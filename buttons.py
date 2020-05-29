@@ -86,10 +86,14 @@ class StartPage(tk.Frame):
         self.currentFileLabel.configure(text=basename(self.filename))
 
     def editText(self):
-        # Edit the .inc file that was chosen by the user (Mac only)
+        # Edit the .inc file that was chosen by the user
         if self.filename == '':
             return
 
+        # For Windows
+        # subprocess.Popen([notepad, self.filename])
+
+        # For Mac
         subprocess.call(['open', '-a', 'TextEdit', self.filename])
 
 
