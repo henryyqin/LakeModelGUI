@@ -94,22 +94,28 @@ class PageOne(tk.Frame):
             row=rowIdx, column=1, columnspan=2, pady=10, sticky="W")
         rowIdx += 3
 
-        # Allows user to upload .inc data.
+        #Entries for .inc file
+        lake_parameters = ["obliquity", "latitude (negative for South)", "longitude (negative for West)",
+                           "local time relative to gmt in hours", "depth of lake at sill in meters",
+                           "Elevation of Basin Bottom in Meters", "Area of Catchment+Lake in Hectares",
+                           "neutral drag coefficient 1.8 HAD 1.7GISS 1.2CCSM", "shortwave extinction coefficient (1/m)",
+                           "fraction of advected air over lake", "albedo of melting snow", "albedo of non-melting snow",
+                           "prescribed depth in meters", "prescribed salinity in ppt", "d18O of air above lake",
+                           "dD of air above lake"]
+        lp_values = []
+        for i in range(rowIdx,rowIdx+16):
+            tk.Label(self, text=lake_parameters[i-rowIdx]).grid(
+                row=i, column=0, sticky="W")
+            lp = tk.Entry(self)
+            lp.grid(row=i, column=1, sticky="W")
+            lp_values.append(lp)
 
-        tk.Label(self, text="Click to upload your .inc file:").grid(
-            row=rowIdx, column=0, sticky="W")
-        graphButton = tk.Button(self, text="Upload .inc File",
-                                command=self.uploadInc)
-        graphButton.grid(row=rowIdx, column=1, pady=10, ipadx=30, ipady=3, sticky="W")
-        rowIdx += 1
+        rowIdx+=15
 
-        # Shows the name of the current uploaded file, if any.
-        tk.Label(self, text="Current File Uploaded:").grid(
-            row=rowIdx, column=0, sticky="W")
-        self.currentIncFileLabel = tk.Label(self, text="No file")
-        self.currentIncFileLabel.grid(
-            row=rowIdx, column=1, columnspan=2, pady=10, sticky="W")
-        rowIdx += 1
+        #Submit entries for .inc file
+        submitButton = tk.Button(self, text="Submit Parameters",
+                                 command=lambda: self.editInc([p.get() for p in lp_values]))
+        submitButton.grid(row=rowIdx, column=1, pady=10, ipadx=30, ipady=3, sticky="W")
 
         # Return to Start Page
         homeButton = tk.Button(self, text="Back to start page",
@@ -137,6 +143,23 @@ class PageOne(tk.Frame):
         incfilename = fd.askopenfilename(filetypes=(('include files', 'inc'),))
         self.currentIncFileLabel.configure(text=basename(incfilename))
         print(incfilename)
+
+    """
+    Edits the parameters in the .inc file
+    """
+
+    def editInc(self, lake_params):
+        with open("Tanganyika.inc", "r+") as f:
+            new = f.readlines()
+            param_names = ["oblq","xlat","xlon","gmt","max_dep","basedep","b_area","cdrn","eta","f","alb_slush",
+                           "alb_snow", "depth_begin", "salty_begin", "o18air", "deutair"]
+            rows = [28,29,30,31,32,33,34,35,36,37,38,39,41,42,44,45]
+            for i in range(0, len(lake_params)):
+                new[rows[i]] = "    parameter ("+param_names[i]+" = "+lake_params[i]+")\n"
+            f.seek(0)
+            f.truncate()
+            f.writelines(new)
+            f.close()
 
 
 class PageTwo(tk.Frame):
