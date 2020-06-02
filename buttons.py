@@ -124,7 +124,7 @@ class StartPage(tk.Frame):
             return
 
         # For Windows
-        # subprocess.Popen([notepad, self.filename])
+        # subprocess.Popen([notepad, self.incfilename])
 
         # For Mac
         subprocess.call(['open', '-a', 'TextEdit', self.incfilename])
