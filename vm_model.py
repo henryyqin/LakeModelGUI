@@ -95,26 +95,30 @@ class PageOne(tk.Frame):
         rowIdx += 3
 
         #Entries for .inc file
-        lake_parameters = ["obliquity", "latitude (negative for South)", "longitude (negative for West)",
+        parameters = ["obliquity", "latitude (negative for South)", "longitude (negative for West)",
                            "local time relative to gmt in hours", "depth of lake at sill in meters",
                            "Elevation of Basin Bottom in Meters", "Area of Catchment+Lake in Hectares",
                            "neutral drag coefficient 1.8 HAD 1.7GISS 1.2CCSM", "shortwave extinction coefficient (1/m)",
                            "fraction of advected air over lake", "albedo of melting snow", "albedo of non-melting snow",
                            "prescribed depth in meters", "prescribed salinity in ppt", "d18O of air above lake",
-                           "dD of air above lake"]
-        lp_values = []
-        for i in range(rowIdx,rowIdx+16):
-            tk.Label(self, text=lake_parameters[i-rowIdx]).grid(
+                           "dD of air above lake", "number of years for spinup",
+                           "true for explict boundry layer computations; presently only for sigma coord climate models",
+                           "sigma level for boundary flag", "true for variable lake depth", "true for variable ice cover",
+                           "true for variable salinity", "true for variable d18O", "true for variable dD",
+                           "height of met inputs"]
+        param_values = []
+        for i in range(rowIdx,rowIdx+25):
+            tk.Label(self, text=parameters[i-rowIdx]).grid(
                 row=i, column=0, sticky="W")
-            lp = tk.Entry(self)
-            lp.grid(row=i, column=1, sticky="W")
-            lp_values.append(lp)
+            p = tk.Entry(self)
+            p.grid(row=i, column=1, sticky="W")
+            param_values.append(p)
 
-        rowIdx+=15
+        rowIdx+=25
 
         #Submit entries for .inc file
         submitButton = tk.Button(self, text="Submit Parameters",
-                                 command=lambda: self.editInc([p.get() for p in lp_values]))
+                                 command=lambda: self.editInc([p.get() for p in param_values], parameters))
         submitButton.grid(row=rowIdx, column=1, pady=10, ipadx=30, ipady=3, sticky="W")
 
         # Return to Start Page
@@ -148,14 +152,16 @@ class PageOne(tk.Frame):
     Edits the parameters in the .inc file
     """
 
-    def editInc(self, lake_params):
+    def editInc(self, parameters, descriptions):
         with open("Tanganyika.inc", "r+") as f:
             new = f.readlines()
-            param_names = ["oblq","xlat","xlon","gmt","max_dep","basedep","b_area","cdrn","eta","f","alb_slush",
-                           "alb_snow", "depth_begin", "salty_begin", "o18air", "deutair"]
-            rows = [28,29,30,31,32,33,34,35,36,37,38,39,41,42,44,45]
-            for i in range(0, len(lake_params)):
-                new[rows[i]] = "    parameter ("+param_names[i]+" = "+lake_params[i]+")\n"
+            names = ["oblq","xlat","xlon","gmt","max_dep","basedep","b_area","cdrn","eta","f","alb_slush",
+                           "alb_snow", "depth_begin", "salty_begin", "o18air", "deutair", "nspin", "bndry_flag",
+                           "sigma","wb_flag","iceflag","s_flag","o18flag","deutflag","z_screen"]
+            rows = [28,29,30,31,32,33,34,35,36,37,38,39,41,42,44,45,69,70,71,72,73,74,75,76,77]
+            for i in range(0, len(parameters)):
+                if len(parameters[i]) != 0:
+                    new[rows[i]] = "    parameter ("+names[i]+" = "+parameters[i]+")   ! "+descriptions[i]+"\n"
             f.seek(0)
             f.truncate()
             f.writelines(new)
