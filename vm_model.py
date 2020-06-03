@@ -152,16 +152,18 @@ class PageOne(tk.Frame):
     Edits the parameters in the .inc file
     """
 
-    def editInc(self, parameters, descriptions):
+    def editInc(self, parameters, comments):
         with open("Tanganyika.inc", "r+") as f:
             new = f.readlines()
+            #names of the parameters that need to be modified
             names = ["oblq","xlat","xlon","gmt","max_dep","basedep","b_area","cdrn","eta","f","alb_slush",
                            "alb_snow", "depth_begin", "salty_begin", "o18air", "deutair", "nspin", "bndry_flag",
                            "sigma","wb_flag","iceflag","s_flag","o18flag","deutflag","z_screen"]
+            #line numbers in the .inc file that need to be modified
             rows = [28,29,30,31,32,33,34,35,36,37,38,39,41,42,44,45,69,70,71,72,73,74,75,76,77]
             for i in range(0, len(parameters)):
                 if len(parameters[i]) != 0:
-                    new[rows[i]] = "    parameter ("+names[i]+" = "+parameters[i]+")   ! "+descriptions[i]+"\n"
+                    new[rows[i]] = "    parameter ("+names[i]+" = "+parameters[i]+")   ! "+comments[i]+"\n"
             f.seek(0)
             f.truncate()
             f.writelines(new)
