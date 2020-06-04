@@ -4,7 +4,8 @@ from os.path import basename
 import tkinter.filedialog as fd
 import subprocess
 import pandas as pd
-import glob
+import webbrowser
+from tkinter import ttk
 
 # Imports for Lake Model
 import numpy as np
@@ -17,6 +18,9 @@ if you want the user to upload something from the same directory as the gui
 then you can use initialdir=os.getcwd() as the first parameter of askopenfilename
 """
 LARGE_FONT = ("Verdana", 16)
+
+def callback(url):
+    webbrowser.open_new(url)
 
 class SampleApp(tk.Tk):
 
@@ -60,16 +64,31 @@ class StartPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.controller = controller
-        label = tk.Label(self, text="This is the start page",
-                         font=controller.title_font)
-        label.pack(side="top", fill="x", pady=10)
+        label = tk.Label(self, text="PRYSM Models", font=("Verdana", 40))
+        label.pack(pady=(200, 10), padx=10)
 
-        button1 = tk.Button(self, text="Run Lake Model",
-                            command=lambda: controller.show_frame("PageOne"))
-        button2 = tk.Button(self, text="Go to Page Two",
-                            command=lambda: controller.show_frame("PageTwo"))
-        button1.pack()
-        button2.pack()
+        descrip = tk.Label(self, text="A graphical user interface for Climate Proxy System Modeling Tools in Python",
+                           font=("Helvetica", 18))
+        descrip.pack(pady=10, padx=10)
+
+        authors = tk.Label(self, text="By: Sylvia Dee, Henry Qin, Xueyan Mu, and Vinay Tummarakota",
+                           font=("Helvetica", 18))
+        authors.pack(pady=10, padx=10)
+
+        website = tk.Label(self, text="Getting Started Guide", fg="blue", cursor="hand2", font=("Helvetica", 18))
+        website.pack(pady=10, padx=10)
+        website.bind("<Button-1>", lambda e: callback(
+            "https://docs.google.com/document/d/1RHYEXm5AjXO3NppNxDLPmPnHPr8tQIaT_jH7F7pU2ic/edit?usp=sharing"))
+
+        github = tk.Label(self, text="Github", fg="blue", cursor="hand2", font=("Helvetica", 18))
+        github.pack(pady=10, padx=10)
+        github.bind("<Button-1>", lambda e: callback("https://github.com/henryyqin/LakeModelGUI"))
+
+        button = ttk.Button(self, text="Run Lake Environment Model", command=lambda: controller.show_frame("PageOne"))
+        button.pack(ipadx=43, ipady=3, pady=(40, 5))
+
+        button2 = ttk.Button(self, text="Run Additional Models", command=lambda: controller.show_frame("PageTwo"))
+        button2.pack(ipadx=30, ipady=3, pady=(5, 5))
 
 
 class PageOne(tk.Frame):
@@ -79,14 +98,19 @@ class PageOne(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.controller = controller
         label = tk.Label(
-            self, text="(This is page 1) Upload or modify .txt and .inc files", font=controller.title_font)
-        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=15)
+            self, text="Run Lake Environment Model", font=controller.title_font)
+        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
 
         rowIdx += 3
 
-        # Label for uploading .txt and .inc files
+        # Instructions for uploading .txt and .inc files
         tk.Label(self,
-                 text="(SUBTITLE- can include instructions on using sample files) Upload a .txt and .inc file."
+                 text=
+                 """
+                 1) Upload a text file to provide input data for the lake model\n
+                 2) Enter lake-specific and simulation-specific parameters\n
+                 3) If parameters are left empty, default parameters for Lake Tanganyika will be used instead
+                 """, justify="left"
                  ).grid(row=rowIdx, columnspan=3, rowspan=3, pady=15)
         rowIdx += 3
 
@@ -107,6 +131,48 @@ class PageOne(tk.Frame):
             row=rowIdx, column=1, columnspan=2, pady=10, sticky="W")
         rowIdx += 3
 
+        #Entries for .inc file
+        parameters = ["obliquity", "latitude (negative for South)", "longitude (negative for West)",
+                           "local time relative to gmt in hours", "depth of lake at sill in meters",
+                           "Elevation of Basin Bottom in Meters", "Area of Catchment+Lake in Hectares",
+                           "neutral drag coefficient 1.8 HAD 1.7GISS 1.2CCSM", "shortwave extinction coefficient (1/m)",
+                           "fraction of advected air over lake", "albedo of melting snow", "albedo of non-melting snow",
+                           "prescribed depth in meters", "prescribed salinity in ppt", "d18O of air above lake",
+                           "dD of air above lake", "number of years for spinup",
+                           "true for explict boundry layer computations; presently only for sigma coord climate models",
+                           "sigma level for boundary flag", "true for variable lake depth", "true for variable ice cover",
+                           "true for variable salinity", "true for variable d18O", "true for variable dD",
+                           "height of met inputs"]
+        param_values = []
+        tk.Label(self, text="Lake-Specific Parameters", font=("Helvetica", 18)).grid(
+            row=rowIdx, column=0, sticky="W")
+        tk.Label(self, text="Simulation-Specific Parameters", font=("Helvetica", 18)).grid(
+            row=rowIdx, column=2, sticky="W")
+        rowIdx+=1
+        for i in range(rowIdx,rowIdx+16):
+            tk.Label(self, text=parameters[i-rowIdx]).grid(
+                row=i, column=0, sticky="W")
+            p = tk.Entry(self)
+            p.grid(row=i, column=1, sticky="W")
+            param_values.append(p)
+
+        for i in range(rowIdx+16,rowIdx+25):
+            tk.Label(self, text=parameters[i-rowIdx]).grid(
+                row=i-16, column=2, sticky="W")
+            p = tk.Entry(self)
+            p.grid(row=i-16, column=3, sticky="W")
+            param_values.append(p)
+
+        rowIdx+=16
+
+        #Submit entries for .inc file
+        submitButton = tk.Button(self, text="Submit Parameters",
+                                 command=lambda: self.editInc([p.get() for p in param_values], parameters))
+        submitButton.grid(row=rowIdx, column=1, pady=10, ipadx=30, ipady=3, sticky="W")
+
+        rowIdx+=1
+
+        """
         # Allows user to upload .inc data.
 
         tk.Label(self, text="Click to upload your .inc file:").grid(
@@ -135,8 +201,8 @@ class PageOne(tk.Frame):
             self, text="Edit .inc File (Windows)", command=self.editTextWindows)
         editButtonMac.grid(row=rowIdx, column=2, ipadx=30, ipady=3, sticky="W")
         rowIdx += 1
-
-        # Button to run the model (Mac only)
+        """
+        # Button to run the model (Mac/Linux only)
         runButton = tk.Button(
             self, text="Run Model", command=self.runModel)
         runButton.grid(row=rowIdx, column=1, ipadx=30, ipady=3, sticky="W")
@@ -176,11 +242,38 @@ class PageOne(tk.Frame):
         self.txtfilename = fd.askopenfilename(
             filetypes=(('text files', 'txt'),))
         self.currentTxtFileLabel.configure(text=basename(self.txtfilename))
-        print(self.txtfilename)
+        with open("lake_environment.f90", "r+") as f:
+            new = f.readlines()
+            new[18] = "      !data_input_filename = '"+self.txtfilename+"'\n"
+            new[732] = "      open(unit=15,file='"+self.txtfilename+"',status='old')\n"
+            f.seek(0)
+            f.truncate()
+            f.writelines(new)
+            f.close()
+
+    """
+    Edits the parameters in the .inc file
+    """
+
+    def editInc(self, parameters, comments):
+        with open("Tanganyika.inc", "r+") as f:
+            new = f.readlines()
+            #names of the parameters that need to be modified
+            names = ["oblq","xlat","xlon","gmt","max_dep","basedep","b_area","cdrn","eta","f","alb_slush",
+                           "alb_snow", "depth_begin", "salty_begin", "o18air", "deutair", "nspin", "bndry_flag",
+                           "sigma","wb_flag","iceflag","s_flag","o18flag","deutflag","z_screen"]
+            #line numbers in the .inc file that need to be modified
+            rows = [28,29,30,31,32,33,34,35,36,37,38,39,41,42,44,45,69,70,71,72,73,74,75,76,77]
+            for i in range(0, len(parameters)):
+                if len(parameters[i]) != 0:
+                    new[rows[i]] = "    parameter ("+names[i]+" = "+parameters[i]+")   ! "+comments[i]+"\n"
+            f.seek(0)
+            f.truncate()
+            f.writelines(new)
+            f.close()
 
     """
     Takes a .inc file
-    """
 
     def uploadInc(self):
         # Open the file choosen by the user
@@ -189,9 +282,7 @@ class PageOne(tk.Frame):
         self.currentIncFileLabel.configure(text=basename(self.incfilename))
         print(self.incfilename)
 
-    """
     Edits the .inc file that was chosen by the user (for Mac)
-    """
 
     def editTextMac(self):
         # Checks if a file was uploaded at all
@@ -200,9 +291,7 @@ class PageOne(tk.Frame):
 
         subprocess.call(['open', '-a', 'TextEdit', self.incfilename])
 
-    """
     Edits the .inc file that was chosen by the user (for Windows)
-    """
 
     def editTextWindows(self):
         # Checks if a file was uploaded at all
@@ -212,13 +301,13 @@ class PageOne(tk.Frame):
         subprocess.Popen([notepad, self.incfilename])
 
     """
+    """
     Compiles a Fortran wrapper and runs the model
     """
 
     def runModel(self):
-        # For Mac
         # Runs f2py terminal command then (hopefully) terminates (takes a bit)
-        subprocess.call(
+        subprocess.run(
             ['f2py', '-c', '-m', 'lakepsm', 'lake_environment.f90'])
 
         # imports the wrapper
