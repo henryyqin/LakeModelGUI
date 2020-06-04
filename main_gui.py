@@ -17,7 +17,8 @@ from math import pi, sqrt, exp
 if you want the user to upload something from the same directory as the gui
 then you can use initialdir=os.getcwd() as the first parameter of askopenfilename
 """
-LARGE_FONT = ("Verdana", 16)
+LARGE_FONT = ("Verdana", 26)
+f = ("Verdana", 20)
 
 def callback(url):
     webbrowser.open_new(url)
@@ -26,7 +27,7 @@ class SampleApp(tk.Tk):
 
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
-        self.title_font = tkfont.Font(family='Verdana', size=18, weight="bold")
+        self.title_font = tkfont.Font(family='Verdana', size=24, weight="bold")
         # title of window
         self.title("Lake Model GUI")
         self.minsize(640, 400)
@@ -84,10 +85,10 @@ class StartPage(tk.Frame):
         github.pack(pady=10, padx=10)
         github.bind("<Button-1>", lambda e: callback("https://github.com/henryyqin/LakeModelGUI"))
 
-        button = ttk.Button(self, text="Run Lake Environment Model", command=lambda: controller.show_frame("PageOne"))
+        button = tk.Button(self, text="Run Lake Environment Model", font=f, command=lambda: controller.show_frame("PageOne"))
         button.pack(ipadx=43, ipady=3, pady=(40, 5))
 
-        button2 = ttk.Button(self, text="Run Additional Models", command=lambda: controller.show_frame("PageTwo"))
+        button2 = tk.Button(self, text="Run Additional Models", font=f, command=lambda: controller.show_frame("PageTwo"))
         button2.pack(ipadx=30, ipady=3, pady=(5, 5))
 
 
@@ -98,7 +99,7 @@ class PageOne(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.controller = controller
         label = tk.Label(
-            self, text="Run Lake Environment Model", font=controller.title_font)
+            self, text="Run Lake Environment Model", font=LARGE_FONT)
         label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
 
         rowIdx += 3
@@ -110,23 +111,23 @@ class PageOne(tk.Frame):
                  1) Upload a text file to provide input data for the lake model\n
                  2) Enter lake-specific and simulation-specific parameters\n
                  3) If parameters are left empty, default parameters for Lake Tanganyika will be used instead
-                 """, justify="left"
+                 """,  font=f, justify="left"
                  ).grid(row=rowIdx, columnspan=3, rowspan=3, pady=15)
         rowIdx += 3
 
         # Allows user to upload .txt data.
-        tk.Label(self, text="Click to upload your .txt file:").grid(
+        tk.Label(self, text="Click to upload your .txt file:", font=f).grid(
             row=rowIdx, column=0, pady=10, sticky="W")
-        graphButton = tk.Button(self, text="Upload .txt File",
+        graphButton = tk.Button(self, text="Upload .txt File", font=f,
                                 command=self.uploadTxt)
         graphButton.grid(row=rowIdx, column=1, pady=10,
                          ipadx=30, ipady=3, sticky="W")
         rowIdx += 1
 
         # Shows the name of the current uploaded file, if any.
-        tk.Label(self, text="Current File Uploaded:").grid(
+        tk.Label(self, text="Current File Uploaded:", font=f).grid(
             row=rowIdx, column=0, sticky="W")
-        self.currentTxtFileLabel = tk.Label(self, text="No file")
+        self.currentTxtFileLabel = tk.Label(self, text="No file", font=f)
         self.currentTxtFileLabel.grid(
             row=rowIdx, column=1, columnspan=2, pady=10, sticky="W")
         rowIdx += 3
@@ -144,20 +145,20 @@ class PageOne(tk.Frame):
                            "true for variable salinity", "true for variable d18O", "true for variable dD",
                            "height of met inputs"]
         param_values = []
-        tk.Label(self, text="Lake-Specific Parameters", font=("Helvetica", 18)).grid(
+        tk.Label(self, text="Lake-Specific Parameters", font=LARGE_FONT).grid(
             row=rowIdx, column=0, sticky="W")
-        tk.Label(self, text="Simulation-Specific Parameters", font=("Helvetica", 18)).grid(
+        tk.Label(self, text="Simulation-Specific Parameters", font=LARGE_FONT).grid(
             row=rowIdx, column=2, sticky="W")
         rowIdx+=1
         for i in range(rowIdx,rowIdx+16):
-            tk.Label(self, text=parameters[i-rowIdx]).grid(
+            tk.Label(self, text=parameters[i-rowIdx], font=f).grid(
                 row=i, column=0, sticky="W")
             p = tk.Entry(self)
             p.grid(row=i, column=1, sticky="W")
             param_values.append(p)
 
         for i in range(rowIdx+16,rowIdx+25):
-            tk.Label(self, text=parameters[i-rowIdx]).grid(
+            tk.Label(self, text=parameters[i-rowIdx], font=f).grid(
                 row=i-16, column=2, sticky="W")
             p = tk.Entry(self)
             p.grid(row=i-16, column=3, sticky="W")
@@ -166,7 +167,7 @@ class PageOne(tk.Frame):
         rowIdx+=16
 
         #Submit entries for .inc file
-        submitButton = tk.Button(self, text="Submit Parameters",
+        submitButton = tk.Button(self, text="Submit Parameters", font=f,
                                  command=lambda: self.editInc([p.get() for p in param_values], parameters))
         submitButton.grid(row=rowIdx, column=1, pady=10, ipadx=30, ipady=3, sticky="W")
 
@@ -174,7 +175,6 @@ class PageOne(tk.Frame):
 
         """
         # Allows user to upload .inc data.
-
         tk.Label(self, text="Click to upload your .inc file:").grid(
             row=rowIdx, column=0, sticky="W")
         graphButton = tk.Button(self, text="Upload .inc File",
@@ -182,7 +182,6 @@ class PageOne(tk.Frame):
         graphButton.grid(row=rowIdx, column=1, pady=10,
                          ipadx=30, ipady=3, sticky="W")
         rowIdx += 1
-
         # Shows the name of the current uploaded file, if any.
         tk.Label(self, text="Current File Uploaded:").grid(
             row=rowIdx, column=0, sticky="W")
@@ -190,12 +189,10 @@ class PageOne(tk.Frame):
         self.currentIncFileLabel.grid(
             row=rowIdx, column=1, columnspan=2, pady=10,  sticky="W")
         rowIdx += 1
-
         # Allows user to edit .inc file (for Mac)
         editButtonMac = tk.Button(
             self, text="Edit .inc File (Mac)", command=self.editTextMac)
         editButtonMac.grid(row=rowIdx, column=1, ipadx=30, ipady=3, sticky="W")
-
         # Allows user to edit .inc file (for Windows)
         editButtonMac = tk.Button(
             self, text="Edit .inc File (Windows)", command=self.editTextWindows)
@@ -204,7 +201,7 @@ class PageOne(tk.Frame):
         """
         # Button to run the model (Mac/Linux only)
         runButton = tk.Button(
-            self, text="Run Model", command=self.runModel)
+            self, text="Run Model", font=f,command=self.runModel)
         runButton.grid(row=rowIdx, column=1, ipadx=30, ipady=3, sticky="W")
         rowIdx += 1
 
@@ -213,12 +210,10 @@ class PageOne(tk.Frame):
         # Displays the resultant .dat files
         tk.Label(self, text="Output Files:").grid(
             row=rowIdx, column=0, sticky="W")
-
         self.outputFile1 = tk.Label(self, text="")
         self.outputFile1.grid(
             row=rowIdx, column=1, columnspan=2, pady=10,  sticky="W")
         rowIdx += 1
-
         self.outputFile2 = tk.Label(self, text="")
         self.outputFile2.grid(
             row=rowIdx, column=1, columnspan=2, pady=10,  sticky="W")
@@ -226,7 +221,7 @@ class PageOne(tk.Frame):
         """
 
         # Return to Start Page
-        homeButton = tk.Button(self, text="Back to start page",
+        homeButton = tk.Button(self, text="Back to start page", font=f,
                                command=lambda: controller.show_frame("StartPage"))
         # previousPageB.pack(anchor = "w", side = "bottom")
         homeButton.grid(row=rowIdx, column=3, ipadx=25,
@@ -274,32 +269,24 @@ class PageOne(tk.Frame):
 
     """
     Takes a .inc file
-
     def uploadInc(self):
         # Open the file choosen by the user
         self.incfilename = fd.askopenfilename(
             filetypes=(('include files', 'inc'),))
         self.currentIncFileLabel.configure(text=basename(self.incfilename))
         print(self.incfilename)
-
     Edits the .inc file that was chosen by the user (for Mac)
-
     def editTextMac(self):
         # Checks if a file was uploaded at all
         if self.incfilename == '':
             return
-
         subprocess.call(['open', '-a', 'TextEdit', self.incfilename])
-
     Edits the .inc file that was chosen by the user (for Windows)
-
     def editTextWindows(self):
         # Checks if a file was uploaded at all
         if self.incfilename == '':
             return
-
         subprocess.Popen([notepad, self.incfilename])
-
     """
     """
     Compiles a Fortran wrapper and runs the model
@@ -322,7 +309,6 @@ class PageOne(tk.Frame):
 """
         # Updates the output files
         self.displayOutput()
-
     def displayOutput(self):
         os.chdir(os.getcwd())
         filelist = glob.glob("*.dat")
@@ -339,7 +325,7 @@ class PageTwo(tk.Frame):
         label = tk.Label(self, text="This is page 2",
                          font=controller.title_font)
         label.pack(side="top", fill="x", pady=10)
-        button = tk.Button(self, text="Go to the start page",
+        button = tk.Button(self, text="Go to the start page", font=f,
                            command=lambda: controller.show_frame("StartPage"))
         button.pack()
 
