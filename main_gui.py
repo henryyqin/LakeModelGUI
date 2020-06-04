@@ -6,6 +6,7 @@ import subprocess
 import pandas as pd
 import webbrowser
 from tkinter import ttk
+import multiprocessing
 
 # Imports for Lake Model
 import numpy as np
@@ -201,7 +202,7 @@ class PageOne(tk.Frame):
         """
         # Button to run the model (Mac/Linux only)
         runButton = tk.Button(
-            self, text="Run Model", font=f,command=self.runModel)
+            self, text="Run Model", font=f,command=lambda: self.runModel(runButton))
         runButton.grid(row=rowIdx, column=1, ipadx=30, ipady=3, sticky="W")
         rowIdx += 1
 
@@ -288,11 +289,22 @@ class PageOne(tk.Frame):
             return
         subprocess.Popen([notepad, self.incfilename])
     """
+
+    """
+    Disables run model button and creates separate process for lake model
+    """
+
+    def runModel(self, btn):
+        btn["state"]="disabled"
+        model_process = multiprocessing.Process(target=self.computeModel)
+        model_process.start()
+        btn["state"]="normal"
+
     """
     Compiles a Fortran wrapper and runs the model
     """
 
-    def runModel(self):
+    def computeModel(self):
         # Runs f2py terminal command then (hopefully) terminates (takes a bit)
         subprocess.run(
             ['f2py', '-c', '-m', 'lakepsm', 'lake_environment.f90'])

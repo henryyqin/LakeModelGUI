@@ -3,6 +3,8 @@ from tkinter import font  as tkfont  # python 3
 from os.path import basename
 import tkinter.filedialog as fd
 import subprocess
+import webbrowser
+from tkinter import ttk
 
 """
 if you want the user to upload something from the same directory as the gui
@@ -10,6 +12,8 @@ then you can use initialdir=os.getcwd() as the first parameter of askopenfilenam
 """
 LARGE_FONT = ("Verdana", 16)
 
+def callback(url):
+    webbrowser.open_new(url)
 
 class SampleApp(tk.Tk):
 
@@ -50,15 +54,30 @@ class StartPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.controller = controller
-        label = tk.Label(self, text="This is the start page", font=controller.title_font)
-        label.pack(side="top", fill="x", pady=10)
+        label = tk.Label(self, text="PRYSM Models", font=("Verdana", 40))
+        label.pack(pady=(200, 10), padx=10)
 
-        button1 = tk.Button(self, text="Run Lake Model",
-                            command=lambda: controller.show_frame("PageOne"))
-        button2 = tk.Button(self, text="Go to Page Two",
-                            command=lambda: controller.show_frame("PageTwo"))
-        button1.pack()
-        button2.pack()
+        descrip = tk.Label(self, text="A graphical user interface for Climate Proxy System Modeling Tools in Python",
+                           font=("Helvetica", 18))
+        descrip.pack(pady=10, padx=10)
+
+        authors = tk.Label(self, text="By: Sylvia Dee, Henry Qin, Xueyan Mu, and Vinay Tummarakota",
+                           font=("Helvetica", 18))
+        authors.pack(pady=10, padx=10)
+
+        website = tk.Label(self, text="Getting Started Guide", fg="blue", cursor="hand2", font=("Helvetica", 18))
+        website.pack(pady=10, padx=10)
+        website.bind("<Button-1>", lambda e: callback("https://docs.google.com/document/d/1RHYEXm5AjXO3NppNxDLPmPnHPr8tQIaT_jH7F7pU2ic/edit?usp=sharing"))
+
+        github = tk.Label(self, text="Github", fg="blue", cursor="hand2", font=("Helvetica", 18))
+        github.pack(pady=10, padx=10)
+        github.bind("<Button-1>", lambda e: callback("https://github.com/henryyqin/LakeModelGUI"))
+
+        button = ttk.Button(self, text="PageOne", command=lambda: controller.show_frame("PageOne"))
+        button.pack(ipadx=43, ipady=3, pady=(40, 5))
+
+        button2 = ttk.Button(self, text="PageTwo", command=lambda: controller.show_frame("PageTwo"))
+        button2.pack(ipadx=30, ipady=3, pady=(5, 5))
 
 
 class PageOne(tk.Frame):
