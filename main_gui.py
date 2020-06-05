@@ -1,5 +1,6 @@
 import tkinter as tk                # python 3
 from tkinter import font as tkfont  # python 3
+import os
 from os.path import basename
 import tkinter.filedialog as fd
 import subprocess
@@ -240,8 +241,9 @@ class PageOne(tk.Frame):
         self.currentTxtFileLabel.configure(text=basename(self.txtfilename))
         with open("lake_environment.f90", "r+") as f:
             new = f.readlines()
-            new[18] = "      !data_input_filename = '"+self.txtfilename+"'\n"
-            new[732] = "      open(unit=15,file='"+self.txtfilename+"',status='old')\n"
+            if self.txtfilename != "":
+                new[18] = "      !data_input_filename = '"+self.txtfilename+"'\n"
+                new[732] = "      open(unit=15,file='"+self.txtfilename+"',status='old')\n"
             f.seek(0)
             f.truncate()
             f.writelines(new)
@@ -296,14 +298,20 @@ class PageOne(tk.Frame):
 
     def runModel(self, btn):
         btn["state"]="disabled"
-        model_process = multiprocessing.Process(target=lambda: self.computeModel(btn))
+        model_process = multiprocessing.Process(target=self.computeModel)
         model_process.start()
+        pbar = ttk.Progressbar(self, orient="horizontal", length=100, mode="indeterminate")
+        pbar.grid(row=30,column=1, sticky="W")
+        pbar.start()
+        file_path = os.getcwd() + "/profile_output.dat"
+        self.after(30000, lambda: self.check_file(file_path, 0, pbar, btn))
+
 
     """
     Compiles a Fortran wrapper and runs the model
     """
 
-    def computeModel(self, btn):
+    def computeModel(self):
         # Runs f2py terminal command then (hopefully) terminates (takes a bit)
         subprocess.run(
             ['f2py', '-c', '-m', 'lakepsm', 'lake_environment.f90'])
@@ -313,7 +321,26 @@ class PageOne(tk.Frame):
 
         # Run Environment Model (Crashes eventually)
         lakepsm.lakemodel()
+
+    def check_file(self, file, past_size, progress, btn):
+        current_size = os.path.getsize(file)
+        print(past_size, current_size)
+        if past_size != current_size or current_size==0:
+            self.after(60000, lambda: self.check_file(file, current_size, progress, btn))
+        else:
+            btn["state"]="normal"
+            progress.stop()
+        return None
+        """
+        while file_growth > 0:
+            size1 = os.path.getsize(file_path)
+            self.after(15000, lambda: None)
+            size2 = os.path.getsize(file_path)
+            file_growth = size2 - size1
+            print(size1, size2, file_growth)
         btn["state"] = "normal"
+        """
+
 
 """
         # Updates the output files
