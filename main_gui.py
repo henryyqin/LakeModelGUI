@@ -19,7 +19,7 @@ if you want the user to upload something from the same directory as the gui
 then you can use initialdir=os.getcwd() as the first parameter of askopenfilename
 """
 LARGE_FONT = ("Verdana", 26)
-f = ("Verdana", 20)
+f = ("Verdana", 12)
 
 def callback(url):
     webbrowser.open_new(url)
@@ -296,15 +296,14 @@ class PageOne(tk.Frame):
 
     def runModel(self, btn):
         btn["state"]="disabled"
-        model_process = multiprocessing.Process(target=self.computeModel)
+        model_process = multiprocessing.Process(target=lambda: self.computeModel(btn))
         model_process.start()
-        btn["state"]="normal"
 
     """
     Compiles a Fortran wrapper and runs the model
     """
 
-    def computeModel(self):
+    def computeModel(self, btn):
         # Runs f2py terminal command then (hopefully) terminates (takes a bit)
         subprocess.run(
             ['f2py', '-c', '-m', 'lakepsm', 'lake_environment.f90'])
@@ -312,11 +311,9 @@ class PageOne(tk.Frame):
         # imports the wrapper
         import lakepsm
 
-        # defines the input file (idk if necessary at this step)
-        lake_data_file = self.txtfilename
-
         # Run Environment Model (Crashes eventually)
         lakepsm.lakemodel()
+        btn["state"] = "normal"
 
 """
         # Updates the output files
