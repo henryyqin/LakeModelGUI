@@ -13,6 +13,8 @@ import multiprocessing
 import numpy as np
 import matplotlib
 matplotlib.use('TkAgg')  # Necessary for Mac Mojave
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 from math import pi, sqrt, exp
 
@@ -48,7 +50,7 @@ class SampleApp(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-        for F in (StartPage, PageOne, PageTwo):
+        for F in (StartPage, PageOne, PageTimeSeries, PageTwo):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
@@ -94,8 +96,13 @@ class StartPage(tk.Frame):
         button = tk.Button(self, text="Run Lake Environment Model", font=f, command=lambda: controller.show_frame("PageOne"))
         button.pack(ipadx=43, ipady=3, pady=(40, 5))
 
+        buttonTimeSeries = tk.Button(self, text="Plot Time Series", font=f, command=lambda: controller.show_frame("PageTimeSeries"))
+        buttonTimeSeries.pack(ipadx=43, ipady=3, pady=(5, 5))
+
         button2 = tk.Button(self, text="Run Additional Models", font=f, command=lambda: controller.show_frame("PageTwo"))
         button2.pack(ipadx=30, ipady=3, pady=(5, 5))
+
+
 
 
 class PageOne(tk.Frame):
@@ -318,7 +325,7 @@ class PageOne(tk.Frame):
     def computeModel(self):
         # Runs f2py terminal command then (hopefully) terminates (takes a bit)
         subprocess.run(
-            ['f2py', '-c', '-m', 'lakepsm', 'lake_environment.f90'])
+            ['f2py', '-c', '-m', 'lakepsm', 'env_sub.f90'])
 
         # imports the wrapper
         import lakepsm
@@ -356,6 +363,29 @@ class PageOne(tk.Frame):
         self.outputFile2.configure(text=basename(filelist[1]))
 """
 
+"""
+Page to plot time series
+"""
+class PageTimeSeries(tk.Frame):
+
+    def __init__(self, parent, controller):
+        rowIdx=1
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+        label = tk.Label(
+            self, text="Time Series", font=LARGE_FONT)
+        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
+
+
+        # From Vinay's code
+        self.f = Figure(figsize=(10, 5), dpi=100)
+        self.plt = self.f.add_subplot(111)
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+        self.plt.set_title(r'SENSOR', fontsize=12)
+        self.plt.set_xlabel('Time')
+        self.plt.set_ylabel('Simulated Carbonate Data')
+
 
 class PageTwo(tk.Frame):
 
@@ -368,6 +398,8 @@ class PageTwo(tk.Frame):
         button = tk.Button(self, text="Go to the start page", font=f,
                            command=lambda: controller.show_frame("StartPage"))
         button.pack()
+
+
 
 
 if __name__ == "__main__":
