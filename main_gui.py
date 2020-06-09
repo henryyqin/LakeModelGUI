@@ -313,7 +313,7 @@ class PageCarbonate(tk.Frame):
                 line_vals = line.split()
                 tempr_yr.append(line_vals[1])
             surf_tempr.append(tempr_yr[self.nspin*12:len(tempr_yr)])
-        surf_tempr = np.array(surf_tempr[0], dtype=float) + 275.15
+        surf_tempr = np.array(surf_tempr[0], dtype=float)
         self.LST = surf_tempr
         self.d180w = -2
         self.carb_proxy = carb.carb_sensor(self.LST, self.d180w, self.model)
