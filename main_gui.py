@@ -15,6 +15,10 @@ import matplotlib
 matplotlib.use('TkAgg')  # Necessary for Mac Mojave
 import matplotlib.pyplot as plt
 from math import pi, sqrt, exp
+
+# Imports for plotting
+from statistics import mean
+
 """
 if you want the user to upload something from the same directory as the gui
 then you can use initialdir=os.getcwd() as the first parameter of askopenfilename

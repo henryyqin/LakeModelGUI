@@ -16,7 +16,7 @@
       !character*80 :: data_output_profile, data_output_surface
 
       !lake_data_filename = 'lake_environment.inc'
-      !data_input_filename = 'C:/Users/Srivinay Tummarakota/Documents/Vinay's Docs/Rice Freshman/Lake Model/Malawi.txt'
+      !data_input_filename = '/Users/henryqin/Desktop/LakeModelGUI/ERA_INTERIM_climatology_Tang_2yr.txt'
       !data_output_profile = 'profile_output.dat'
       !data_output_surface = 'surface_output.dat'
       !!!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -730,7 +730,7 @@
       subroutine file_open
 
 !      input files
-      open(unit=15,file='C:/Users/Srivinay Tummarakota/Documents/Vinay's Docs/Rice Freshman/Lake Model/Malawi.txt',status='old')
+      open(unit=15,file='/Users/henryqin/Desktop/LakeModelGUI/ERA_INTERIM_climatology_Tang_2yr.txt',status='old')
 
 !      output files
       open(unit=50,file='profile_output.dat',status='unknown')
