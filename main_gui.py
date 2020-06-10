@@ -1,4 +1,4 @@
-import tkinter as tk                # python 3
+import tkinter as tk  # python 3
 from tkinter import font as tkfont  # python 3
 import os
 from os.path import basename
@@ -9,28 +9,29 @@ import webbrowser
 from tkinter import ttk
 import multiprocessing
 import sensor_carbonate as carb
+from subprocess import Popen, PIPE
 
 # Imports for Lake Model
 import numpy as np
 import matplotlib
+
 matplotlib.use('TkAgg')  # Necessary for Mac Mojave
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 from math import pi, sqrt, exp
+
 """
 if you want the user to upload something from the same directory as the gui
 then you can use initialdir=os.getcwd() as the first parameter of askopenfilename
 """
 LARGE_FONT = ("Verdana", 26)
-<<<<<<< HEAD
-f = ("Verdana", 14)
-=======
-f = ("Verdana", 12)
->>>>>>> 64e8c7628c081a8c08988a067d1f6c991e4dda92
+f = ("Verdana", 8)
+
 
 def callback(url):
     webbrowser.open_new(url)
+
 
 class SampleApp(tk.Tk):
 
@@ -94,10 +95,12 @@ class StartPage(tk.Frame):
         github.pack(pady=10, padx=10)
         github.bind("<Button-1>", lambda e: callback("https://github.com/henryyqin/LakeModelGUI"))
 
-        button = tk.Button(self, text="Run Lake Environment Model", font=f, command=lambda: controller.show_frame("PageOne"))
+        button = tk.Button(self, text="Run Lake Environment Model", font=f,
+                           command=lambda: controller.show_frame("PageOne"))
         button.pack(ipadx=43, ipady=3, pady=(40, 5))
 
-        button2 = tk.Button(self, text="Run Carbonate Model", font=f, command=lambda: controller.show_frame("PageCarbonate"))
+        button2 = tk.Button(self, text="Run Carbonate Model", font=f,
+                            command=lambda: controller.show_frame("PageCarbonate"))
         button2.pack(ipadx=30, ipady=3, pady=(5, 5))
 
 
@@ -120,7 +123,7 @@ class PageOne(tk.Frame):
                  1) Upload a text file to provide input data for the lake model\n
                  2) Enter lake-specific and simulation-specific parameters\n
                  3) If parameters are left empty, default parameters for Lake Tanganyika will be used instead
-                 """,  font=f, justify="left"
+                 """, font=f, justify="left"
                  ).grid(row=rowIdx, columnspan=3, rowspan=3, pady=15)
         rowIdx += 3
 
@@ -141,50 +144,50 @@ class PageOne(tk.Frame):
             row=rowIdx, column=1, columnspan=2, pady=10, sticky="W")
         rowIdx += 3
 
-        #Entries for .inc file
+        # Entries for .inc file
         parameters = ["obliquity", "latitude (negative for South)", "longitude (negative for West)",
-                           "local time relative to gmt in hours", "depth of lake at sill in meters",
-                           "Elevation of Basin Bottom in Meters", "Area of Catchment+Lake in Hectares",
-                           "neutral drag coefficient 1.8 HAD 1.7GISS 1.2CCSM", "shortwave extinction coefficient (1/m)",
-                           "fraction of advected air over lake", "albedo of melting snow", "albedo of non-melting snow",
-                           "prescribed depth in meters", "prescribed salinity in ppt", "d18O of air above lake",
-                           "dD of air above lake", "number of years for spinup",
-                           "true for explict boundry layer computations; presently only for sigma coord climate models",
-                           "sigma level for boundary flag", "true for variable lake depth", "true for variable ice cover",
-                           "true for variable salinity", "true for variable d18O", "true for variable dD",
-                           "height of met inputs"]
+                      "local time relative to gmt in hours", "depth of lake at sill in meters",
+                      "Elevation of Basin Bottom in Meters", "Area of Catchment+Lake in Hectares",
+                      "neutral drag coefficient 1.8 HAD 1.7GISS 1.2CCSM", "shortwave extinction coefficient (1/m)",
+                      "fraction of advected air over lake", "albedo of melting snow", "albedo of non-melting snow",
+                      "prescribed depth in meters", "prescribed salinity in ppt", "d18O of air above lake",
+                      "dD of air above lake", "number of years for spinup",
+                      "true for explict boundry layer computations; presently only for sigma coord climate models",
+                      "sigma level for boundary flag", "true for variable lake depth", "true for variable ice cover",
+                      "true for variable salinity", "true for variable d18O", "true for variable dD",
+                      "height of met inputs"]
         param_values = []
         tk.Label(self, text="Lake-Specific Parameters", font=LARGE_FONT).grid(
             row=rowIdx, column=0, sticky="W")
         tk.Label(self, text="Simulation-Specific Parameters", font=LARGE_FONT).grid(
             row=rowIdx, column=2, sticky="W")
-        rowIdx+=1
-        for i in range(rowIdx,rowIdx+16):
-            tk.Label(self, text=parameters[i-rowIdx], font=f).grid(
+        rowIdx += 1
+        for i in range(rowIdx, rowIdx + 16):
+            tk.Label(self, text=parameters[i - rowIdx], font=f).grid(
                 row=i, column=0, sticky="W")
             p = tk.Entry(self)
             p.grid(row=i, column=1, sticky="W")
             param_values.append(p)
 
-        for i in range(rowIdx+16,rowIdx+25):
-            tk.Label(self, text=parameters[i-rowIdx], font=f).grid(
-                row=i-16, column=2, sticky="W")
+        for i in range(rowIdx + 16, rowIdx + 25):
+            tk.Label(self, text=parameters[i - rowIdx], font=f).grid(
+                row=i - 16, column=2, sticky="W")
             p = tk.Entry(self)
-            p.grid(row=i-16, column=3, sticky="W")
+            p.grid(row=i - 16, column=3, sticky="W")
             param_values.append(p)
 
-        rowIdx+=16
+        rowIdx += 16
 
-        #Submit entries for .inc file
+        # Submit entries for .inc file
         submitButton = tk.Button(self, text="Submit Parameters", font=f,
                                  command=lambda: self.editInc([p.get() for p in param_values], parameters))
         submitButton.grid(row=rowIdx, column=1, pady=10, ipadx=30, ipady=3, sticky="W")
 
-        rowIdx+=1
+        rowIdx += 1
 
         # Button to run the model (Mac/Linux only)
         runButton = tk.Button(
-            self, text="Run Model", font=f,command=lambda: self.runModel(runButton))
+            self, text="Run Model", font=f, command=lambda: self.compileModel(runButton))
         runButton.grid(row=rowIdx, column=1, ipadx=30, ipady=3, sticky="W")
         rowIdx += 1
 
@@ -208,8 +211,16 @@ class PageOne(tk.Frame):
         with open("lake_environment.f90", "r+") as f:
             new = f.readlines()
             if self.txtfilename != "":
-                new[18] = "      !data_input_filename = '"+self.txtfilename+"'\n"
-                new[732] = "      open(unit=15,file='"+self.txtfilename+"',status='old')\n"
+                new[18] = "      !data_input_filename = '" + self.txtfilename + "'\n"
+                new[732] = "      open(unit=15,file='" + self.txtfilename + "',status='old')\n"
+            f.seek(0)
+            f.truncate()
+            f.writelines(new)
+            f.close()
+        with open("lake_environment.inc","r+") as f:
+            new = f.readlines()
+            if self.txtfilename != "":
+                new[61] = "    character(38) :: datafile='"+self.txtfilename+"' ! the data file to open in FILE_OPEN subroutine\n"
             f.seek(0)
             f.truncate()
             f.writelines(new)
@@ -222,15 +233,15 @@ class PageOne(tk.Frame):
     def editInc(self, parameters, comments):
         with open("lake_environment.inc", "r+") as f:
             new = f.readlines()
-            #names of the parameters that need to be modified
-            names = ["oblq","xlat","xlon","gmt","max_dep","basedep","b_area","cdrn","eta","f","alb_slush",
-                           "alb_snow", "depth_begin", "salty_begin", "o18air", "deutair", "nspin", "bndry_flag",
-                           "sigma","wb_flag","iceflag","s_flag","o18flag","deutflag","z_screen"]
-            #line numbers in the .inc file that need to be modified
-            rows = [28,29,30,31,32,33,34,35,36,37,38,39,41,42,44,45,69,70,71,72,73,74,75,76,77]
+            # names of the parameters that need to be modified
+            names = ["oblq", "xlat", "xlon", "gmt", "max_dep", "basedep", "b_area", "cdrn", "eta", "f", "alb_slush",
+                     "alb_snow", "depth_begin", "salty_begin", "o18air", "deutair", "nspin", "bndry_flag",
+                     "sigma", "wb_flag", "iceflag", "s_flag", "o18flag", "deutflag", "z_screen"]
+            # line numbers in the .inc file that need to be modified
+            rows = [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 42, 44, 45, 69, 70, 71, 72, 73, 74, 75, 76, 77]
             for i in range(0, len(parameters)):
                 if len(parameters[i]) != 0:
-                    new[rows[i]] = "    parameter ("+names[i]+" = "+parameters[i]+")   ! "+comments[i]+"\n"
+                    new[rows[i]] = "    parameter (" + names[i] + " = " + parameters[i] + ")   ! " + comments[i] + "\n"
             f.seek(0)
             f.truncate()
             f.writelines(new)
@@ -238,22 +249,18 @@ class PageOne(tk.Frame):
 
     """
     Disables run model button and creates separate process for lake model
-    """
 
     def runModel(self, btn):
-        btn["state"]="disabled"
+        btn["state"] = "disabled"
         model_process = multiprocessing.Process(target=self.computeModel)
         model_process.start()
         pbar = ttk.Progressbar(self, orient="horizontal", length=100, mode="indeterminate")
-        pbar.grid(row=30,column=1, sticky="W")
+        pbar.grid(row=30, column=1, sticky="W")
         pbar.start()
         file_path = os.getcwd() + "/profile_output.dat"
         self.after(30000, lambda: self.check_file(file_path, 0, pbar, btn))
 
-
-    """
     Compiles a Fortran wrapper and runs the model
-    """
 
     def computeModel(self):
         # Runs f2py terminal command then (hopefully) terminates (takes a bit)
@@ -265,43 +272,19 @@ class PageOne(tk.Frame):
 
         # Run Environment Model (Crashes eventually)
         lakepsm.lakemodel()
+    """
+    def compileModel(self, btn):
+        cygwin1 = Popen(['bash'], stdin=PIPE, stdout=PIPE)
+        result1 = cygwin1.communicate(input=b"gfortran -o 'TEST1' env_heatflux.f90")
+        print(result1)
+        self.after(5000, lambda: self.runModel())
 
-<<<<<<< HEAD
+    def runModel(self):
+        cygwin2 = Popen(['bash'], stdin=PIPE, stdout=PIPE)
+        result2 = cygwin2.communicate(input=b"./TEST1.exe")
+        print(result2)
+
 class PageCarbonate(tk.Frame):
-=======
-    def check_file(self, file, past_size, progress, btn):
-        current_size = os.path.getsize(file)
-        print(past_size, current_size)
-        if past_size != current_size or current_size==0:
-            self.after(60000, lambda: self.check_file(file, current_size, progress, btn))
-        else:
-            btn["state"]="normal"
-            progress.stop()
-        return None
-        """
-        while file_growth > 0:
-            size1 = os.path.getsize(file_path)
-            self.after(15000, lambda: None)
-            size2 = os.path.getsize(file_path)
-            file_growth = size2 - size1
-            print(size1, size2, file_growth)
-        btn["state"] = "normal"
-        """
-
-
-"""
-        # Updates the output files
-        self.displayOutput()
-    def displayOutput(self):
-        os.chdir(os.getcwd())
-        filelist = glob.glob("*.dat")
-        self.outputFile1.configure(text=basename(filelist[0]))
-        self.outputFile2.configure(text=basename(filelist[1]))
-"""
-
-
-class PageTwo(tk.Frame):
->>>>>>> 64e8c7628c081a8c08988a067d1f6c991e4dda92
 
     def __init__(self, parent, controller):
         rowIdx = 1
@@ -315,16 +298,20 @@ class PageTwo(tk.Frame):
 
         self.model = tk.StringVar()
         self.model.set("ONeil")
-        model_names = ["ONeil","Kim-ONeil","ErezLuz","Bemis","Lynch"]
+        model_names = ["ONeil", "Kim-ONeil", "ErezLuz", "Bemis", "Lynch"]
         for name in model_names:
             tk.Radiobutton(self, text=name, value=name, variable=self.model).grid(row=rowIdx, column=0, sticky="W")
-            rowIdx+=1
+            rowIdx += 1
         tk.Button(self, text="Submit Model", command=self.run_carbonate_model).grid(
             row=rowIdx, column=0, sticky="W")
-        rowIdx+=1
+        rowIdx += 1
 
-        tk.Button(self, text="Download Carbonate Proxy Data", command=self.download_carb_data).grid(
+        tk.Button(self, text="Generate Graph of Carbonate Proxy Data", command=self.generate_graph).grid(
             row=rowIdx, column=0, sticky="W")
+        rowIdx+=1
+        tk.Button(self, text="Save Graph Data as .csv", command=self.download_carb_data).grid(
+            row=rowIdx, column=0, sticky="W")
+
         self.f = Figure(figsize=(10, 5), dpi=100)
         self.plt = self.f.add_subplot(111)
         self.canvas = FigureCanvasTkAgg(self.f, self)
@@ -332,51 +319,60 @@ class PageTwo(tk.Frame):
         self.plt.set_title(r'SENSOR', fontsize=12)
         self.plt.set_xlabel('Time')
         self.plt.set_ylabel('Simulated Carbonate Data')
+
     """
     Create time series data for carbonate sensor
     """
 
     def run_carbonate_model(self):
         surf_tempr = []
-        self.nspin=""
+        self.nspin = ""
         with open("lake_environment.inc", "r") as inc:
             lines = inc.readlines()
             nspin_line = lines[69]
             idx = 0
             while nspin_line[idx] != "=":
-                idx+=1
-            idx+=1
+                idx += 1
+            idx += 1
             while nspin_line[idx] != ")":
-                self.nspin+=nspin_line[idx]
-                idx+=1
-            self.nspin=int(self.nspin)
-        with open("surface_output.dat", 'r') as data:
+                self.nspin += nspin_line[idx]
+                idx += 1
+            self.nspin = int(self.nspin)
+        with open("BCC-ERA-Tlake-humid_surf.dat", 'r') as data:
             tempr_yr = []
             for line in data:
                 line_vals = line.split()
                 tempr_yr.append(line_vals[1])
-            surf_tempr.append(tempr_yr[self.nspin*12:len(tempr_yr)])
+            surf_tempr.append(tempr_yr[self.nspin * 12:len(tempr_yr)])
         surf_tempr = np.array(surf_tempr[0], dtype=float)
         self.LST = surf_tempr
         self.d180w = -2
-        self.carb_proxy = carb.carb_sensor(self.LST, self.d180w, self.model)
+        self.carb_proxy = carb.carb_sensor(self.LST, self.d180w, model=self.model.get())
 
-    def download_carb_data(self):
-        days = []
-        with open("surface_output.dat", "r") as data:
+    def generate_graph(self):
+        self.days = []
+        with open("BCC-ERA-Tlake-humid_surf.dat", "r") as data:
             line_num = 0
             for line in data:
                 line_vals = line.split()
-                if line_num >= self.nspin*12:
-                    days.append(line_vals[0])
-                line_num+=1
-        days = [int(float(day)) for day in days]
-        carb_plot = pd.Series(self.carb_proxy, days)
-        carb_plot.plot()
-        plt.show()
+                if line_num >= self.nspin * 12:
+                    self.days.append(line_vals[0])
+                line_num += 1
+        self.days = [int(float(day)) for day in self.days]
+        self.f.clf()
+        self.plt = self.f.add_subplot(111)
+        self.plt.set_title(r'SENSOR')
+        self.plt.set_xlabel('Time')
+        self.plt.set_ylabel('Simulated Carbonate Data')
+        self.plt.plot(self.days, self.carb_proxy, color="#ff6053")
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+        self.canvas.draw()
 
-
-
+    def download_carb_data(self):
+        df = pd.DataFrame({"Time":self.days, "Simulated Carbonate Data":self.carb_proxy})
+        path = fd.askdirectory()
+        df.to_csv(path+"/carbonate_timeseries.csv", index=False)
 
 
 

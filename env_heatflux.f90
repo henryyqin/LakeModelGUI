@@ -1,95 +1,131 @@
-      program lake_env
-      
-      implicit none
-      
-      call lakemodel()
-      
-      stop
-      end
-      
-      
-      subroutine lakemodel ()
-      implicit none
-      !!!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      !character*32 :: lake_data_filename
-      !character*80 :: lake_data_filename, data_input_filename
-      !character*80 :: data_output_profile, data_output_surface
+      program lakemodel
 
-      !lake_data_filename = 'lake_environment.inc'
-      !data_input_filename = 'Tanganyika.txt'
-      !data_output_profile = 'profile_output.dat'
-      !data_output_surface = 'surface_output.dat'
-      !!!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	  !f2py real(8) intent(in) :: lake_data_filename, data_input_filename
-	  !f2py real(8) intent(out) :: data_output_profile, data_output_surface
-      !!!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-      
-      !include trim(lake_data_filename)
-      !include "lake_environment.inc" ! info for simulation
-      
-      !program lakemodel
-
-      !implicit none
+      implicit none
       include 'lake_environment.inc' ! info for simulation
 
       real year,day,ta_in,dp_in,ua_in,rlwd_in,sw_in,qa_in,  &
            prec_in,ps_in,runin_in,declin,ta_i,qa_i,ua_i,  &
-           rh_i,sw_i,rlwd_i,ps_i,prec_i,runin_i,xtime,rh_in
+           rh_i,sw_i,rlwd_i,ps_i,prec_i,runin_i,xtime,rh_in, &
+           deutprec_in, deutrun_in, o18prec_in, o18run_in, &
+           deutprec_i, deutrun_i, o18prec_i, o18run_i, julian   !Ashling
       dimension year(2),day(2),ta_in(2),dp_in(2),ua_in(2),  &
                 sw_in(2),rlwd_in(2),qa_in(2),prec_in(2),runin_in(2), &
-                ps_in(2),rh_in(2)
+                ps_in(2),rh_in(2), deutprec_in(2), deutrun_in(2), &
+                o18prec_in(2), o18run_in(2)  !Ashling
       integer j,nsteps,ispin
 
       call file_open ! open input and output files
       call init_lake ! initialize lake variables
       ispin = 0
 
+!	  Begin Ashling
+      !Read in data based on
       if (wb_flag) then
-        read(15,*,end=998) year(1),day(1),ta_in(1),dp_in(1),   &
+        !variable lake depth, with or without isotopes
+        if(deutflag.and..not.o18flag) then
+          !read for deut only
+          read(15,*,end=998) year(1),day(1),ta_in(1),dp_in(1),   &
+                         ua_in(1),sw_in(1),rlwd_in(1),ps_in(1),       &
+                         prec_in(1), deutprec_in(1), &
+                         runin_in(1), deutrun_in(1)
+        else if(o18flag.and..not.deutflag) then
+          !read for o18 only
+          read(15,*,end=998) year(1),day(1),ta_in(1),dp_in(1),   &
+                         ua_in(1),sw_in(1),rlwd_in(1),ps_in(1),       &
+                         prec_in(1), o18prec_in(1), &
+                         runin_in(1), o18run_in(1)
+        else if(o18flag.and.deutflag) then
+          !read for deut and o18
+          read(15,*,end=998) year(1),day(1),ta_in(1),dp_in(1),   &
+                         ua_in(1),sw_in(1),rlwd_in(1),ps_in(1),       &
+                         prec_in(1), deutprec_in(1), o18prec_in(1), &
+                         runin_in(1), deutrun_in(1), o18run_in(1)
+        else
+          !only wb_flag
+           read(15,*,end=998) year(1),day(1),ta_in(1),dp_in(1),   &
                          ua_in(1),sw_in(1),rlwd_in(1),ps_in(1),       &
                          prec_in(1),runin_in(1)
+        end if
       else
+        !not variable lake depth, no isotopes
         read(15,*,end=998) year(1),day(1),ta_in(1),dp_in(1),   &
-                         ua_in(1),sw_in(1),rlwd_in(1),ps_in(1)        
-                         !prec_in(1)
+                         ua_in(1),sw_in(1),rlwd_in(1),ps_in(1)
         runin_in(1)=0.0
         prec_in(1)=0.0
       end if
+
+
       call datain (ta_in(1),dp_in(1),ua_in(1),sw_in(1),rlwd_in(1),  &
-                   ps_in(1),prec_in(1),runin_in(1),qa_in(1),rh_in(1))  
+                   ps_in(1),prec_in(1),runin_in(1),qa_in(1),rh_in(1))
 
  150  if (wb_flag) then
-        read(15,*,end=998) year(2),day(2),ta_in(2),dp_in(2),  &
-                           ua_in(2),sw_in(2),rlwd_in(2),ps_in(2),     &
-                           prec_in(2),runin_in(2)
+        !variable lake depth, with or without isotopes
+        if(deutflag.and..not.o18flag) then
+          !read for deut only
+          read(15,*,end=998) year(2),day(2),ta_in(2),dp_in(2),   &
+                         ua_in(2),sw_in(2),rlwd_in(2),ps_in(2),       &
+                         prec_in(2), deutprec_in(2), &
+                         runin_in(2), deutrun_in(2)
+        else if(o18flag.and..not.deutflag) then
+          !read for o18 only
+          read(15,*,end=998) year(2),day(2),ta_in(2),dp_in(2),   &
+                         ua_in(2),sw_in(2),rlwd_in(2),ps_in(2),       &
+                         prec_in(2), o18prec_in(2), &
+                         runin_in(2), o18run_in(2)
+        else if(o18flag.and.deutflag) then
+          !read for deut and o18
+          read(15,*,end=998) year(2),day(2),ta_in(2),dp_in(2),   &
+                         ua_in(2),sw_in(2),rlwd_in(2),ps_in(2),       &
+                         prec_in(2), deutprec_in(2), o18prec_in(2), &
+                         runin_in(2), deutrun_in(2), o18run_in(2)
+        else
+          !only wb_flag
+           read(15,*,end=998) year(2),day(2),ta_in(2),dp_in(2),   &
+                         ua_in(2),sw_in(2),rlwd_in(2),ps_in(2),       &
+                         prec_in(2),runin_in(2)
+        end if
       else
-        read(15,*,end=998) year(2),day(2),ta_in(2),dp_in(2),  &
-                           ua_in(2),sw_in(2),rlwd_in(2),ps_in(2)     
-                           !prec_in(2)
-        runin_in(2) = 0.0
-        prec_in(2) = 0.0
+        !not variable lake depth, no isotopes
+        read(15,*,end=998) year(2),day(2),ta_in(2),dp_in(2),   &
+                         ua_in(2),sw_in(2),rlwd_in(2),ps_in(2)
+        runin_in(2)=0.0
+        prec_in(2)=0.0
       end if
 
-      if (ispin.le.nspin.and.year(2).ne.year(1)) then
-        ispin = ispin+1
-        rewind 15
-        goto 150
-      end if
+!     End Ashling
 
       call datain (ta_in(2),dp_in(2),ua_in(2),sw_in(2),rlwd_in(2),   &
-                   ps_in(2),prec_in(2),runin_in(2),qa_in(2),rh_in(2))  
+                   ps_in(2),prec_in(2),runin_in(2),qa_in(2),rh_in(2))
 
       nsteps = 24*60*60/int(dt) * int((day(2)-day(1)))
-
+!     Begin Ashling
+!     Added isotopes_i
       do j=1,nsteps
          xtime = real(j)/nsteps
          call tendency (j,nsteps,ta_in,ta_i,qa_in,qa_i,ua_in,ua_i,   &
                         sw_in,sw_i,rlwd_in,rlwd_i,ps_in,ps_i,        &
-                        rh_in,rh_i,prec_in,prec_i,runin_in,runin_i) 
+                        rh_in,rh_i,prec_in,prec_i,deutprec_in, &
+                        deutprec_i,o18prec_in, o18prec_i, &
+                        runin_in,runin_i,deutrun_in, deutrun_i,&
+                        o18run_in,o18run_i)
+		 if (day(2).gt.(day(1)+1)) then   ! monthly input
+		   julian = day(1) + int(j/(24*60*60/int(dt)))
+		 else  ! daily or hourly input
+		   julian = day(1)
+		 end if
 
-         call lake_main(xtime,day(1),ta_i,ua_i,qa_i,ps_i,  &
-                        prec_i,sw_i,rlwd_i,runin_i,rh_i,nsteps) 
+         call lake_main(xtime,julian,ta_i,ua_i,qa_i,ps_i,  &
+                        prec_i,sw_i,rlwd_i,runin_i,rh_i,nsteps,&
+                        deutprec_i,o18prec_i,deutrun_i,o18run_i)
       enddo
+!     End Ashling
+
+      if (ispin.le.nspin.and.year(2).ne.year(1)) then
+        ispin = ispin+1
+		day(1) = 1
+        rewind 15
+        goto 150
+      end if
 
       year(1) = year(2)                 ! increment year,day,hour
       day(1) = day(2)
@@ -105,20 +141,26 @@
 !    LAKE_MAIN
 !    main lake subroutine
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-      subroutine lake_main (xtime, julian, ta_i, ua_i, & 
-                            qa_i, ps, prec, sw, rlwd, runin,rh,nsteps)  
+      !   call lake_main(xtime,day(1),ta_i,ua_i,qa_i,ps_i,  &
+      !                  prec_i,sw_i,rlwd_i,runin_i,rh_i,nsteps,&
+      !                  deutprec_i,o18prec_i,deutrun_i,o18run_i)
+      !Ashling: added isotopes_i (call above)
+      subroutine lake_main (xtime, julian, ta_i, ua_i, &
+                            qa_i, ps, prec, sw, rlwd, runin,rh,nsteps,&
+                            deutprec_i,o18prec_i,deutrun_i,o18run_i)
 
       implicit none
       include 'lake_environment.inc'
-      real lnetw,lneti,luw,lui,lu,julian,ps,prec,sw,rlwd,      &
+      real lnetw,lneti,lui,lu,julian,ps,prec,sw,rlwd,      &         !SD HEATBUDGET DELETED SWW, LUW
            rh,runin,tempice,hice,hsnow,fracice,t,tcutoff,u2w,t2w,     &
            q2w,ti,u2i,t2i,q2i,ta_i,qa_i,ua_i,ta,ua,qa,taC,albs,albi,  &
-           albw,swi,sww,tin,tcutk,hicedum,delq,evapw,qhw,qew,evapi,   &
+           albw,swi,tin,tcutk,hicedum,delq,evapw,evapi,   &
            qhi,qei,delqs,tkw,tki,evap,qe,qh,qbot,qw,qnetice,evaps,    &
+		   qew,qhw,sww,luw,                                          &
            dnsty,de,fracadd,surf_a,fracprv,o18prec,o18run,     &
            deutprec,deutrun,runout,hsprv,snowmelt,o18snow,deutsnow,   &
-           tdepth1,tdepth2,xtime,rain,snowadd
+           tdepth1,tdepth2,xtime,rain,snowadd, &
+           deutrun_i, deutprec_i, o18prec_i, o18run_i !Ashling
       integer mixmax,i_shuf,k,iwater,mixdep,j,dep_inc,islice,&
               isave_d,nsteps
       logical snow_flag,melt_flag
@@ -128,18 +170,18 @@
 !        1. initialize and read in info from previous dt
 ! =================================================================
 
-      i_shuf = 1   ! grab info from common block 
+      i_shuf = 1   ! grab info from common block
       call shuffle (xtime, julian, i_shuf, depth, d_frac, tempice, &
                     hice, hsnow, fracice, t, snow_flag, o18snow,  &
                     deutsnow, surf_a, ti, mixmax, evap, runout,   &
-                    melt_flag, nsteps)  
+                    melt_flag, nsteps, qew, qhw, sww, luw)
 
       call salt_init (ps, Tcutoff, trace(1,n_trace)) ! freezing point
 
       call zero (t2w, t2i, q2w, q2i, u2w, u2i, evapw, evapi, qhw, &
                  qhi, qew, qei, lnetw, lneti, luw, lui, sww, swi)
-      
-      if (bndry_flag) then     
+
+      if (bndry_flag) then
          if (fracice.lt.1.0)                                           &
             call bndry_flux (ta_i, qa_i, ps, ua_i, t(1,1), Tcutoff,    &
                              u2w, t2w, q2w, hice)
@@ -157,7 +199,7 @@
 
       taC= ta - 273.15     ! convert weighted air temp to C
 
-      do k=1,depth  
+      do k=1,depth
         t(k,2) = t(k,1)
         ti(k,1)= t(k,1)
         ti(k,2)= ti(k,1)
@@ -166,29 +208,30 @@
 ! ======================================================================
 !     2. Calculate added precip and isotopic values- and if snow
 ! ======================================================================
-
       hsprv = hsnow
       fracprv = fracice
       rain = prec   ! holds rain (as opposed to snow) amount
       snowmelt = 0.0
 
-      if (prec.gt.0.and.o18flag) then
-         o18prec = co18prec(taC)
-         o18run = co18run(taC)
-      end if
- 
-      if (prec.gt.0.and.deutflag) then
-         deutprec = cdeutprec(taC)
-         deutrun = cdeutrun(taC)
+! Begin Ashling (no edit yet)
+      if (prec.gt.0.0 .and.o18flag) then
+         o18prec = o18prec_i!co18prec(taC)
+         o18run = o18run_i!co18run(taC)
       end if
 
-      if (taC.le.snowcut.and.hice.gt.0.0.and.prec.gt.0) then
+      if (prec.gt.0.0 .and.deutflag) then
+         deutprec = deutprec_i!cdeutprec(taC)
+         deutrun = deutrun_i!cdeutrun(taC)
+      end if
+! End Ashling
+
+      if (taC.le.snowcut.and.hice.gt.0.0 .and.prec.gt.0) then
         hsnow = hsnow+prec*(rhowat/rhosnow)
         rain = 0.
         snow_flag = .true.
         if (o18flag)  &
            o18snow = (o18snow*hsprv*(rhosnow/rhowat)+prec*o18prec) &
-                      /(hsnow*(rhosnow/rhowat)) 
+                      /(hsnow*(rhosnow/rhowat))
         if (deutflag) &
            deutsnow = (deutsnow*hsprv*(rhosnow/rhowat)+prec*     &
                        deutprec)/(hsnow*(rhosnow/rhowat))
@@ -199,13 +242,13 @@
 !=======================================================================
 
        call lake_albedo(taC, tcutoff, julian, albs, albi, albw, &
-                        melt_flag) 
+                        melt_flag)
        if (hsnow.gt.snocrit) then
         swi=sw*(1.-albs)    ! swi because over ice fraction
-       else if (hsnow.gt.0.0.and.hsnow.le.snocrit) then
+       else if (hsnow.gt.0.0 .and.hsnow.le.snocrit) then
         albi=(albi+albs)/2. ! if thin snow, avg albedos
         swi=sw*(1.-albi)
-       else if (hice.gt.0.0.and.hsnow.le.0.0) then
+       else if (hice.gt.0.0 .and.hsnow.le.0.0) then
         swi=sw*(1.-albi)
        endif
        sww=sw*(1.-albw)
@@ -228,9 +271,9 @@
         tempice=tempice+273.15
         evapi=evapw
         call adjust_flux (swi, tempice, Tcutk, hice, hsnow, ta, &
-                          qa, ua, ps, delq, evapi, Qhi, rlwd) 
+                          qa, ua, ps, delq, evapi, Qhi, rlwd)
         Qei = -evapi*Lei ! latent over ice, should be Lei
-        tempice=tempice-273.15  
+        tempice=tempice-273.15
       endif ! end if there is ice present
 
 ! ==== 4.3 adjust fluxes for salinity  ============================
@@ -275,8 +318,8 @@
         call eddy (iwater, ua, t, de, depth, trace)
         call temp_profile (iwater, qbot, qw, t, sww, lnetw, Qew, &
                            Qhw, de, depth, trace)
-        call tracer_profile (de, depth, iwater) 
-        mixdep  = 1 
+        call tracer_profile (de, depth, iwater)
+        mixdep  = 1
         call tracer_mixer(t, dnsty, depth, trace, mixdep, iwater)
         if (mixdep.gt.mixmax) mixmax=mixdep
       endif  ! if there is open water present
@@ -289,7 +332,7 @@
         iwater=0 ! signal that not an open water calculation
         call eddy (iwater, ua, ti, de, depth, trace_i)
         call temp_profile (iwater, qbot, qw, ti, swi, lneti, Qei,  &
-                           Qhi, de, depth, trace_i) 
+                           Qhi, de, depth, trace_i)
         call tracer_profile (de, depth, iwater)
         mixdep = 1
         call tracer_mixer (ti, dnsty, depth, trace_i, mixdep, iwater)
@@ -300,8 +343,8 @@
 !     10. Calculate ice formation in open water fraction
 !==============================================================
 
-      if (fracprv.lt.1.0.and.t(1,1).lt.Tcutoff) then
-        if (iceflag) then  
+      if (fracprv.lt.1.0 .and.t(1,1).lt.Tcutoff) then
+        if (iceflag) then
           call ice_form (ps, qnetice, t, depth, Tcutoff, fracprv,  &
                          trace, fracadd, fracice, hice)
          fracice = fracice+fracadd  ! add to frac from lakeice
@@ -319,39 +362,39 @@
 !==============================================================
 !     11.  Average ice and water columns
 !==============================================================
-     
+
       call column_avg (depth, t, ti, trace, trace_i, fracprv)
       call tracer_avg (depth, fracprv)
- 
+
 !==============================================================
 !      12.1 DO WATER AND SALT BALANCE
 !==============================================================
-   
+
       if (wb_flag) then
- 
+
       tdepth1 = t(depth,1)
       tdepth2 = t(depth,2)
       isave_d = depth
-  
+
       call water_balance (depth, d_frac, rain, evapw*(1.-fracprv),  &
                           evapi*fracprv, snowmelt, runin, runout,   &
                           surf_a, dep_inc, isave_d)
- 
+
       if (dep_inc.gt.0) then  ! check about adding new lake layers
          do islice=1,dep_inc  ! add new lake layers
            t(isave_d+islice,1)=tdepth1 ! set temperature of new layers
            t(isave_d+islice,2)=tdepth2
          enddo
       endif
-     
+
       endif
 
 !==============================================================
 !   12.2  DO d18O AND dH BALANCE FOR OPEN WATER ONLY
 !==============================================================
 
-      if (o18flag) then  
-        call O18 (runin, runout, surf_a, rain, evapw*   & 
+      if (o18flag) then
+        call O18 (runin, runout, surf_a, rain, evapw*   &
                  (1.-fracprv), rh, t, o18prec, o18run,  &
                  o18snow, snowmelt*rhosnow/rhowat)
       endif
@@ -360,29 +403,29 @@
                  (1.-fracprv), rh, t, deutprec, deutrun,&
                  deutsnow, snowmelt*rhosnow/rhowat)
       endif
-      if (hsprv.gt.0.and.hsnow.eq.0) then  ! all snow gone this dt 
+      if (hsprv.gt.0.0 .and.hsnow.eq.0) then  ! all snow gone this dt
          snow_flag = .false.  ! no snow present anymore
          o18snow = 0.0
          deutsnow = 0.0
       endif
 
 !==============================================================
-!      13.  Place updated info back into common blocks 
+!      13.  Place updated info back into common blocks
 !==============================================================
 
-      i_shuf = 2   ! put/get info in the common block 
+      i_shuf = 2   ! put/get info in the common block
 
       evap = evapw*(1.-fracprv)+evapi*(fracprv)
       if (snowmelt.lt.0) melt_flag=.True.
       if (snowmelt.ge.0) melt_flag=.False.
       call shuffle (xtime,julian,i_shuf, depth, d_frac, tempice,  &
-                    hice, hsnow, fracice, t, snow_flag, o18snow,  & 
+                    hice, hsnow, fracice, t, snow_flag, o18snow,  &
                     deutsnow, surf_a, ti, mixmax, evap, runout,   &
-                    melt_flag, nsteps) 
+                    melt_flag, nsteps, qew, qhw, sww, luw)
 
       return
       end
-     
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !                       ADJUST_FLUX
 !   solve for the temperature of the ice (tp) necessary
@@ -395,7 +438,7 @@
 !   surface T derived from the interplay of the fluxes is equal
 !   to the T fed in to the iteration loop
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- 
+
       subroutine adjust_flux (sw, tp, tcutoff, hice, hsnow, ta, qa, &
                               ua, psurf, delq, evap, hsen, rlwd)
       implicit none
@@ -405,8 +448,8 @@
            q0,t0,tcutc,tposs,t,tlat
       integer ntimes
 
-      t4(x)=(x+273.15)**4.  
-      tcutc=tcutoff-273.15  
+      t4(x)=(x+273.15)**4.
+      tcutc=tcutoff-273.15
       ntimes=1
       a=-0.1
       b=10.0
@@ -419,7 +462,7 @@
       qlat=-evap*Lei
       qmet=rlwd-emis*delta*t4(t)+qsen+qlat
       call ice_rad (sw, hice, hsnow, condbar, val, val2)
-      q0=-qmet  
+      q0=-qmet
       t0=condbar*(sw-q0)+tcutc-val ! eq 7 from p + h
       if (t0.ge.t.and.ntimes.eq.1) then
         b=t-a
@@ -433,7 +476,7 @@
         goto 99
       else if (t0.ge.t.and.ntimes.eq.3) then
         tp=t+273.15         ! temperature to pass back out
-        goto 299 
+        goto 299
       endif
       tposs=tposs+a
       if (tposs.lt.-100.) goto 299
@@ -442,7 +485,7 @@
 
       return
       end
-        
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !                         BNDRY_FLUX
 !     used to interpolate lowest atmospheric model level to 2-meters
@@ -478,7 +521,7 @@
       aloga = log(za)
       alogg = log(zo)
 
-      if (hice.le.0.0.and.tlake.gt.Tcutoff) then  ! for eo and qo calcs
+      if (hice.le.0.0 .and.tlake.gt.Tcutoff) then  ! for eo and qo calcs
          a=c72
          b=c73
       else          ! if ice, calc eo over ice
@@ -489,7 +532,7 @@
       eo=ca*exp(a*(tlakeK-cb)/(tlakeK-b)) ! surface vapor pressure
       qo=0.622*eo/(psurf-(1.-.622)*eo)  ! surface specific humidity
 
-      call fstrat (tlakeK,ta,tfac,za,alogg,aloga,ua,richu, & 
+      call fstrat (tlakeK,ta,tfac,za,alogg,aloga,ua,richu, &
                    stramu,strahu)  ! determine stability
 
       cdh = ua*(kv/(aloga-alogg))**2*strahu ! calc air transfer coeffs
@@ -497,7 +540,7 @@
 
       cdh = min (cdmaxa,cdh/(1.+cdh/cdmaxb))
       cdm = min (cdmaxa,cdm/(1.+cdm/cdmaxb))
- 
+
       fsena = rhoa*cdh*cp*(ta*tfac-tlakeK) ! calc fluxes
       fvapa = rhoa*cdh*(qa-qo)
       tau = rhoa*cdm*ua
@@ -558,7 +601,7 @@
       enddo
 
       return
-      end 
+      end
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !                        D2H
@@ -587,7 +630,7 @@
        evapdeut = delvdeut * evap
        runoutdeut  = runout * trace(1,2)
        snowdeut= hs*rhosnow/rhowat*deutsnow
-       runin_len = (runin *(b_area-surf_a) / surf_a) 
+       runin_len = (runin *(b_area-surf_a) / surf_a)
        runindeut = runin_len * deutrun
        precdeut = rain * deutprec
        trace(1,2)=(trace (1,2)*dexch+   &
@@ -611,11 +654,12 @@
            rlwd_in,es,ea,rh_in
 
       if(sw_in.lt.0.0)sw_in=0.0
-!      ps_in = ps_in*100.                      ! convert from mb to Pa   
+!      ps_in = ps_in*100.                     ! convert from mb to Pa
       prec_in = prec_in/1000.                 ! convert from mm to m
-      runin_in =runin_in/1000.               ! convert from mm to m
+      runin_in =runin_in/1000.                ! convert from mm to m
 
-      es = ca*exp(c72*(ta_in+273.16-cb)/(ta_in+273.16-c73))   ! sat vap
+!      es = ca*exp(c72*(ta_in+273.16-cb)/(ta_in+273.16-c73))   ! sat vap
+      es = ca*exp(c72*(ta_in-cb)/(ta_in-c73))   ! sat vap
 !     ea = ca*exp(c72*(dp_in+273.16-cb)/(dp_in+273.16-c73))   ! act vap pres
 !     qa_in=ea*0.622/(ps_in-ea*0.378)
 !      rh_in = ea/es
@@ -628,7 +672,7 @@
       qa_in = ea*0.622/(ps_in-ea*0.378)
 !      ta_in = ta_in+273.15
       ua_in = ua_in*log(z_screen/0.001)/log(10.0/0.001)  ! use for 10-meter wind
-
+!      write (*,*) dp_in, es, ea, rh_in, qa_in
       return
       end
 
@@ -686,9 +730,9 @@
           de(k)=dm
         enddo
         return !  no further calculations needed
-      endif 
+      endif
 
-      u=amax1(u2,0.5) ! avoid NAN in ks 
+      u=amax1(u2,0.5) ! avoid NAN in ks
       ks=6.6*sqrt(abs(sin(xlat*raddeg)))*u**(-1.84)
       ws=0.0012*u2
       Po=1.0
@@ -696,14 +740,14 @@
       radmax=4.e4 ! limits Ri to 10
       do k= 1,depth-1
         if (k .eq. 1) then  ! for surface layer different depth
-          zhalf=(surf+dz)*0.5 
+          zhalf=(surf+dz)*0.5
         else
           zhalf=dz
         endif
         dpdz=(dnsty(k+1)-dnsty(k))/zhalf
-        N2=(dpdz/(1.e3+dnsty(k)))*grav 
+        N2=(dpdz/(1.e3+dnsty(k)))*grav
         z=surf+float(k-1)*dz
-        if ((ks*z)/ws.gt.40.) then   
+        if ((ks*z)/ws.gt.40.) then
           rad = radmax  ! avoid NAN
         else
           rad=1.+40.*N2*(kv*z)**2./(ws**2.*exp(-2.*ks*z))
@@ -719,7 +763,7 @@
       enddo
       de(depth)=dm
       de(depth-1)=de(depth)  ! necessary for cn solution to work
-!      de = de * 10.
+
       return
       end
 
@@ -728,13 +772,19 @@
 !  open input and output files
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       subroutine file_open
+      !Begin Ashling
+      implicit none
+      include 'lake_environment.inc'
 
 !      input files
-      open(unit=15,file='Tanganyika.txt',status='old')
+      open(unit=15,file=datafile, status='old')
+      !End Ashling
 
 !      output files
-      open(unit=50,file='profile_output.dat',status='unknown')
-      open(unit=51,file='surface_output.dat',status='unknown')
+!      open(unit=50,file='ERA-HIST-Tlake_prof.dat',status='unknown')
+      open(unit=51,file='BCC-ERA-Tlake-humid_surf.dat',status='unknown')
+!	  open(unit=52,file='ERA-HIST-Tlake_o18prof.dat',status='unknown')
+!	  open(unit=53,file='ERA-HIST-Tlake_deutprof.dat',status='unknown')
 
       return
       end
@@ -762,8 +812,8 @@
       implicit none
       include 'lake_environment.inc'
 
-      real tb,tt,ttfac,zt,alb,alt,u,rich,stram,strah,zb,x,c,sqri   
-   
+      real tb,tt,ttfac,zt,alb,alt,u,rich,stram,strah,zb,x,c,sqri
+
       zb = zo
       rich=grav*max(zt-zb,0.)*(tt*ttfac-tb)/(tt*ttfac*u**2)
       rich=min(rich,1.0)
@@ -836,7 +886,7 @@
       include 'lake_environment.inc'
       real  a,b,c,d,sw,hi,hs,val,val2,condbar
 
-      condbar=(hs*condi+hi*conds)/(condi*conds)  
+      condbar=(hs*condi+hi*conds)/(condi*conds)
       a=(1.-exp(-lamssw*hs))/(conds*lamssw)
       b=exp(-lamssw*hs)*(1-exp(-lamisw*hi))/(condi*lamisw)
       c=(1.-exp(-lamslw*hs))/(conds*lamslw)
@@ -850,7 +900,7 @@
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !                INIT_LAKE
-!    initialize lake 
+!    initialize lake
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
       subroutine init_lake
@@ -870,12 +920,14 @@
 !     2. Initialize lake temp and tracer profiles
 !===============================================================
 
+! Begin Ashling
       do k=1,depth_a
-          temp_a(k)=23.        
-          trace_a(k,1)= -5.   ! d18O
-          trace_a(k,2)= -120.   ! dD
+          temp_a(k)= tempinit
+          trace_a(k,1)= o18init
+          trace_a(k,2)= deutinit
           trace_a(k,3)= salty_a  ! salinity
       enddo
+ ! End Ashling
 
       if (s_flag) then ! salinity varies
          num_tra = n_trace  ! do tracer calculations for all
@@ -886,7 +938,7 @@
 !==============================================================
 !     3. Zero others
 !==============================================================
-      
+
       d_fraca = 0.   ! incremental lake level change
       hice_a = 0.    ! height of lake ice
       hsnow_a = 0.    ! height of snow on lake ice
@@ -923,7 +975,7 @@
       logical melt_flag
 
       tdiffs=tair-tcutoff  ! degrees above freezing in celcius
-      tdiff=amax1(tdiffs,0.) ! make sure tdiffs above zero 
+      tdiff=amax1(tdiffs,0.) ! make sure tdiffs above zero
       tdiffs=amin1(tdiff,20.) ! limit diff to be < 20 degrees
       albgl=sical1-1.1e-2*tdiffs  ! long wave = near-infrared
       albgs=sical0-2.45e-2*tdiffs ! short wave = visible
@@ -938,14 +990,18 @@
          albs=alb_snow  ! albedo of snow
       end if
 
-      albw = 0.08+0.02*sin(2.*pi*julian/365.+pi/2.)
+      if (xlat.ge.0.0) then  ! northern hemisphere
+         albw = 0.08 + 0.02 * sin(2. * pi * julian / 365. + pi / 2.)
+	  else                   ! southern hemisphere
+		 albw = 0.08 + 0.02 * sin(2. * pi * julian / 365. - pi / 2.)
+	  endif
 
       return
       end
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !                    LAKE_DRAG
-! calculates drag coefficient using BATS method 
+! calculates drag coefficient using BATS method
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
       subroutine lake_drag (tlakek, t1k, u1, cdrx)
@@ -956,13 +1012,13 @@
 
 !     cdrn=(kv/alog(z2/zo))**2.  ! neutral drag coefficient
       zs = z_screen
-      if (bndry_flag) zs = 2.0 
+      if (bndry_flag) zs = 2.0
       ribn=zs*grav*(1.-tlakek/t1k)  ! neutral bulk Richardson number
 
       if ((tlakek/t1k).le.1.0) then  ! unstable conditions
         ribd=u1**2.+0.1**2.  ! other bulk Richardson number
       else  ! stable conditions
-        ribd=u1**2.+1.0**2.  
+        ribd=u1**2.+1.0**2.
       endif
 
       rib=ribn/ribd   !  bulk Richardson number
@@ -977,7 +1033,7 @@
       cdrx=cdr
 
       return
-      end 
+      end
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !                LAKE_ICE
@@ -1001,14 +1057,14 @@
       q0t0(x)=sw+(1./condbar)*(tcutoff-(x)-val)
 !     conductivity for water to ice flux
 !=============================================================
-!     1.  Calculate surface fluxes, update tempice 
+!     1.  Calculate surface fluxes, update tempice
 !=============================================================
 
        condqw = rhowat * cpw_ice * surf / (qwtau*2.)
        evapl=evapi*dt/1000.  ! convert from mm/sec to m (over this dt)
        tprev=tempice          ! keep track of incoming t0
        qmet=radlwd-emis*delta*t4(tprev)+qsen+qlat
-!     1a. Calculate surface fluxes, update tempice 
+!     1a. Calculate surface fluxes, update tempice
 !         qmet is the same as H(To) in Patterson and Hamblin, pg. 327, eqn. 6
        call ice_rad (sw, hi, hs, condbar, val, val2 )
        q0=-qmet  ! q0 is flux of heat out of i/s from i/s surf
@@ -1041,7 +1097,7 @@
 !==============================================================
 
       qmeltsx=0.0           ! initialize here, incase no snow
-      if (hs.gt.0.0) then    
+      if (hs.gt.0.0) then
         if (evapl*(rhowat/rhosnow).le.hs) then
           hs=hs-evapl*(rhowat/rhosnow)   ! not water equivalent
           evapl=0.0                   ! all evapl used in removing snow
@@ -1132,11 +1188,11 @@
       implicit none
       include 'lake_environment.inc'
       real tsurf,tcutoff,hice,t2,q2,u2,psurf,delq,evap,qsen,  &
-           elake,qlake,rai,cdrx,a,b,delt,rash,relhum,pv,pd,rhosurf 
- 
-      call lake_drag (tsurf, t2, u2, cdrx)   ! calculate drag coef. 
+           elake,qlake,rai,cdrx,a,b,delt,rash,relhum,pv,pd,rhosurf
 
-      if (hice.le.0.0.and.tsurf.gt.Tcutoff) then
+      call lake_drag (tsurf, t2, u2, cdrx)   ! calculate drag coef.
+
+      if (hice.le.0.0 .and.tsurf.gt.Tcutoff) then
         a=c72
         b=c73
       else          ! if ice, calc eog over ice
@@ -1158,7 +1214,7 @@
       delt=t2-tsurf ! temperature gradient
       rash=cdrx*u2*rhosurf*cpair
       qsen=rash*delt
- 
+
       return
       end
 
@@ -1189,20 +1245,20 @@
       evapo18 = delvo18 * evap
       runout_o18 = runout * trace(1,1)
       snowo18 = hs*rhosnow/rhowat*o18snow
-      runin_len = (runin*(b_area-surf_a) / surf_a) 
+      runin_len = (runin*(b_area-surf_a) / surf_a)
       runin_o18  = runin_len * o18run
       preco18 = rain * o18prec
       trace(1,1)=(trace (1,1)*dexch+   &
            runin_o18-runout_o18+preco18-evapo18/1.e03*dt+  &
            snowo18)/ (dexch+runin_len-runout+rain-       &
            evap/1.e03*dt+hs*rhosnow/rhowat)
-      
+
       return
-      end 
+      end
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !                 SALT_EVAP
-!   calculates change in surface vapor pressure (and 
+!   calculates change in surface vapor pressure (and
 !   therefore evaporation) due to salinity
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1212,7 +1268,7 @@
       real salty,evap,qa,delq,psurf,Tcutoff,hice,tg,    &
            delqs,qsurf,psurfpa,esurf,elower,esurfs,qgs,alpha
 
-      if (hice.eq.0.0.and.tg.gt.Tcutoff) then
+      if (hice.eq.0.0 .and.tg.gt.Tcutoff) then
        qsurf=qa-delq
        psurfpa=psurf
        esurf=(psurfpa*qsurf)/(0.622+0.378*qsurf)
@@ -1243,53 +1299,55 @@
       psd = ps/10000.             ! convert from Pa to decibars
       tfsp=-0.0575*s+1.710523e-3*s**(3./2.)-2.154996e-4*s**2.     &
          -7.53e-4*psd
-     
+
       return
-      end 
+      end
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !                       SHUFFLE
-! shuffles data to and from common block 
+! shuffles data to and from common block
 !c~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
       subroutine shuffle (xtime,day,i_shuf,depth,d_frac,tempice,   &
                           hice,hsnow,fracice,t_shuf,snow_flag, &
                           o18snow,deutsnow,surf_a,ti_shuf,mixmax,   &
-                          evap,runout,melt_flag,nsteps)
+                          evap,runout,melt_flag,nsteps,qew,qhw,sww,luw)
       implicit none
       include 'lake_environment.inc'
       real tempice,hice,hsnow,fracice,surf_a,evap,xtime,day, &
            t_shuf (max_dep,2),ti_shuf(max_dep,2),econv,runout,&
-           o18snow,deutsnow
+           o18snow,deutsnow,qew,qhw,sww,luw
       logical snow_flag,melt_flag
       integer k,i_shuf,i_trace,mixmax,nsteps
-      
+
+!     print *, qew, qhw, sww, luw
       if (i_shuf.eq.1) then  ! get info from common block
         depth   = depth_a
         d_frac  = d_fraca
         tempice = tempi_a
-        hice    = hice_a 
-        hsnow   = amax1(0.,hsnow_a) 
+        hice    = hice_a
+        hsnow   = amax1(0.,hsnow_a)
         snow_flag = snow_flag_a
         melt_flag = melt_flag_a
         o18snow = o18snow_a
         deutsnow = deutsnow_a
-        fracice = fraci_a 
+        fracice = fraci_a
         surf_a =surfarea_a
         mixmax = mixmax_a
-        do k = 1, depth 
+
+        do k = 1, depth
            t_shuf(k,1) = temp_a (k)
-           ti_shuf(k,1) = ti_a (k) 
+           ti_shuf(k,1) = ti_a (k)
            do i_trace = 1,n_trace
              trace(k,i_trace) = trace_a (k,i_trace) ! for open water frac
              trace_i(k,i_trace) = trace_a (k,i_trace)  ! for ice frac
-           enddo 
-        enddo 
-      else if (i_shuf.eq.2) then ! place info in common blocks 
+           enddo
+        enddo
+      else if (i_shuf.eq.2) then ! place info in common blocks
         depth_a = depth
         d_fraca = d_frac
         tempi_a = tempice
-        hice_a  = hice 
+        hice_a  = hice
         hsnow_a = amax1(0.,hsnow)
         snow_flag_a = snow_flag
         melt_flag_a = melt_flag
@@ -1298,13 +1356,13 @@
         deutsnow_a = deutsnow
         surfarea_a =surf_a
         mixmax_a =mixmax
-        do k = 1, depth 
-           temp_a (k) = t_shuf(k,1) 
-           ti_a(k) = ti_shuf(k,1) 
+        do k = 1, depth
+           temp_a (k) = t_shuf(k,1)
+           ti_a(k) = ti_shuf(k,1)
            do i_trace = 1,n_trace
-             trace_a(k,i_trace) = trace(k,i_trace)  
-           enddo 
-        enddo 
+             trace_a(k,i_trace) = trace(k,i_trace)
+           enddo
+        enddo
 
         mix_ave = mix_ave+mixmax
         tsurf_ave = tsurf_ave+t_shuf(1,1)
@@ -1315,14 +1373,27 @@
         o18_ave = o18_ave+trace_a(1,1)
         deut_ave = deut_ave+trace_a(1,2)
         runout_sum = runout_sum+runout
+        qew_ave = qew_ave+Qew         !SD HEAT BUDGET ADD
+        qhw_ave = qhw_ave+Qhw         !SD HEAT BUDGET ADD
+        luw_ave = luw_ave+luw         !SD HEAT BUDGET ADD
+        sww_ave = sww_ave+sww         !SD HEAT BUDGET ADD
+!		print *, qew_ave
+
         do k=1,depth
            temp_ave(k)=temp_ave(k)+temp_a(k)
+!sd		  ! o18pro_ave(k)=o18pro_ave(k)+trace_a(k,1)
+!sd 	  ! deutpro_ave(k)=deutpro_ave(k)+trace_a(k,2)
         end do
 
         if (xtime.eq.1.) then    ! print daily averages
            econv = 60.*60.*24      ! convert from mm/s to mm/day
+
+! Begin Ashling
+! Fixed so that oxygen and hydrogen isotopes can be written separetely
+! Moved format inside of if so that it formats correctly
+! I removed ice from my output; would need to be added back in; format adjusted accordingly
            if (o18flag.and.deutflag) then
-           write(51,361) day,tsurf_ave/nsteps,&
+          write(51,361) day,tsurf_ave/nsteps,&
            				 fice_ave/nsteps,&
                          evap_ave*econv/nsteps,&
                          mix_ave/nsteps,&
@@ -1330,21 +1401,52 @@
                          o18_ave/nsteps, &
                          deut_ave/nsteps,runout_sum,mixmax,&
                          depth,d_frac
+!         write(51,361) day,tsurf_ave/nsteps,&
+!                         evap_ave*econv/nsteps,&
+!                         mix_ave/nsteps,&
+!                         o18_ave/nsteps, &
+!                         deut_ave/nsteps,runout_sum,mixmax,&
+!                         depth,d_frac
+  361      format(F9.2,1x,9(F7.2,1x),2(I5,1x),F6.2)
 !          write(50,*) day,((temp_ave(k)/48.),k=1,depth)
+           write(50,362) day,((temp_ave(k)/nsteps),k=1,depth)
+!sd		   write(52,362) day,((o18pro_ave(k)/nsteps),k=1,depth)
+!sd		   write(53,362) day,((deutpro_ave(k)/nsteps),k=1,depth)
+  362      format(58(F11.2,1x))
+           else if (o18flag.and..not.deutflag) then
+         write(51,371) day,tsurf_ave/nsteps,&
+                         evap_ave*econv/nsteps,&
+                         mix_ave/nsteps,&
+                         o18_ave/nsteps, &
+                         runout_sum,mixmax,&
+                         depth,d_frac
+  371      format(F9.2,1x,5(F6.2,1x),2(I5,1x),F6.2)
+           write(50,372) day,((temp_ave(k)/nsteps),k=1,depth)
+  372      format(58(F11.2,1x))
+           else if (.not.o18flag.and.deutflag) then
+         write(51,381) day,tsurf_ave/nsteps,&
+                         evap_ave*econv/nsteps,&
+                         mix_ave/nsteps,&
+                         deut_ave/nsteps, &
+                         runout_sum,mixmax,&
+                         depth,d_frac
+  381      format(F9.2,1x,5(F6.2,1x),2(I5,1x),F6.2)
+           write(50,382) day,((temp_ave(k)/nsteps),k=1,depth)
+  382      format(58(F11.2,1x))
            else
-!          write(51,360) day,tsurf_ave/48.,fice_ave/48.,  &
-!                       evap_ave*econv/48.,mix_ave/48.,  &
-!                       hice_ave/48.,hsnow_ave/48.,runout_sum, &
-!                       mixmax,depth,d_frac
-           write(51,362) day,tsurf_ave/nsteps,&
-           				 mix_ave/nsteps,&
-                         evap_ave*econv/nsteps,mixmax,depth
-           write(50,363) day,((temp_ave(k)/nsteps),k=1,depth,10)
+!SD           write(51,391) day,tsurf_ave/nsteps,mix_ave/nsteps,&
+!SD                         evap_ave*econv/nsteps,mixmax,depth
+           write(51,391) day,tsurf_ave/nsteps,mix_ave/nsteps,&          !SD HEAT BUDGET
+                         evap_ave*econv/nsteps,qew_ave/nsteps, &
+                         qhw_ave/nsteps,sww_ave/nsteps, &
+                         luw_ave/nsteps,mixmax,depth
+           write(50,392) day,((temp_ave(k)/nsteps),k=1,depth)
+  391      format(8(F11.4,1x),2(i3,1x))
+  392      format(58(F11.2,1x)) !Here change the temperature profile format.
            end if
-  360      format(7(F8.4,1x),F8.6,1x,2(i3,1x),f6.3)
-  361      format(8(F8.4,1x),F10.4,1x,F8.6,1x,2(i3,1x),f6.3)
-  362      format(4(F11.4,1x),2(i3,1x))
-  363      format(2(F11.2,1x))
+
+! End Ashling
+
            mix_ave=0.0
            tsurf_ave=0.0
            fice_ave = 0.0
@@ -1355,18 +1457,24 @@
            deut_ave = 0.0
            mixmax_a = 1
            runout_sum = 0.0
+           qew_ave = 0.0         !SD HEAT BUDGET ADD
+           qhw_ave = 0.0         !SD HEAT BUDGET ADD
+		   sww_ave = 0.0         !ENERGY BUDGET ADD
+		   luw_ave = 0.0         !ENERGY BUDGET ADD
            do k=1,max_dep
              temp_ave(k)=0.0
+!sd			 o18pro_ave(k)=0.0
+!sd			 deutpro_ave(k)=0.0
            end do
         endif
-      endif 
-     
+      endif
+
       return
-      end 
+      end
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !                        SOLAR_DEC
-!  computes the solar declination angle from the julian date.  
+!  computes the solar declination angle from the julian date.
 !  from bats version 3 by Dickinson et al.
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1383,7 +1491,7 @@
       olong=olong*raddeg  ! longitude from vernal equinox
       arg=sinob*sin(olong)
       declin=asin(arg)   ! solar declination angle
- 
+
       return
       end
 
@@ -1402,9 +1510,9 @@
           +2.093236e-5*t**4
       cpts=cpt+s*(-7.6444+0.107276*t-1.3839e-3*t**2)         &
            +s**(3./2.)*(0.17709-4.0772e-3*t+5.3539e-5*t**2)
-      
+
       return
-      end 
+      end
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !                      TEMP_PROFILE
@@ -1456,9 +1564,9 @@
 !------------------------------------------------------------------------
 
 !   2.1   First do top slice of column
-           k = 1 
-           area_1 =(area(k+ktop) + area(k+ktop)) /2.  
-! 0.6m above base of dz is almost = to where basin area is assigned 
+           k = 1
+           area_1 =(area(k+ktop) + area(k+ktop)) /2.
+! 0.6m above base of dz is almost = to where basin area is assigned
            area_2 =(area(k+ktop) + area(k+ktop+1)) / 2.
           if (iwater.eq.1) then  ! open water calculation
            t1 = sw*beta +   &
@@ -1467,7 +1575,7 @@
           else                   ! calculation beneath ice
            t1 = qbot*beta +       &
                 (1.-beta)*qbot*(1.-exp(-eta*surf))*area_2/area(k+ktop) - &
-                qw * area_1/area(k+ktop) 
+                qw * area_1/area(k+ktop)
           endif
 
         cnextra = 0.5 * area_2/area(k+ktop) * & ! for k = 1, top slice in column
@@ -1475,14 +1583,14 @@
 
         d(1) = t(1,1)+t1*dt/((1.e3+dnsty(1))*cpz(1)*z(1))+cnextra
 
-!   2.2   Remainder of water column, excluding top and bottom slice 
+!   2.2   Remainder of water column, excluding top and bottom slice
        swtop = qbot   ! use ice value
        if (iwater.eq.1) swtop = sw ! set to water value if wat frac.
-       do  k=2,depth-1           ! loop through water column 
+       do  k=2,depth-1           ! loop through water column
          top = (surf+(k-2)*dz)
          bot = (surf+(k-1)*dz)
-         area_1 =(area(k+ktop-1) + area(k+ktop)) / 2. 
-         area_2 =(area(k+ktop) + area(k+ktop+1)) / 2. 
+         area_1 =(area(k+ktop-1) + area(k+ktop)) / 2.
+         area_2 =(area(k+ktop) + area(k+ktop+1)) / 2.
          t1 = (1.-beta)*swtop*  &
               ((area_1*exp(-eta*top)-area_2*exp(-eta*bot))/area(k+ktop))
 
@@ -1490,13 +1598,13 @@
 
          cnextra = 0.5 *1./area(k+ktop)*  &
              (((de(k)/zhalf(k))*(dt/z(k))*(t(k+1,1)-t(k,1))) *area_2 -  &
-             ((de(k-1)/zhalf(k-1))*(dt/z(k))*(t(k,1)-t(k-1,1)))*area_1)  
+             ((de(k-1)/zhalf(k-1))*(dt/z(k))*(t(k,1)-t(k-1,1)))*area_1)
          d(k) = t(k,1)+t1*dt/((1.e3+dnsty(k))*cpz(k)*z(k))+cnextra
 
-       enddo                   ! do next slice in column 
+       enddo                   ! do next slice in column
 
-!    2.3  Bottom slice of the water column 
-!         No mud heating 
+!    2.3  Bottom slice of the water column
+!         No mud heating
       k=depth
       area_1 =(area(k+ktop-1) + area(k+ktop)) / 2.
       swtop = qbot   ! use ice value
@@ -1542,34 +1650,62 @@
           t(k,1) = t(k,2)
           call density (t(k,2),salty(k,n_trace),dnsty(k))
        enddo
-     
+
        return
-       end 
+       end
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !                   TENDENCY
 !     computes/interpolates the tendency between input reads
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      !   call tendency (j,nsteps,ta_in,ta_i,qa_in,qa_i,ua_in,ua_i,   &
+      !                  sw_in,sw_i,rlwd_in,rlwd_i,ps_in,ps_i,        &
+      !                  rh_in,rh_i,prec_in,prec_i,deutprec_in, &
+      !                  deutprec_i,o18prec_in, o18prec_i, &
+      !                  runin_in,runin_i,deutrun_in, deutrun_i,&
+      !                  o18run_in,o18run_i)
+      !Ashling: added isotopes to tendency (comment above shows call)
 
       subroutine tendency(li,idtend,ta_in,ta_i,qa_in,qa_i,  &
                           ua_in,ua_i,sw_in,sw_i,rlwd_in,rlwd_i,  &
                           ps_in,ps_i,rh_in,rh_i,prec_in,prec_i,  &
-                          runin_in,runin_i)        
+                          deutprec_in, deutprec_i, o18prec_in,&
+                          o18prec_i,runin_in,runin_i, deutrun_in,&
+                          deutrun_i,o18run_in,o18run_i)
       implicit none
       include 'lake_environment.inc'
       real ta_in,ta_i,qa_in,qa_i,ua_in,ua_i,sw_in,sw_i,rh_in,rh_i, &
-           rlwd_in,rlwd_i,ps_in,ps_i,prec_in,prec_i,runin_in,runin_i
+           rlwd_in,rlwd_i,ps_in,ps_i,prec_in,prec_i,runin_in,runin_i, &
+           deutrun_in, deutprec_in, o18prec_in, o18run_in, &
+           deutrun_i, deutprec_i, o18prec_i, o18run_i !Ashling
       dimension ta_in(2),qa_in(2),ua_in(2),sw_in(2),rh_in(2),  &
-                rlwd_in(2),ps_in(2),prec_in(2),runin_in(2)
+                rlwd_in(2),ps_in(2),prec_in(2),runin_in(2), &
+                deutrun_in(2), deutprec_in(2), o18prec_in(2), &
+                o18run_in(2) !Ashling
       integer li,idtend
 
-      ta_i = ta_in(1)+(li-1)*(ta_in(2)-ta_in(1))/real(idtend)  
+      ta_i = ta_in(1)+(li-1)*(ta_in(2)-ta_in(1))/real(idtend)
       qa_i = qa_in(1)+(li-1)*(qa_in(2)-qa_in(1))/real(idtend)
       ua_i = ua_in(1)+(li-1)*(ua_in(2)-ua_in(1))/real(idtend)
       sw_i = sw_in(1)+(li-1)*(sw_in(2)-sw_in(1))/real(idtend)
       rlwd_i = rlwd_in(1)+(li-1)*(rlwd_in(2)-rlwd_in(1))/real(idtend)
       ps_i = ps_in(1)+(li-1)*(ps_in(2)-ps_in(1))/real(idtend)
       rh_i = rh_in(1)+(li-1)*(rh_in(2)-rh_in(1))/real(idtend)
+
+      !Begin Ashling
+      if(deutflag) then
+      deutprec_i=deutprec_in(1)+(li-1)* &
+                 (deutprec_in(2)-deutprec_in(1))/real(idtend)
+      deutrun_i=deutrun_in(1)+(li-1)* &
+                 (deutrun_in(2)-deutrun_in(1))/real(idtend)
+      end if
+      if(o18flag) then
+      o18prec_i=o18prec_in(1)+(li-1)* &
+                 (o18prec_in(2)-o18prec_in(1))/real(idtend)
+      o18run_i=o18run_in(1)+(li-1)* &
+                 (o18run_in(2)-o18run_in(1))/real(idtend)
+      end if
+      !End Ashling
 
       prec_i = prec_in(1)/real(idtend)  ! accumulations, not rates
       runin_i = runin_in(1)/real(idtend)
@@ -1584,8 +1720,14 @@
          rh_in(1)=rh_in(2)
          prec_in(1)=prec_in(2)
          runin_in(1)=runin_in(2)
+         !begin Ashling
+         deutprec_in(1)=deutprec_in(2)
+         deutrun_in(1)=deutrun_in(2)
+         o18prec_in(1)=o18prec_in(2)
+         o18run_in(1)=o18run_in(2)
+         !end Ashling
       endif
- 
+
       return
       end
 
@@ -1604,7 +1746,7 @@
       do j=1,depth
          do i_tr = 1,num_tra
             trace (j,i_tr) = (1.-fracprv)*trace(j,i_tr) + &
-                                 fracprv*trace_i(j,i_tr) 
+                                 fracprv*trace_i(j,i_tr)
          enddo
       enddo
 
@@ -1624,7 +1766,7 @@
       integer k,mixprev,i_tr,iwater,m,mixdep,kk,k2
       real avet,avev,avev_tr,cp,vol,vol_tr,tav,densnew,rho_max
       real t(depth,2), dnsty(depth), tr_work(max_dep,n_trace)
-      real tr_av (n_trace), ave_tr (n_trace), salty(max_dep,n_trace)   
+      real tr_av (n_trace), ave_tr (n_trace), salty(max_dep,n_trace)
 
       do k=1,depth
          call density(t(k,1),salty(k,n_trace),dnsty(k))
@@ -1640,7 +1782,7 @@
       enddo
 
 !-----------------------------------------------------------------------
-!   1. check for density instability at each slice in water column 
+!   1. check for density instability at each slice in water column
 !------------------------------------------------------------------------
  9     continue            ! if a new instability created by mixer
        do  k=1,depth-1
@@ -1657,14 +1799,14 @@
 !  if density in layer above greater than density in layer below, keep
 !  track of the depth to which mixing should occur (mixdep)
 
-        if (mixprev.eq.1.and.(k+1).gt.mixdep) &  ! reassigns mix
+        if (mixprev.eq.1.0 .and.(k+1).gt.mixdep) &  ! reassigns mix
             mixdep=k+1 ! if top mix and dep > wat dep for ice
 
 !-----------------------------------------------------------------------
-!   2.  sum and average temp,tracer,volume,density from mixprev to k+1  
+!   2.  sum and average temp,tracer,volume,density from mixprev to k+1
 !------------------------------------------------------------------------
 
-        do m = mixprev, k+1 ! mix from top of instab to bot of inst 
+        do m = mixprev, k+1 ! mix from top of instab to bot of inst
            call specheat (t(m,2),salty(m,n_trace),cp)
            if (m.eq.1) then
               vol = surf*(1.e3+dnsty(m))*cp*area(m+max_dep-depth) ! joules / deg
@@ -1687,9 +1829,9 @@
            do   i_tr = 1, num_tra
              ave_tr(i_tr)=ave_tr(i_tr)+tr_work(m,i_tr)*vol_tr
            enddo
-           avev_tr = avev_tr + vol_tr   ! sum of volume 
+           avev_tr = avev_tr + vol_tr   ! sum of volume
 
-        enddo  ! end summing 
+        enddo  ! end summing
 
 !  calculate the new average temperature and tracer concentrations for the
 !  mixed layer
@@ -1699,18 +1841,18 @@
           tr_av (i_tr) = ave_tr(i_tr) / avev_tr
         enddo
 
-!  next, given the new average temperature and salinity, calculate the new 
+!  next, given the new average temperature and salinity, calculate the new
 !  density profile for the water
         if (s_flag) then    ! need to use mixed value, which is the last tracer
           call density (Tav,tr_av(num_tra),densnew)
         else    ! salinity not changing, just use surface value
           call density (Tav,salty(1,n_trace),densnew)
-        endif   
+        endif
 
 !   2.1 check to make this has not generated new instabilities
-!       above mixprev    
+!       above mixprev
 
-        rho_max = -50.0   !  
+        rho_max = -50.0   !
 
 !	write(*,*)'mixprev is',mixprev
 
@@ -1719,11 +1861,11 @@
         enddo
 
 !-----------------------------------------------------------------------
-!   3.  adjust temp,tracers and density in the mixed part of column 
+!   3.  adjust temp,tracers and density in the mixed part of column
 !------------------------------------------------------------------------
 
         do k2 = mixprev, k+1
-           t(k2,2)=Tav 
+           t(k2,2)=Tav
            do i_tr = 1,num_tra
              tr_work(k2,i_tr) = tr_av (i_tr)
            enddo
@@ -1735,7 +1877,7 @@
          mixprev = 1                   ! reset to top of column
          go to 9                       ! start checking column again
         endif                          ! if new instability created
- 
+
        else         ! if density at K not > k + 1
         mixprev=k+1
        endif        ! if density at k > k+1
@@ -1743,7 +1885,7 @@
       enddo  !   end looping through water column searching for inst.
 
       do k = 1, depth
-             t(k,1)=t(k,2) 
+             t(k,1)=t(k,2)
 
         do i_tr = 1,num_tra
           if (iwater.eq.1) trace(k,i_tr)=tr_work(k,i_tr) ! open water calc
@@ -1765,7 +1907,7 @@
 !     this is a crank-nicholson version -- sept 5 1996
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-      subroutine tracer_profile (de, depth, iwater)  
+      subroutine tracer_profile (de, depth, iwater)
 
       implicit none
       include 'lake_environment.inc'
@@ -1773,11 +1915,11 @@
       integer az,i_tr,k,i_water,iwater,ktop
       parameter (az = 1000) ! length of arrays first dimensioned here
 
-      real de(max_dep) 
+      real de(max_dep)
       real z(az), zhalf(az) ! dz, and dz.5
       real a(az), b(az), c(az), d(az)  ! arrays for tridia matrix
       real tnew(az)
-      real tr_work (max_dep) 
+      real tr_work (max_dep)
 
 ! z is an array of delz with depth
 ! zhalf is array of delz between i and i+1
@@ -1786,13 +1928,13 @@
 ! here all 1 except for zhalf(1) = .8
 
 !-----------------------------------------------------------------------
-!   0.  Loop through the different tracers  
+!   0.  Loop through the different tracers
 !------------------------------------------------------------------------
 
       do 1 i_tr = 1, num_tra
 
 !-----------------------------------------------------------------------
-!   1.  Place correct tracer into work arrray  
+!   1.  Place correct tracer into work arrray
 !------------------------------------------------------------------------
 
       dist12=surf*0.5+dz*0.5 ! dist for grad t calc between
@@ -1823,10 +1965,10 @@
 
       d(1) = tr_work(1)+cnextra
 
-      do 11 k=2,depth-1           ! loop through water column 
+      do 11 k=2,depth-1           ! loop through water column
 
-        area_1 =(area(k+ktop-1) + area(k+ktop)) / 2. 
-        area_2 =(area(k+ktop)  + area(k+ktop+1)) / 2. 
+        area_1 =(area(k+ktop-1) + area(k+ktop)) / 2.
+        area_2 =(area(k+ktop)  + area(k+ktop+1)) / 2.
 
         cnextra = 0.5 *1./area(k+ktop)*                     &
                  (((de(k)/zhalf(k))*(dt/z(k))*         &
@@ -1836,7 +1978,7 @@
 
         d(k) = tr_work(k)+cnextra
 
- 11   continue                  
+ 11   continue
 
        k = depth  !  bottom slice
        area_1 =(area(k+ktop-1) + area(k+ktop)) / 2.
@@ -1858,7 +2000,7 @@
       a(1) = 1. - b(1)  ! no factor of 0.5 here, already done
 
       do 13 k = 2,depth-1  ! all but top and bottom slices
-           
+
          area_1 =(area(k+ktop-1) + area(k+ktop)) / 2.
          area_2 =(area(k+ktop) + area(k+ktop+1)) / 2.
 
@@ -1891,7 +2033,7 @@
 
 
 !-------------------------------------------------------------
- 1    continue    ! go back and do the next tracer 
+ 1    continue    ! go back and do the next tracer
 
       return
      end
@@ -1936,16 +2078,16 @@
 !                 singularity. if a singular or numerically singular
 !                 matrix is used as input a divide by zero or
 !                 floating point overflow will result.
- 
+
 !     last revision date:      4 february 1988
- 
+
       implicit none
       integer ns,ne,nd,nm1,j,i,ib
       real a(nd,ne), b(nd,ne), c(nd,ne), y(nd,ne),  &
            x(nd,ne), alpha(nd,ne), gamma(nd,ne)
 
       nm1 = ne-1
- 
+
 !        obtain the lu decompositions.
 
       do j=1,ns
@@ -1958,7 +2100,7 @@
             gamma(j,i) = c(j,i)*alpha(j,i)
          enddo
       enddo
- 
+
       do j=1,ns
          x(j,1) = y(j,1)*alpha(j,1)
       enddo
@@ -1979,7 +2121,7 @@
       enddo
 
       return
-      end 
+      end
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !                  WATER_BALANCE
@@ -1998,29 +2140,29 @@
       run_s = 0.0       ! runoff salinity
 
 !==============================================================
-!      1. convert runoff input/output volume to rate 
+!      1. convert runoff input/output volume to rate
 !==============================================================
-    
-      i_surf = max_dep - depth + 1 ! lk_area index of water surface  
+
+      i_surf = max_dep - depth + 1 ! lk_area index of water surface
       if (i_surf.eq.1) then
          d_area = 0.0              ! lake at sill
       else
-         d_area = area(i_surf-1) - area(i_surf) 
+         d_area = area(i_surf-1) - area(i_surf)
       end if
       surf_a = d_frac * (d_area/dz) + area(i_surf) ! actual surf area
       run_len = (runin*(b_area-surf_a)/surf_a)
 
 !==============================================================
-!      2. calculate change in lake level  
+!      2. calculate change in lake level
 !==============================================================
 
        if (wb_flag) then
           d_level = (run_len+prec-evap1/1.e3*dt-evap2/1.e3*dt) -  &
                     snowmelt*rhosnow/rhowat
           d_frac  = d_frac + d_level
-          remain = mod(d_frac,dz)          !remainder over whole dzs 
+          remain = mod(d_frac,dz)          !remainder over whole dzs
           n_slice = int(d_frac - remain )  !number of new slices
-          d_frac = remain        
+          d_frac = remain
           depth = depth + n_slice           !new depth in integer slices
 
           if (depth .ge. max_dep.and.d_frac.gt.0.) then
@@ -2040,9 +2182,9 @@
           s_surf = trace(1,n_trace) * surf  ! volume of salt (ppt*m)
           r_salt = run_len*run_s*dt/1.e3    ! volume of runoff salt (ppt*m)
           s_surf = (s_surf + r_salt)*( 1./(surf + d_level))
-          trace(1,n_trace) = s_surf 
+          trace(1,n_trace) = s_surf
        endif
- 
+
 !==============================================================
 !      3. adjust change in lake level, add new layers
 !==============================================================
@@ -2055,18 +2197,18 @@
          if (depth.lt.0.) stop ' Lake is dry '
        endif
 
-       if (depth .ne. isave_d) then        
-         do  k_tr = 1, n_slice 
+       if (depth .ne. isave_d) then
+         do  k_tr = 1, n_slice
            do  i_tr = 1, num_tra
-            trace(isave_d+k_tr,i_tr) = trace (isave_d,i_tr) 
+            trace(isave_d+k_tr,i_tr) = trace (isave_d,i_tr)
            enddo
          enddo
        endif
 
        endif
-    
+
       return
-      end 
+      end
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !                 ZERO
@@ -2074,9 +2216,9 @@
 
       subroutine zero (t2w,t2i,q2w,q2i,u2w,u2i,evapw,evapi,qhw,qhi, &
                         qew,qei,lnetw,lneti,luw,lui,sww,swi)
-      implicit none 
+      implicit none
       real t2w,t2i,q2w,q2i,u2w,u2i,evapw,evapi,qhw,qhi,             &
-           qew,qei,lnetw,lneti,luw,lui,sww,swi
+           qew,qei,lnetw,lneti,luw,lui,sww,swi                        !SD HEATBUDGET DELETED SWW, LUW
 
       t2w=0.0
       t2i=0.0

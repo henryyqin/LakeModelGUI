@@ -19,7 +19,6 @@ def carb_sensor(LST, d18Ow, isoflag = -1, model = 'ONeil'):
 
      OUTPUT: pseudoproxy timeseries of d18O-carb (monthly)
 	'''
-
 	temp = LST
 	if isoflag == -1: 
 		d18O_w = -2.
