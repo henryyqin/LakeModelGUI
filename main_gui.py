@@ -8,10 +8,13 @@ import pandas as pd
 import webbrowser
 from tkinter import ttk
 import multiprocessing
+import threading
+import sensor_carbonate as carb
 
 # Imports for Lake Model
 import numpy as np
 import matplotlib
+
 matplotlib.use('TkAgg')  # Necessary for Mac Mojave
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -50,7 +53,7 @@ class SampleApp(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-        for F in (StartPage, PageOne, PageEnvTimeSeries, PageEnvSeasonalCycle):
+        for F in (StartPage, PageOne, PageEnvTimeSeries, PageEnvSeasonalCycle, PageCarbonate):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
@@ -94,15 +97,20 @@ class StartPage(tk.Frame):
         github.bind("<Button-1>", lambda e: callback("https://github.com/henryyqin/LakeModelGUI"))
 
         button = tk.Button(self, text="Run Lake Environment Model", font=f, command=lambda: controller.show_frame("PageOne"))
-        button.pack(ipadx=43, ipady=3, pady=(40, 5))
+        button.pack(ipadx=35, ipady=3, pady=(40, 5))
 
         # Leads to PageEnvTimeSeries
         buttonTimeSeries = tk.Button(self, text="Plot Environment Time Series", font=f, command=lambda: controller.show_frame("PageEnvTimeSeries"))
-        buttonTimeSeries.pack(ipadx=43, ipady=3, pady=(5, 5))
+        buttonTimeSeries.pack(ipadx=35, ipady=3, pady=(5, 5))
 
         # Leads to PageEnvSeasonalCycle
         buttonTimeSeries = tk.Button(self, text="Plot Environment Seasonal Cycle", font=f, command=lambda: controller.show_frame("PageEnvSeasonalCycle"))
-        buttonTimeSeries.pack(ipadx=43, ipady=3, pady=(5, 5))
+        buttonTimeSeries.pack(ipadx=35, ipady=3, pady=(5, 5))
+
+        # Leads to PageCarbonate
+        carbButton = tk.Button(self, text="Run Carbonate Model", font=f,
+                    command=lambda: controller.show_frame("PageCarbonate"))
+        carbButton.pack(ipadx=30, ipady=3, pady=(5, 5))
 
 
 class PageOne(tk.Frame):
@@ -186,50 +194,12 @@ class PageOne(tk.Frame):
 
         rowIdx+=1
 
-        """
-        # Allows user to upload .inc data.
-        tk.Label(self, text="Click to upload your .inc file:").grid(
-            row=rowIdx, column=0, sticky="W")
-        graphButton = tk.Button(self, text="Upload .inc File",
-                                command=self.uploadInc)
-        graphButton.grid(row=rowIdx, column=1, pady=10,
-                         ipadx=30, ipady=3, sticky="W")
-        rowIdx += 1
-        # Shows the name of the current uploaded file, if any.
-        tk.Label(self, text="Current File Uploaded:").grid(
-            row=rowIdx, column=0, sticky="W")
-        self.currentIncFileLabel = tk.Label(self, text="No file")
-        self.currentIncFileLabel.grid(
-            row=rowIdx, column=1, columnspan=2, pady=10,  sticky="W")
-        rowIdx += 1
-        # Allows user to edit .inc file (for Mac)
-        editButtonMac = tk.Button(
-            self, text="Edit .inc File (Mac)", command=self.editTextMac)
-        editButtonMac.grid(row=rowIdx, column=1, ipadx=30, ipady=3, sticky="W")
-        # Allows user to edit .inc file (for Windows)
-        editButtonMac = tk.Button(
-            self, text="Edit .inc File (Windows)", command=self.editTextWindows)
-        editButtonMac.grid(row=rowIdx, column=2, ipadx=30, ipady=3, sticky="W")
-        rowIdx += 1
-        """
+
         # Button to run the model (Mac/Linux only)
         runButton = tk.Button(
             self, text="Run Model", font=f,command=lambda: self.runModel(runButton))
         runButton.grid(row=rowIdx, column=1, ipadx=30, ipady=3, sticky="W")
 
-        """
-        # Displays the resultant .dat files
-        tk.Label(self, text="Output Files:").grid(
-            row=rowIdx, column=0, sticky="W")
-        self.outputFile1 = tk.Label(self, text="")
-        self.outputFile1.grid(
-            row=rowIdx, column=1, columnspan=2, pady=10,  sticky="W")
-        rowIdx += 1
-        self.outputFile2 = tk.Label(self, text="")
-        self.outputFile2.grid(
-            row=rowIdx, column=1, columnspan=2, pady=10,  sticky="W")
-        rowIdx += 1
-        """
 
         # Return to Start Page
         homeButton = tk.Button(self, text="Back to start page", font=f,
@@ -253,6 +223,14 @@ class PageOne(tk.Frame):
             if self.txtfilename != "":
                 new[18] = "      !data_input_filename = '"+self.txtfilename+"'\n"
                 new[732] = "      open(unit=15,file='"+self.txtfilename+"',status='old')\n"
+            f.seek(0)
+            f.truncate()
+            f.writelines(new)
+            f.close()
+        with open("lake_environment.inc","r+") as f:
+            new = f.readlines()
+            if self.txtfilename != "":
+                new[61] = "    character(38) :: datafile='"+self.txtfilename+"' ! the data file to open in FILE_OPEN subroutine\n"
             f.seek(0)
             f.truncate()
             f.writelines(new)
@@ -618,6 +596,98 @@ class PageEnvSeasonalCycle(tk.Frame):
         self.canvas.get_tk_widget().grid(
             row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
         self.canvas.draw()
+
+class PageCarbonate(tk.Frame):
+
+    def __init__(self, parent, controller):
+        rowIdx = 1
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+        label = tk.Label(
+            self, text="Run Carbonate Sensor Model", font=LARGE_FONT)
+        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
+
+        rowIdx += 3
+
+        self.model = tk.StringVar()
+        self.model.set("ONeil")
+        model_names = ["ONeil", "Kim-ONeil", "ErezLuz", "Bemis", "Lynch"]
+        for name in model_names:
+            tk.Radiobutton(self, text=name, value=name, variable=self.model).grid(row=rowIdx, column=0, sticky="W")
+            rowIdx += 1
+        tk.Button(self, text="Submit Model", command=self.run_carbonate_model).grid(
+            row=rowIdx, column=0, sticky="W")
+        rowIdx += 1
+
+        tk.Button(self, text="Generate Graph of Carbonate Proxy Data", command=self.generate_graph).grid(
+            row=rowIdx, column=0, sticky="W")
+        rowIdx+=1
+        tk.Button(self, text="Save Graph Data as .csv", command=self.download_carb_data).grid(
+            row=rowIdx, column=0, sticky="W")
+
+        self.f = Figure(figsize=(10, 5), dpi=100)
+        self.plt = self.f.add_subplot(111)
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+        self.plt.set_title(r'SENSOR', fontsize=12)
+        self.plt.set_xlabel('Time')
+        self.plt.set_ylabel('Simulated Carbonate Data')
+
+    """
+    Create time series data for carbonate sensor
+    """
+
+    def run_carbonate_model(self):
+        surf_tempr = []
+        self.nspin = ""
+        with open("lake_environment.inc", "r") as inc:
+            lines = inc.readlines()
+            nspin_line = lines[53]
+            idx = 0
+            while nspin_line[idx] != "=":
+                idx += 1
+            idx += 1
+            while nspin_line[idx] != ")":
+                self.nspin += nspin_line[idx]
+                idx += 1
+            self.nspin = int(self.nspin)
+            print(self.nspin)
+        with open("BCC-ERA-Tlake-humid_surf.dat", 'r') as data:
+            tempr_yr = []
+            for line in data:
+                line_vals = line.split()
+                tempr_yr.append(line_vals[1])
+            surf_tempr.append(tempr_yr[self.nspin * 12:len(tempr_yr)])
+        surf_tempr = np.array(surf_tempr[0], dtype=float)
+        self.LST = surf_tempr
+        self.d180w = -2
+        self.carb_proxy = carb.carb_sensor(self.LST, self.d180w, model=self.model.get())
+
+
+    def generate_graph(self):
+        self.days = []
+        with open("BCC-ERA-Tlake-humid_surf.dat", "r") as data:
+            line_num = 0
+            for line in data:
+                line_vals = line.split()
+                if line_num >= self.nspin * 12:
+                    self.days.append(line_vals[0])
+                line_num += 1
+        self.days = [int(float(day)) for day in self.days]
+        self.f.clf()
+        self.plt = self.f.add_subplot(111)
+        self.plt.set_title(r'SENSOR')
+        self.plt.set_xlabel('Time')
+        self.plt.set_ylabel('Simulated Carbonate Data')
+        self.plt.scatter(self.days, self.carb_proxy, color="#ff6053")
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+        self.canvas.draw()
+
+    def download_carb_data(self):
+        df = pd.DataFrame({"Time":self.days, "Simulated Carbonate Data":self.carb_proxy})
+        path = fd.askdirectory()
+        df.to_csv(path+"/carbonate_timeseries.csv", index=False)
 
 
 if __name__ == "__main__":
