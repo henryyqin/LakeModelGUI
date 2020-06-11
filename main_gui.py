@@ -3,12 +3,8 @@ from tkinter import font as tkfont  # python 3
 import os
 from os.path import basename
 import tkinter.filedialog as fd
-import subprocess
 import pandas as pd
 import webbrowser
-from tkinter import ttk
-import multiprocessing
-import threading
 import sensor_carbonate as carb
 from subprocess import Popen, PIPE
 
@@ -121,7 +117,9 @@ class PageOne(tk.Frame):
         tk.Label(self,
                  text=
                  """
-                 1) Upload a text file to provide input data for the lake model\n
+                 1) Upload a text file to provide input data for the lake model. Please make sure
+                 the text file is either in the current directory or the file path is less than 132 
+                 characters. \n
                  2) Enter lake-specific and simulation-specific parameters\n
                  3) If parameters are left empty, default parameters for Lake Tanganyika will be used instead
                  """, font=f, justify="left"
@@ -208,12 +206,18 @@ class PageOne(tk.Frame):
         # Open the file choosen by the user
         self.txtfilename = fd.askopenfilename(
             filetypes=(('text files', 'txt'),))
-        self.currentTxtFileLabel.configure(text=basename(self.txtfilename))
+        base = basename(self.txtfilename)
+        nonbase = (self.txtfilename.replace("/","\\")).replace(base,'')[:-1]
+        self.currentTxtFileLabel.configure(text=base)
         with open("lake_environment.f90", "r+") as f:
             new = f.readlines()
             if self.txtfilename != "":
-                new[18] = "      !data_input_filename = '" + self.txtfilename + "'\n"
-                new[732] = "      open(unit=15,file='" + self.txtfilename + "',status='old')\n"
+                if nonbase == os.getcwd():
+                    new[18] = "      !data_input_filename = '" + base + "'\n"
+                    new[732] = "      open(unit=15,file='" + base + "',status='old')\n"
+                else:
+                    new[18] = "      !data_input_filename = '" + self.txtfilename + "'\n"
+                    new[732] = "      open(unit=15,file='" + self.txtfilename + "',status='old')\n"
             f.seek(0)
             f.truncate()
             f.writelines(new)
@@ -221,7 +225,10 @@ class PageOne(tk.Frame):
         with open("lake_environment.inc","r+") as f:
             new = f.readlines()
             if self.txtfilename != "":
-                new[61] = "    character(38) :: datafile='"+self.txtfilename+"' ! the data file to open in FILE_OPEN subroutine\n"
+                if nonbase == os.getcwd():
+                    new[61] = "    character(38) :: datafile='" + base + "' ! the data file to open in FILE_OPEN subroutine\n"
+                else:
+                    new[61] = "    character(38) :: datafile='"+self.txtfilename+"' ! the data file to open in FILE_OPEN subroutine\n"
             f.seek(0)
             f.truncate()
             f.writelines(new)
@@ -276,19 +283,18 @@ class PageOne(tk.Frame):
     """
     def compileModel(self, btn):
         response = tk.messagebox.askyesno(title="Run Model", message="Running the model will take several minutes, and "
-                                                                     "you will not be able to exit. You will receive a notification "
+                                                                     "GUI functionality will temporarily stop. You will receive a notification "
                                                                      "once the model has finished. Do you wish to proceed?")
         if response == 1:
             cygwin1 = Popen(['bash'], stdin=PIPE, stdout=PIPE)
-            result1 = cygwin1.communicate(input=b"gfortran -o 'TEST1' env_heatflux.f90")
+            result1 = cygwin1.communicate(input=b"gfortran -o 'TEST1' lake_environment.f90")
             print(result1)
             self.runModel()
             tk.messagebox.showinfo(title="Run Model", message="Model has completed running. You will find "
-                                                              "BCC-ERA-Tlake-humid_surf.dat located in your "
+                                                              "surface_output.dat located in your "
                                                               "current working directory.")
         else:
             pass
-
 
     def runModel(self):
         cygwin2 = Popen(['bash'], stdin=PIPE, stdout=PIPE)
@@ -341,7 +347,7 @@ class PageCarbonate(tk.Frame):
         self.nspin = ""
         with open("lake_environment.inc", "r") as inc:
             lines = inc.readlines()
-            nspin_line = lines[69]
+            nspin_line = lines[53]
             idx = 0
             while nspin_line[idx] != "=":
                 idx += 1
@@ -350,12 +356,12 @@ class PageCarbonate(tk.Frame):
                 self.nspin += nspin_line[idx]
                 idx += 1
             self.nspin = int(self.nspin)
-        with open("BCC-ERA-Tlake-humid_surf.dat", 'r') as data:
+        with open("surface_output.dat", 'r') as data:
             tempr_yr = []
             for line in data:
                 line_vals = line.split()
                 tempr_yr.append(line_vals[1])
-            surf_tempr.append(tempr_yr[self.nspin * 12:len(tempr_yr)])
+            surf_tempr.append(tempr_yr[self.nspin*12+2:len(tempr_yr)])
         surf_tempr = np.array(surf_tempr[0], dtype=float)
         self.LST = surf_tempr
         self.d180w = -2
@@ -363,20 +369,19 @@ class PageCarbonate(tk.Frame):
 
     def generate_graph(self):
         self.days = []
-        with open("BCC-ERA-Tlake-humid_surf.dat", "r") as data:
+        with open("surface_output.dat", "r") as data:
             line_num = 0
             for line in data:
                 line_vals = line.split()
-                if line_num >= self.nspin * 12:
-                    self.days.append(line_vals[0])
-                line_num += 1
+                self.days.append(line_vals[0])
+            self.days = self.days[self.nspin * 12 + 2:len(self.days)]
         self.days = [int(float(day)) for day in self.days]
         self.f.clf()
         self.plt = self.f.add_subplot(111)
         self.plt.set_title(r'SENSOR')
         self.plt.set_xlabel('Time')
         self.plt.set_ylabel('Simulated Carbonate Data')
-        self.plt.plot(self.days, self.carb_proxy, color="#ff6053")
+        self.plt.scatter(self.days, self.carb_proxy, color="#ff6053")
         self.canvas = FigureCanvasTkAgg(self.f, self)
         self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
         self.canvas.draw()
