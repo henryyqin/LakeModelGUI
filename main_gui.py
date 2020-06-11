@@ -50,7 +50,7 @@ class SampleApp(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-        for F in (StartPage, PageOne, PageEnvTimeSeries, PageEnvSeasonalCycle, PageTwo):
+        for F in (StartPage, PageOne, PageEnvTimeSeries, PageEnvSeasonalCycle):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
@@ -103,9 +103,6 @@ class StartPage(tk.Frame):
         # Leads to PageEnvSeasonalCycle
         buttonTimeSeries = tk.Button(self, text="Plot Environment Seasonal Cycle", font=f, command=lambda: controller.show_frame("PageEnvSeasonalCycle"))
         buttonTimeSeries.pack(ipadx=43, ipady=3, pady=(5, 5))
-
-        button2 = tk.Button(self, text="Run Additional Models", font=f, command=lambda: controller.show_frame("PageTwo"))
-        button2.pack(ipadx=30, ipady=3, pady=(5, 5))
 
 
 class PageOne(tk.Frame):
@@ -621,21 +618,6 @@ class PageEnvSeasonalCycle(tk.Frame):
         self.canvas.get_tk_widget().grid(
             row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
         self.canvas.draw()
-
-
-class PageTwo(tk.Frame):
-
-    def __init__(self, parent, controller):
-        tk.Frame.__init__(self, parent)
-        self.controller = controller
-        label = tk.Label(self, text="This is page 2",
-                         font=controller.title_font)
-        label.pack(side="top", fill="x", pady=10)
-        button = tk.Button(self, text="Go to the start page", font=f,
-                           command=lambda: controller.show_frame("StartPage"))
-        button.pack()
-
-
 
 
 if __name__ == "__main__":
