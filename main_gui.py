@@ -8,6 +8,7 @@ import pandas as pd
 import webbrowser
 from tkinter import ttk
 import multiprocessing
+import threading
 import sensor_carbonate as carb
 from subprocess import Popen, PIPE
 
@@ -274,15 +275,26 @@ class PageOne(tk.Frame):
         lakepsm.lakemodel()
     """
     def compileModel(self, btn):
-        cygwin1 = Popen(['bash'], stdin=PIPE, stdout=PIPE)
-        result1 = cygwin1.communicate(input=b"gfortran -o 'TEST1' env_heatflux.f90")
-        print(result1)
-        self.after(5000, lambda: self.runModel())
+        response = tk.messagebox.askyesno(title="Run Model", message="Running the model will take several minutes, and "
+                                                                     "you will not be able to exit. You will receive a notification "
+                                                                     "once the model has finished. Do you wish to proceed?")
+        if response == 1:
+            cygwin1 = Popen(['bash'], stdin=PIPE, stdout=PIPE)
+            result1 = cygwin1.communicate(input=b"gfortran -o 'TEST1' env_heatflux.f90")
+            print(result1)
+            self.runModel()
+            tk.messagebox.showinfo(title="Run Model", message="Model has completed running. You will find "
+                                                              "BCC-ERA-Tlake-humid_surf.dat located in your "
+                                                              "current working directory.")
+        else:
+            pass
+
 
     def runModel(self):
         cygwin2 = Popen(['bash'], stdin=PIPE, stdout=PIPE)
         result2 = cygwin2.communicate(input=b"./TEST1.exe")
         print(result2)
+
 
 class PageCarbonate(tk.Frame):
 
