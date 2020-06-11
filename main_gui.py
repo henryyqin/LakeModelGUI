@@ -50,7 +50,7 @@ class SampleApp(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-        for F in (StartPage, PageOne, PageTimeSeries, PageTwo):
+        for F in (StartPage, PageOne, PageEnvTimeSeries, PageEnvSeasonalCycle, PageTwo):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
@@ -96,13 +96,16 @@ class StartPage(tk.Frame):
         button = tk.Button(self, text="Run Lake Environment Model", font=f, command=lambda: controller.show_frame("PageOne"))
         button.pack(ipadx=43, ipady=3, pady=(40, 5))
 
-        buttonTimeSeries = tk.Button(self, text="Plot Time Series", font=f, command=lambda: controller.show_frame("PageTimeSeries"))
+        # Leads to PageEnvTimeSeries
+        buttonTimeSeries = tk.Button(self, text="Plot Environment Time Series", font=f, command=lambda: controller.show_frame("PageEnvTimeSeries"))
+        buttonTimeSeries.pack(ipadx=43, ipady=3, pady=(5, 5))
+
+        # Leads to PageEnvSeasonalCycle
+        buttonTimeSeries = tk.Button(self, text="Plot Environment Seasonal Cycle", font=f, command=lambda: controller.show_frame("PageEnvSeasonalCycle"))
         buttonTimeSeries.pack(ipadx=43, ipady=3, pady=(5, 5))
 
         button2 = tk.Button(self, text="Run Additional Models", font=f, command=lambda: controller.show_frame("PageTwo"))
         button2.pack(ipadx=30, ipady=3, pady=(5, 5))
-
-
 
 
 class PageOne(tk.Frame):
@@ -216,8 +219,6 @@ class PageOne(tk.Frame):
         runButton = tk.Button(
             self, text="Run Model", font=f,command=lambda: self.runModel(runButton))
         runButton.grid(row=rowIdx, column=1, ipadx=30, ipady=3, sticky="W")
-        rowIdx += 1
-
 
         """
         # Displays the resultant .dat files
@@ -238,7 +239,7 @@ class PageOne(tk.Frame):
                                command=lambda: controller.show_frame("StartPage"))
         # previousPageB.pack(anchor = "w", side = "bottom")
         homeButton.grid(row=rowIdx, column=3, ipadx=25,
-                        ipady=3, pady=30, sticky="W")
+                        ipady=3, pady=3, sticky="E")
         rowIdx += 1
 
     """
@@ -265,7 +266,7 @@ class PageOne(tk.Frame):
     """
 
     def editInc(self, parameters, comments):
-        with open("Tanganyika.inc", "r+") as f:
+        with open("lake_environment.inc", "r+") as f:
             new = f.readlines()
             #names of the parameters that need to be modified
             names = ["oblq","xlat","xlon","gmt","max_dep","basedep","b_area","cdrn","eta","f","alb_slush",
@@ -325,7 +326,7 @@ class PageOne(tk.Frame):
     def computeModel(self):
         # Runs f2py terminal command then (hopefully) terminates (takes a bit)
         subprocess.run(
-            ['f2py', '-c', '-m', 'lakepsm', 'env_sub.f90'])
+            ['f2py', '-c', '-m', 'lakepsm', 'lake_environment.f90'])
 
         # imports the wrapper
         import lakepsm
@@ -366,25 +367,260 @@ class PageOne(tk.Frame):
 """
 Page to plot time series
 """
-class PageTimeSeries(tk.Frame):
+class PageEnvTimeSeries(tk.Frame):
 
     def __init__(self, parent, controller):
         rowIdx=1
         tk.Frame.__init__(self, parent)
         self.controller = controller
         label = tk.Label(
-            self, text="Time Series", font=LARGE_FONT)
-        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
+            self, text="Environment Model Time Series", font=LARGE_FONT)
+        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5, sticky="we")
+        rowIdx+=3
 
-
-        # From Vinay's code
+        # Empty graph, default
         self.f = Figure(figsize=(10, 5), dpi=100)
         self.plt = self.f.add_subplot(111)
         self.canvas = FigureCanvasTkAgg(self.f, self)
         self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
-        self.plt.set_title(r'SENSOR', fontsize=12)
+        self.plt.set_title(r'Time Series', fontsize=12)
         self.plt.set_xlabel('Time')
-        self.plt.set_ylabel('Simulated Carbonate Data')
+        self.plt.set_ylabel('Lake Surface Temperature')
+
+        # Graph button for each variable
+
+        # Lake Surface Temperature
+        LSTButton = tk.Button(self, text="Graph Surface Temperature", font=f, 
+                        command=lambda : self.generate_env_time_series(1, 'Lake Surface Temperature (\N{DEGREE SIGN}C)')) # 2nd column
+        LSTButton.grid(row=rowIdx, column=1, pady=1,
+                         ipadx=30, ipady=10, sticky="W")
+        rowIdx+=1
+
+        # Mixing Depth
+        MDButton = tk.Button(self, text="Graph Mixing Depth", font=f, 
+                        command=lambda : self.generate_env_time_series(2, 'Mixing Depth (m)')) # 3rd column
+        MDButton.grid(row=rowIdx, column=1, pady=1,
+                         ipadx=30, ipady=10, sticky="W")
+        rowIdx+=1
+
+        # Evaporation Rate
+        ERButton = tk.Button(self, text="Graph Evaporation Rate", font=f, 
+                        command=lambda : self.generate_env_time_series(3, 'Evaporation Rate (mm/day)')) # 4th column
+        ERButton.grid(row=rowIdx, column=1, pady=1,
+                         ipadx=30, ipady=10, sticky="W")
+        rowIdx+=1
+
+        # Latent Heat Flux
+        LHFButton = tk.Button(self, text="Graph Latent Heat Flux", font=f, 
+                        command=lambda : self.generate_env_time_series(3, 'Latent Heat Flux (W/$m^2$)')) # 4th column
+        LHFButton.grid(row=rowIdx, column=1, pady=1,
+                         ipadx=30, ipady=10, sticky="W")
+        rowIdx+=1
+
+        # Sensible Heat Flux
+        SHFButton = tk.Button(self, text="Graph Sensible Heat Flux", font=f, 
+                        command=lambda : self.generate_env_time_series(3, 'Sensible Heat Flux (W/$m^2$)')) # 4th column
+        SHFButton.grid(row=rowIdx, column=1, pady=1,
+                         ipadx=30, ipady=10, sticky="W")
+        rowIdx+=10
+
+        # Return to Start Page
+        homeButton = tk.Button(self, text="Back to start page", font=f,
+                               command=lambda: controller.show_frame("StartPage"))
+        homeButton.grid(row=rowIdx, column=3, ipadx=25,
+                        ipady=3, pady=3, sticky="E")
+
+    """
+    Plots the multiple values of a specific variable for each day of the year as a scatterplot
+
+    Inputs:
+     - column, an int that corresponds to the column of the desired variable to be plotted
+     - varstring, a string that is the name and unit of the variable
+
+    Returns:
+     - Nothing, just generates a graph on the page
+    """
+    # extracts data from .dat file and plots data based on given column number
+    def generate_env_time_series(self, column, varstring):
+        self.days = [] # x-axis
+        self.yaxis = [] # y-axis
+
+        """
+        # determining nspin
+        self.nspin = ""
+        with open("lake_environment.inc", "r") as inc:
+            lines = inc.readlines()
+            nspin_line = lines[69]
+            idx = 0
+            while nspin_line[idx] != "=":
+                idx += 1
+            idx += 1
+            while nspin_line[idx] != ")":
+                self.nspin += nspin_line[idx]
+                idx += 1
+            self.nspin = int(self.nspin)
+
+        print(self.nspin)
+        """
+
+        # Hard code nspin = 10
+        self.nspin = 10
+
+        # generate data (Using BCC-ERA for now)
+        with open("BCC-ERA-Tlake-humid_surf.dat", "r") as data:
+            line_num = 0
+            for line in data:
+                
+                line_vals = line.split()
+                if line_num >= self.nspin * 12:
+                    self.days.append(line_vals[0]) # ignore nspin
+                    self.yaxis.append(line_vals[column])
+                line_num += 1
+
+        self.days = [int(float(day)) for day in self.days] # convert days to int
+
+        self.f.clf()
+        self.plt = self.f.add_subplot(111)
+        self.plt.set_title(r'' + varstring + ' over Time')
+        self.plt.set_xlabel('Time (Day of the Year)')
+        self.plt.set_ylabel(varstring)
+        self.plt.scatter(self.days, self.yaxis, color="#ff6053")
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.get_tk_widget().grid(
+            row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+        self.canvas.draw()
+
+"""
+Page to plot seasonal cycle
+"""
+class PageEnvSeasonalCycle(tk.Frame):
+
+    def __init__(self, parent, controller):
+        rowIdx=1
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+        label = tk.Label(
+            self, text="Environment Model Seasonal Cycle", font=LARGE_FONT)
+        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5, sticky="we")
+        rowIdx+=3
+
+        # Empty graph, default
+        self.f = Figure(figsize=(10, 5), dpi=100)
+        self.plt = self.f.add_subplot(111)
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+        self.plt.set_title(r'Seasonal Cycle', fontsize=12)
+        self.plt.set_xlabel('Day of the Year')
+        self.plt.set_ylabel('')
+
+        # Graph button for each variable
+
+        # Lake Surface Temperature
+        LSTButton = tk.Button(self, text="Graph Surface Temperature", font=f, 
+                        command=lambda : self.generate_env_seasonal_cycle(1, 'Lake Surface Temperature (\N{DEGREE SIGN}C)')) # 2nd column
+        LSTButton.grid(row=rowIdx, column=1, pady=1,
+                         ipadx=30, ipady=10, sticky="W")
+        rowIdx+=1
+
+        # Mixing Depth
+        MDButton = tk.Button(self, text="Graph Mixing Depth", font=f, 
+                        command=lambda : self.generate_env_seasonal_cycle(2, 'Mixing Depth (m)')) # 3rd column
+        MDButton.grid(row=rowIdx, column=1, pady=1,
+                         ipadx=30, ipady=10, sticky="W")
+        rowIdx+=1
+
+        # Evaporation Rate
+        ERButton = tk.Button(self, text="Graph Evaporation Rate", font=f, 
+                        command=lambda : self.generate_env_seasonal_cycle(3, 'Evaporation Rate (mm/day)')) # 4th column
+        ERButton.grid(row=rowIdx, column=1, pady=1,
+                         ipadx=30, ipady=10, sticky="W")
+        rowIdx+=1
+
+        # Latent Heat Flux
+        LHFButton = tk.Button(self, text="Graph Latent Heat Flux", font=f, 
+                        command=lambda : self.generate_env_seasonal_cycle(3, 'Latent Heat Flux (W/$m^2$)')) # 4th column
+        LHFButton.grid(row=rowIdx, column=1, pady=1,
+                         ipadx=30, ipady=10, sticky="W")
+        rowIdx+=1
+
+        # Sensible Heat Flux
+        SHFButton = tk.Button(self, text="Graph Sensible Heat Flux", font=f, 
+                        command=lambda : self.generate_env_seasonal_cycle(3, 'Sensible Heat Flux (W/$m^2$)')) # 4th column
+        SHFButton.grid(row=rowIdx, column=1, pady=1,
+                         ipadx=30, ipady=10, sticky="W")
+        rowIdx+=10
+
+        # Return to Start Page
+        homeButton = tk.Button(self, text="Back to start page", font=f,
+                               command=lambda: controller.show_frame("StartPage"))
+        homeButton.grid(row=rowIdx, column=3, ipadx=25,
+                        ipady=3, pady=3, sticky="E")
+
+    """
+    Plots the average of a specific variable for each day of the year as a scatterplot
+
+    Inputs:
+     - column, an int that corresponds to the column of the desired variable to be plotted
+     - varstring, a string that is the name and unit of the variable
+
+    Returns:
+     - Nothing, just generates a graph on the page
+    """
+    # Treating 375 as part of the year for now
+    # Treating everything >375 to be 15, 45, etc.
+    def generate_env_seasonal_cycle(self, column, varstring):
+        self.xaxis = [15, 45, 75, 105, 135, 165, 195, 225, 255, 285, 315, 345, 375] # x-axis
+        self.ydict = {} # dict to list all y of an x as an array, to be meaned later
+
+        """
+        # determining nspin
+        self.nspin = ""
+        with open("lake_environment.inc", "r") as inc:
+            lines = inc.readlines()
+            nspin_line = lines[69]
+            idx = 0
+            while nspin_line[idx] != "=":
+                idx += 1
+            idx += 1
+            while nspin_line[idx] != ")":
+                self.nspin += nspin_line[idx]
+                idx += 1
+            self.nspin = int(self.nspin)
+
+        print(self.nspin)
+        """
+
+        # Hard code nspin = 10
+        self.nspin = 10
+
+        # generate data (Using BCC-ERA for now)
+        with open("BCC-ERA-Tlake-humid_surf.dat", "r") as data:
+            line_num = 0
+            for line in data:
+                line_vals = line.split() # convert each line into a list of floats
+                if line_num >= self.nspin * 12:
+                    xval = int(float(line_vals[0]) % 405)
+                    if xval in self.ydict: # if xval is already a key in ydict
+                        self.ydict[xval].append(float(line_vals[column])) # update y array with desired value
+                    else: # xval not a key in ydict yet
+                        self.ydict[xval] = []
+                line_num += 1
+
+        # After yval array is formed for each xval, generate the axtual yaxis data
+        self.yaxis = [] # actual plotting data for y
+        for xval in range(15, 376, 30): # count from 15 to 375 by 30's
+            self.yaxis.append(mean(self.ydict[xval])) # mean the yvals for each xval and append it to yaxis
+
+        self.f.clf()
+        self.plt = self.f.add_subplot(111)
+        self.plt.set_title(r'' + varstring + ' Seasonal Cycle')
+        self.plt.set_xlabel('Day of the Year')
+        self.plt.set_ylabel('Average ' + varstring)
+        self.plt.scatter(self.xaxis, self.yaxis, color="#ff6053")
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.get_tk_widget().grid(
+            row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+        self.canvas.draw()
 
 
 class PageTwo(tk.Frame):

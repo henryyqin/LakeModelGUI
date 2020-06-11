@@ -10,13 +10,14 @@
       
       subroutine lakemodel ()
       implicit none
+      
       !!!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       !character*32 :: lake_data_filename
       !character*80 :: lake_data_filename, data_input_filename
       !character*80 :: data_output_profile, data_output_surface
 
-      !lake_data_filename = 'lake_environment.inc'
-      !data_input_filename = '/Users/henryqin/Desktop/LakeModelGUI/ERA_INTERIM_climatology_Tang_2yr.txt'
+      !data_input_filename = '/Users/henryqin/Desktop/LakeModelGUI/ERA_INTERIM_1979_2016_Tanganyika.txt'
+      !data_input_filename = 'input_file.txt'
       !data_output_profile = 'profile_output.dat'
       !data_output_surface = 'surface_output.dat'
       !!!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -729,8 +730,8 @@
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       subroutine file_open
 
-!      input files
-      open(unit=15,file='/Users/henryqin/Desktop/LakeModelGUI/ERA_INTERIM_climatology_Tang_2yr.txt',status='old')
+      open(unit=15,file='/Users/henryqin/Desktop/LakeModelGUI/ERA_INTERIM_1979_2016_Tanganyika.txt',status='old')
+      open(unit=15,file='input_file.txt',status='old')
 
 !      output files
       open(unit=50,file='profile_output.dat',status='unknown')
@@ -871,7 +872,7 @@
 !===============================================================
 
       do k=1,depth_a
-          temp_a(k)=23.        
+          temp_a(k)= 23.        
           trace_a(k,1)= -5.   ! d18O
           trace_a(k,2)= -120.   ! dD
           trace_a(k,3)= salty_a  ! salinity
