@@ -212,7 +212,10 @@ class PageEnvModel(tk.Frame):
         runButton = tk.Button(
             self, text="Run Model", font=f,command=lambda: self.runModel(runButton))
         runButton.grid(row=rowIdx, column=1, ipadx=30, ipady=3, sticky="W")
+        rowIdx+=1
 
+        csvButton = tk.Button(self, text='Download CSV', font=f, command=lambda: self.download_csv())
+        csvButton.grid(row=rowIdx, column=1, ipadx=30, ipady=3, sticky="W")
 
         # Return to Start Page
         homeButton = tk.Button(self, text="Back to start page", font=f,
@@ -324,33 +327,20 @@ class PageEnvModel(tk.Frame):
 
     def check_file(self, file, past_size, progress, btn):
         current_size = os.path.getsize(file)
-        print(past_size, current_size)
         if past_size != current_size or current_size==0:
             self.after(60000, lambda: self.check_file(file, current_size, progress, btn))
         else:
             btn["state"]="normal"
             progress.stop()
         return None
-        """
-        while file_growth > 0:
-            size1 = os.path.getsize(file_path)
-            self.after(15000, lambda: None)
-            size2 = os.path.getsize(file_path)
-            file_growth = size2 - size1
-            print(size1, size2, file_growth)
-        btn["state"] = "normal"
-        """
-
-
-"""
-        # Updates the output files
-        self.displayOutput()
-    def displayOutput(self):
-        os.chdir(os.getcwd())
-        filelist = glob.glob("*.dat")
-        self.outputFile1.configure(text=basename(filelist[0]))
-        self.outputFile2.configure(text=basename(filelist[1]))
-"""
+    
+    """
+    Downloads 'surface_output.dat' as a CSV to the user's desired location
+    """
+    def download_csv(self):
+        read_file = pd.read_csv("surface_output.dat")
+        export_file_path = fd.asksaveasfilename(defaultextension='.csv')
+        read_file.to_csv(export_file_path, index=None)
 
 """
 Page to plot environment model time series
@@ -660,7 +650,7 @@ class PageCarbonate(tk.Frame):
                 self.nspin += nspin_line[idx]
                 idx += 1
             self.nspin = int(self.nspin)
-            print(self.nspin)
+            
         with open("BCC-ERA-Tlake-humid_surf.dat", 'r') as data:
             tempr_yr = []
             for line in data:
@@ -799,10 +789,10 @@ class PageGDGT(tk.Frame):
             for line in data:
                 line_vals = line.split()
                 if line_num >= self.nspin * 12:
-                    print(line_num)
                     self.days.append(line_vals[0])
                 line_num += 1
         self.days = [int(float(day)) for day in self.days]
+        print(len(self.days), len(self.gdgt_proxy))
         self.f.clf()
         self.plt = self.f.add_subplot(111)
         self.plt.set_title(r'SENSOR')
