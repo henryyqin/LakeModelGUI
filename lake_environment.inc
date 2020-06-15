@@ -59,7 +59,7 @@
       parameter (s_flag = .false.)        ! true for variable salinity
       parameter (o18flag = .false.)       ! true for variable d18O 
       parameter (deutflag = .false.)      ! true for variable dD
-      parameter (z_screen = 5.0)          ! height of met inputs
+    character(38) :: datafile='/Users/henryqin/Desktop/LakeModelGUI/ERA_INTERIM_1979_2016_Tanganyika.txt' ! the data file to open in FILE_OPEN subroutine
 
 !**********************************************************************
 ! Other parameters DO NOT CHANGE without good reason for doing so******

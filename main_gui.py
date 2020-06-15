@@ -16,6 +16,9 @@ import sensor_carbonate as carb
 # GDGT
 import gdgt
 
+# Leafwax sensor
+import sensor_leafwax as leafwax
+
 # Imports for Lake Model
 import numpy as np
 import matplotlib
@@ -28,6 +31,7 @@ from math import pi, sqrt, exp
 
 # Imports for plotting
 from statistics import mean
+plt.style.use('seaborn-whitegrid')
 
 """
 if you want the user to upload something from the same directory as the gui
@@ -58,7 +62,7 @@ class SampleApp(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-        for F in (StartPage, PageEnvModel, PageEnvTimeSeries, PageEnvSeasonalCycle, PageCarbonate, PageGDGT):
+        for F in (StartPage, PageEnvModel, PageEnvTimeSeries, PageEnvSeasonalCycle, PageCarbonate, PageLeafwax, PageGDGT):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
@@ -119,8 +123,13 @@ class StartPage(tk.Frame):
                     command=lambda: controller.show_frame("PageCarbonate"))
         carbButton.pack(ipadx=30, ipady=3, pady=(5, 5))
 
+        # Leads to PageGDGT
         gdgtButton = tk.Button(self, text="Run GDGT Model", font=f, command=lambda: controller.show_frame("PageGDGT"))
         gdgtButton.pack(ipadx=30, ipady=3, pady=(5, 5))
+
+        # Leads to PageLeafwax
+        leafwaxButton = tk.Button(self, text="Run Leafwax Model", font=f, command=lambda: controller.show_frame("PageLeafwax"))
+        leafwaxButton.pack(ipadx=30, ipady=3, pady=(5, 5))
 
 
 """
@@ -215,7 +224,7 @@ class PageEnvModel(tk.Frame):
         rowIdx+=1
 
         csvButton = tk.Button(self, text='Download CSV', font=f, command=lambda: self.download_csv())
-        csvButton.grid(row=rowIdx, column=1, ipadx=30, ipady=3, sticky="W")
+        csvButton.grid(row=rowIdx, column=2, ipadx=30, ipady=3, sticky="W")
 
         # Return to Start Page
         homeButton = tk.Button(self, text="Back to start page", font=f,
@@ -808,7 +817,175 @@ class PageGDGT(tk.Frame):
         path = fd.askdirectory()
         df.to_csv(path+"/gdgt_timeseries.csv", index=False)
 
+"""
+Page to run leafwax sensor model and plot data
+"""
+class PageLeafwax(tk.Frame):
+    def __init__(self, parent, controller):
+        rowIdx = 1
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+        label = tk.Label(
+            self, text="Run Lake Environment Model", font=LARGE_FONT)
+        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
 
+        rowIdx += 3
+
+        # Instructions for uploading file
+        tk.Label(self,
+                 text=
+                 """
+                 1) Upload a .txt file or choose the provided example .txt file
+                 2) Enter error stuff? [IDK]
+                 3) If parameters are left empty, [INSERT INSTRUCTIONS]
+                 """, font=f, justify="left"
+                 ).grid(row=rowIdx, columnspan=3, rowspan=3, pady=15)
+        rowIdx += 3
+
+        # Example file
+        sample_input = 'IsoGSM_dDP_1953_2012.txt'
+        dDp = np.loadtxt(sample_input)
+        self.dDp = dDp
+
+        # Upload example file
+        tk.Label(self, text="Click to load data", font=f).grid(
+            row=rowIdx, column=0, pady=10, sticky="W")
+        graphButton = tk.Button(self, text="Upload example file", font=f,
+                                command = lambda: self.uploadLeafwaxTxt("sample"))
+        graphButton.grid(row=rowIdx, column=1, pady=10,
+                         ipadx=30, ipady=3, sticky="W")
+        #Upload own text file
+        graphButton = tk.Button(self, text="Upload own .txt File", font=f,
+                                command = lambda: self.uploadLeafwaxTxt("user_file"))
+        graphButton.grid(row=rowIdx, column=2, pady=10,
+                         ipadx=30, ipady=3, sticky="W")
+        rowIdx += 1
+
+        # Shows the name of the current uploaded file, if any.
+        tk.Label(self, text="Current File Uploaded:", font=f).grid(
+            row=rowIdx, column=0, sticky="W")
+        self.currentFileLabel = tk.Label(self, text="No file", font=f)
+        self.currentFileLabel.grid(
+            row=rowIdx, column=1, columnspan=2, pady=10, sticky="W")
+
+        rowIdx += 3
+
+        self.f = Figure(figsize=(9, 5), dpi=100)
+        self.plt = self.f.add_subplot(111)
+        self.plt.set_title(r'SENSOR', fontsize=12)
+        self.plt.set_xlabel('Time')
+        self.plt.set_ylabel('Simulated Leafwax Data')
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+        self.canvas.draw()
+
+        tk.Button(self, text="Run Leafwax Model", font=f, command=self.run_leafwax_model).grid(
+            row=rowIdx, column=0, sticky="W")
+        rowIdx += 1
+        tk.Button(self, text="Generate Graph of Leafwax Proxy Data", font=f, command=self.generate_graph).grid(
+            row=rowIdx, column=0, sticky="W")
+        rowIdx += 1
+        tk.Button(self, text="Save Graph Data as .csv", font=f, command=self.download_leafwax_data).grid(
+            row=rowIdx, column=0, sticky="W")
+        rowIdx += 1
+        # Return to Start Page
+        tk.Button(self, text="Back to start", font=f,
+                  command=lambda: controller.show_frame("StartPage")).grid(
+            row=rowIdx, column=0, sticky="W")
+
+    """
+      Upload .txt file from user
+      """
+
+    def uploadLeafwaxTxt(self, type):
+        if type == "sample":
+            # Upload example file
+            sample_input = 'IsoGSM_dDP_1953_2012.txt'
+            self.currentFileLabel.configure(text=sample_input)
+            self.dDp = np.loadtxt(sample_input)
+        else:
+            # Open the file choosen by the user
+            self.txtfilename = fd.askopenfilename(
+                filetypes=(('text files', 'txt'),))
+            self.currentFileLabel.configure(text=basename(self.txtfilename))
+            self.dDp = np.loadtxt(self.txtfilename)
+
+    """
+    Create time series data for leafwax sensor
+    """
+
+    def run_leafwax_model(self):
+
+        self.nspin = ""
+        with open("lake_environment.inc", "r") as inc:
+            lines = inc.readlines()
+            nspin_line = lines[53]
+            idx = 0
+            while nspin_line[idx] != "=":
+                idx += 1
+            idx += 1
+            while nspin_line[idx] != ")":
+                self.nspin += nspin_line[idx]
+                idx += 1
+            self.nspin = int(self.nspin)
+
+        self.fC_3 = 0.7  # fraction of C3 plants
+        self.fC_4 = 0.3  # fraction of C4 plants
+        self.eps_c3 = -112.8  # pm 34.7
+        self.eps_c4 = -124.5  # pm 28.2
+
+        # define the error range on the epsilon (apparent fractionation) measurement:
+        self.eps_c3_err = 34.7
+        self.eps_c4_err = 28.2
+
+        self.leafwax_proxy = leafwax.wax_sensor(self.dDp, self.fC_3, self.fC_4, self.eps_c3, self.eps_c4)
+
+        # add uncertainties in apparent fractionation via monte-carlo resampling process:
+        #self.delta_d_wax_mc, self.Q1, self.Q2 = leafwax.wax_uncertainty(self.dDp, self.fC_3, self.fC_4, self.eps_c3,
+                                                                        #self.eps_c4, self.eps_c3_err, self.eps_c4_err)
+
+        # where Q1 is the 2.5th percentile, Q2 is the 97.5th percentile of the 1000 MC realizations
+
+    def generate_graph(self):
+        self.days = []
+        with open("BCC-ERA-Tlake-humid_surf.dat", "r") as data:
+            line_num = 0
+            for line in data:
+                line_vals = line.split()
+                if line_num >= self.nspin * 12 and line_num >= 142:
+                    self.days.append(line_vals[0])
+                line_num += 1
+        self.days = [int(float(day)) for day in self.days]
+        # TEMPORARY: CUTTING NUMBER OF DAYS SO THAT X AND Y IS SAME SIZE
+        self.leafwax_proxy = self.leafwax_proxy[:24]
+        self.f.clf()
+        self.plt = self.f.add_subplot(111)
+        self.plt.set_title(r'SENSOR')
+        self.plt.set_xlabel('Time')
+        self.plt.set_ylabel('Simulated Leaf Wax Data')
+        # error line chart
+        # sigma = float(sigmaRaw)
+        # self.R3 = sigma 
+        # inputs = len(self.X)
+        # self.X = self.cell
+        # self.X = self.X.reshape(inputs,1)
+        # Xn = analytical_error.analytical_error(self.X, sigma, inputs)
+        # Xn = Xn[:,0,:].reshape(inputs, inputs) 
+        # self.gaussq1=mquantiles(Xn,prob=[0.025,0.975],axis=1)
+        # q2=self.time
+        # self.plt.fill_between(q2,self.gaussq1[:,0],self.gaussq1[:,1],
+        #     label='100 Gaussian Analytical Error Realizations, CI', facecolor='darkgray',alpha=0.5)
+        #self.plt.errorbar(self.days, self.leafwax_proxy, yerr=0.8, fmt='o', color='black', ecolor='lightgray', elinewidth=3, capsize=0)
+
+        self.plt.scatter(self.days, self.leafwax_proxy, color="#ff6053")
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+        self.canvas.draw()
+
+    def download_leafwax_data(self):
+        df = pd.DataFrame({"Time":self.days, "Simulated Leafwax Data":self.leafwax_proxy})
+        path = fd.askdirectory()
+        df.to_csv(path+"/leafwax_timeseries.csv", index=False)
 
 if __name__ == "__main__":
     app = SampleApp()
