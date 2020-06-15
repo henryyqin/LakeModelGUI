@@ -1,4 +1,4 @@
-import tkinter as tk  # python 3
+import tkinter as tk                # python 3
 from tkinter import font as tkfont  # python 3
 import os
 from os.path import basename
@@ -8,9 +8,16 @@ import pandas as pd
 import webbrowser
 from tkinter import ttk
 import multiprocessing
-import sensor_leafwax as leafwax
+import threading
+
+# Carbonate sensor
 import sensor_carbonate as carb
-import sensor_gdgt as gdgt
+
+# GDGT
+import gdgt
+
+# Leafwax sensor
+import sensor_leafwax as leafwax
 
 # Imports for Lake Model
 import numpy as np
@@ -22,13 +29,16 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 from math import pi, sqrt, exp
 
+# Imports for plotting
+from statistics import mean
 plt.style.use('seaborn-whitegrid')
+
 """
 if you want the user to upload something from the same directory as the gui
 then you can use initialdir=os.getcwd() as the first parameter of askopenfilename
 """
-LARGE_FONT = ("Verdana", 18)
-f = ("Verdana", 11)
+LARGE_FONT = ("Verdana", 26)
+f = ("Verdana", 12)
 
 def callback(url):
     webbrowser.open_new(url)
@@ -52,7 +62,7 @@ class SampleApp(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-        for F in (StartPage, PageOne, PageCarbonate, PageLeafwax, PageGDGT):
+        for F in (StartPage, PageEnvModel, PageEnvTimeSeries, PageEnvSeasonalCycle, PageCarbonate, PageLeafwax, PageGDGT):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
@@ -69,7 +79,9 @@ class SampleApp(tk.Tk):
         frame = self.frames[page_name]
         frame.tkraise()
 
-
+"""
+Home/Title Page
+"""
 class StartPage(tk.Frame):
 
     def __init__(self, parent, controller):
@@ -95,20 +107,35 @@ class StartPage(tk.Frame):
         github.pack(pady=10, padx=10)
         github.bind("<Button-1>", lambda e: callback("https://github.com/henryyqin/LakeModelGUI"))
 
-        button = tk.Button(self, text="Run Lake Environment Model", font=f, command=lambda: controller.show_frame("PageOne"))
-        button.pack(ipadx=43, ipady=3, pady=(40, 5))
+        envModelButton = tk.Button(self, text="Run Lake Environment Model", font=f, command=lambda: controller.show_frame("PageEnvModel"))
+        envModelButton.pack(ipadx=35, ipady=3, pady=(40, 5))
 
-        button2 = tk.Button(self, text="Run Carbonate Model", font=f, command=lambda: controller.show_frame("PageCarbonate"))
-        button2.pack(ipadx=30, ipady=3, pady=(5, 5))
+        # Leads to PageEnvTimeSeries
+        envTimeSeriesButton = tk.Button(self, text="Plot Environment Time Series", font=f, command=lambda: controller.show_frame("PageEnvTimeSeries"))
+        envTimeSeriesButton.pack(ipadx=35, ipady=3, pady=(5, 5))
 
-        button3 = tk.Button(self, text="Run Leafwax Model", font=f, command=lambda: controller.show_frame("PageLeafwax"))
-        button3.pack(ipadx=30, ipady=3, pady=(5, 5))
+        # Leads to PageEnvSeasonalCycle
+        envTimeSeriesButton = tk.Button(self, text="Plot Environment Seasonal Cycle", font=f, command=lambda: controller.show_frame("PageEnvSeasonalCycle"))
+        envTimeSeriesButton.pack(ipadx=35, ipady=3, pady=(5, 5))
 
-        button4 = tk.Button(self, text="Run GDGT Model", font=f, command=lambda: controller.show_frame("PageGDGT"))
-        button4.pack(ipadx=30, ipady=3, pady=(5, 5))
+        # Leads to PageCarbonate
+        carbButton = tk.Button(self, text="Run Carbonate Model", font=f,
+                    command=lambda: controller.show_frame("PageCarbonate"))
+        carbButton.pack(ipadx=30, ipady=3, pady=(5, 5))
+
+        # Leads to PageGDGT
+        gdgtButton = tk.Button(self, text="Run GDGT Model", font=f, command=lambda: controller.show_frame("PageGDGT"))
+        gdgtButton.pack(ipadx=30, ipady=3, pady=(5, 5))
+
+        # Leads to PageLeafwax
+        leafwaxButton = tk.Button(self, text="Run Leafwax Model", font=f, command=lambda: controller.show_frame("PageLeafwax"))
+        leafwaxButton.pack(ipadx=30, ipady=3, pady=(5, 5))
 
 
-class PageOne(tk.Frame):
+"""
+Page to run the environment model
+"""
+class PageEnvModel(tk.Frame):
 
     def __init__(self, parent, controller):
         rowIdx = 1
@@ -189,18 +216,22 @@ class PageOne(tk.Frame):
 
         rowIdx+=1
 
+
         # Button to run the model (Mac/Linux only)
         runButton = tk.Button(
             self, text="Run Model", font=f,command=lambda: self.runModel(runButton))
         runButton.grid(row=rowIdx, column=1, ipadx=30, ipady=3, sticky="W")
-        rowIdx += 1
+        rowIdx+=1
+
+        csvButton = tk.Button(self, text='Download CSV', font=f, command=lambda: self.download_csv())
+        csvButton.grid(row=rowIdx, column=2, ipadx=30, ipady=3, sticky="W")
 
         # Return to Start Page
         homeButton = tk.Button(self, text="Back to start page", font=f,
                                command=lambda: controller.show_frame("StartPage"))
         # previousPageB.pack(anchor = "w", side = "bottom")
         homeButton.grid(row=rowIdx, column=3, ipadx=25,
-                        ipady=3, pady=30, sticky="W")
+                        ipady=3, pady=3, sticky="E")
         rowIdx += 1
 
     """
@@ -217,6 +248,14 @@ class PageOne(tk.Frame):
             if self.txtfilename != "":
                 new[18] = "      !data_input_filename = '"+self.txtfilename+"'\n"
                 new[732] = "      open(unit=15,file='"+self.txtfilename+"',status='old')\n"
+            f.seek(0)
+            f.truncate()
+            f.writelines(new)
+            f.close()
+        with open("lake_environment.inc","r+") as f:
+            new = f.readlines()
+            if self.txtfilename != "":
+                new[61] = "    character(38) :: datafile='"+self.txtfilename+"' ! the data file to open in FILE_OPEN subroutine\n"
             f.seek(0)
             f.truncate()
             f.writelines(new)
@@ -242,6 +281,28 @@ class PageOne(tk.Frame):
             f.truncate()
             f.writelines(new)
             f.close()
+
+    """
+    Takes a .inc file
+    def uploadInc(self):
+        # Open the file choosen by the user
+        self.incfilename = fd.askopenfilename(
+            filetypes=(('include files', 'inc'),))
+        self.currentIncFileLabel.configure(text=basename(self.incfilename))
+        print(self.incfilename)
+    Edits the .inc file that was chosen by the user (for Mac)
+    def editTextMac(self):
+        # Checks if a file was uploaded at all
+        if self.incfilename == '':
+            return
+        subprocess.call(['open', '-a', 'TextEdit', self.incfilename])
+    Edits the .inc file that was chosen by the user (for Windows)
+    def editTextWindows(self):
+        # Checks if a file was uploaded at all
+        if self.incfilename == '':
+            return
+        subprocess.Popen([notepad, self.incfilename])
+    """
 
     """
     Disables run model button and creates separate process for lake model
@@ -273,7 +334,374 @@ class PageOne(tk.Frame):
         # Run Environment Model (Crashes eventually)
         lakepsm.lakemodel()
 
+    def check_file(self, file, past_size, progress, btn):
+        current_size = os.path.getsize(file)
+        if past_size != current_size or current_size==0:
+            self.after(60000, lambda: self.check_file(file, current_size, progress, btn))
+        else:
+            btn["state"]="normal"
+            progress.stop()
+        return None
+    
+    """
+    Downloads 'surface_output.dat' as a CSV to the user's desired location
+    """
+    def download_csv(self):
+        read_file = pd.read_csv("surface_output.dat")
+        export_file_path = fd.asksaveasfilename(defaultextension='.csv')
+        read_file.to_csv(export_file_path, index=None)
+
+"""
+Page to plot environment model time series
+"""
+class PageEnvTimeSeries(tk.Frame):
+
+    def __init__(self, parent, controller):
+        rowIdx=1
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+        label = tk.Label(
+            self, text="Environment Model Time Series", font=LARGE_FONT)
+        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5, sticky="we")
+        rowIdx+=3
+
+        # Empty graph, default
+        self.f = Figure(figsize=(10, 5), dpi=100)
+        self.plt = self.f.add_subplot(111)
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+        self.plt.set_title(r'Time Series', fontsize=12)
+        self.plt.set_xlabel('Time')
+        self.plt.set_ylabel('Lake Surface Temperature')
+
+        # Graph button for each variable
+
+        # Lake Surface Temperature
+        LSTButton = tk.Button(self, text="Graph Surface Temperature", font=f, 
+                        command=lambda : self.generate_env_time_series(1, 'Lake Surface Temperature (\N{DEGREE SIGN}C)')) # 2nd column
+        LSTButton.grid(row=rowIdx, column=1, pady=1,
+                         ipadx=30, ipady=10, sticky="W")
+        rowIdx+=1
+
+        # Mixing Depth
+        MDButton = tk.Button(self, text="Graph Mixing Depth", font=f, 
+                        command=lambda : self.generate_env_time_series(2, 'Mixing Depth (m)')) # 3rd column
+        MDButton.grid(row=rowIdx, column=1, pady=1,
+                         ipadx=30, ipady=10, sticky="W")
+        rowIdx+=1
+
+        # Evaporation Rate
+        ERButton = tk.Button(self, text="Graph Evaporation Rate", font=f, 
+                        command=lambda : self.generate_env_time_series(3, 'Evaporation Rate (mm/day)')) # 4th column
+        ERButton.grid(row=rowIdx, column=1, pady=1,
+                         ipadx=30, ipady=10, sticky="W")
+        rowIdx+=1
+
+        # Latent Heat Flux
+        LHFButton = tk.Button(self, text="Graph Latent Heat Flux", font=f, 
+                        command=lambda : self.generate_env_time_series(3, 'Latent Heat Flux (W/$m^2$)')) # 4th column
+        LHFButton.grid(row=rowIdx, column=1, pady=1,
+                         ipadx=30, ipady=10, sticky="W")
+        rowIdx+=1
+
+        # Sensible Heat Flux
+        SHFButton = tk.Button(self, text="Graph Sensible Heat Flux", font=f, 
+                        command=lambda : self.generate_env_time_series(3, 'Sensible Heat Flux (W/$m^2$)')) # 4th column
+        SHFButton.grid(row=rowIdx, column=1, pady=1,
+                         ipadx=30, ipady=10, sticky="W")
+        rowIdx+=10
+
+        # Return to Start Page
+        homeButton = tk.Button(self, text="Back to start page", font=f,
+                               command=lambda: controller.show_frame("StartPage"))
+        homeButton.grid(row=rowIdx, column=3, ipadx=25,
+                        ipady=3, pady=3, sticky="E")
+
+    """
+    Plots the multiple values of a specific variable for each day of the year as a scatterplot
+
+    Inputs:
+     - column, an int that corresponds to the column of the desired variable to be plotted
+     - varstring, a string that is the name and unit of the variable
+
+    Returns:
+     - Nothing, just generates a graph on the page
+    """
+    # extracts data from .dat file and plots data based on given column number
+    def generate_env_time_series(self, column, varstring):
+        self.days = [] # x-axis
+        self.yaxis = [] # y-axis
+        
+        # determining nspin
+        self.nspin = ""
+        with open("lake_environment.inc", "r") as inc:
+            lines = inc.readlines()
+            nspin_line = lines[53] # depends on the .inc file
+            idx = 0
+            while nspin_line[idx] != "=":
+                idx += 1
+            idx += 1
+            while nspin_line[idx] != ")":
+                self.nspin += nspin_line[idx]
+                idx += 1
+            self.nspin = int(self.nspin)
+
+
+        # generate data (Using BCC-ERA for now)
+        with open("BCC-ERA-Tlake-humid_surf.dat", "r") as data:
+            line_num = 0
+            for line in data:
+                
+                line_vals = line.split()
+                if line_num >= self.nspin * 12:
+                    self.days.append(line_vals[0]) # ignore nspin
+                    self.yaxis.append(line_vals[column])
+                line_num += 1
+
+        self.days = [int(float(day)) for day in self.days] # convert days to int
+
+        self.f.clf()
+        self.plt = self.f.add_subplot(111)
+        self.plt.set_title(r'' + varstring + ' over Time')
+        self.plt.set_xlabel('Time (Day of the Year)')
+        self.plt.set_ylabel(varstring)
+        self.plt.scatter(self.days, self.yaxis, color="#ff6053")
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.get_tk_widget().grid(
+            row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+        self.canvas.draw()
+
+"""
+Page to plot seasonal cycle
+"""
+class PageEnvSeasonalCycle(tk.Frame):
+
+    def __init__(self, parent, controller):
+        rowIdx=1
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+        label = tk.Label(
+            self, text="Environment Model Seasonal Cycle", font=LARGE_FONT)
+        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5, sticky="we")
+        rowIdx+=3
+
+        # Empty graph, default
+        self.f = Figure(figsize=(10, 5), dpi=100)
+        self.plt = self.f.add_subplot(111)
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+        self.plt.set_title(r'Seasonal Cycle', fontsize=12)
+        self.plt.set_xlabel('Day of the Year')
+        self.plt.set_ylabel('')
+
+        # Graph button for each variable
+
+        # Lake Surface Temperature
+        LSTButton = tk.Button(self, text="Graph Surface Temperature", font=f, 
+                        command=lambda : self.generate_env_seasonal_cycle(1, 'Lake Surface Temperature (\N{DEGREE SIGN}C)')) # 2nd column
+        LSTButton.grid(row=rowIdx, column=1, pady=1,
+                         ipadx=30, ipady=10, sticky="W")
+        rowIdx+=1
+
+        # Mixing Depth
+        MDButton = tk.Button(self, text="Graph Mixing Depth", font=f, 
+                        command=lambda : self.generate_env_seasonal_cycle(2, 'Mixing Depth (m)')) # 3rd column
+        MDButton.grid(row=rowIdx, column=1, pady=1,
+                         ipadx=30, ipady=10, sticky="W")
+        rowIdx+=1
+
+        # Evaporation Rate
+        ERButton = tk.Button(self, text="Graph Evaporation Rate", font=f, 
+                        command=lambda : self.generate_env_seasonal_cycle(3, 'Evaporation Rate (mm/day)')) # 4th column
+        ERButton.grid(row=rowIdx, column=1, pady=1,
+                         ipadx=30, ipady=10, sticky="W")
+        rowIdx+=1
+
+        # Latent Heat Flux
+        LHFButton = tk.Button(self, text="Graph Latent Heat Flux", font=f, 
+                        command=lambda : self.generate_env_seasonal_cycle(3, 'Latent Heat Flux (W/$m^2$)')) # 4th column
+        LHFButton.grid(row=rowIdx, column=1, pady=1,
+                         ipadx=30, ipady=10, sticky="W")
+        rowIdx+=1
+
+        # Sensible Heat Flux
+        SHFButton = tk.Button(self, text="Graph Sensible Heat Flux", font=f, 
+                        command=lambda : self.generate_env_seasonal_cycle(3, 'Sensible Heat Flux (W/$m^2$)')) # 4th column
+        SHFButton.grid(row=rowIdx, column=1, pady=1,
+                         ipadx=30, ipady=10, sticky="W")
+        rowIdx+=10
+
+        # Return to Start Page
+        homeButton = tk.Button(self, text="Back to start page", font=f,
+                               command=lambda: controller.show_frame("StartPage"))
+        homeButton.grid(row=rowIdx, column=3, ipadx=25,
+                        ipady=3, pady=3, sticky="E")
+
+    """
+    Plots the average of a specific variable for each day of the year as a scatterplot
+
+    Inputs:
+     - column, an int that corresponds to the column of the desired variable to be plotted
+     - varstring, a string that is the name and unit of the variable
+
+    Returns:
+     - Nothing, just generates a graph on the page
+    """
+    # Treating 375 as part of the year for now
+    # Treating everything >375 to be 15, 45, etc.
+    def generate_env_seasonal_cycle(self, column, varstring):
+        self.xaxis = [15, 45, 75, 105, 135, 165, 195, 225, 255, 285, 315, 345, 375] # x-axis
+        self.ydict = {} # dict to list all y of an x as an array, to be meaned later
+
+        # determining nspin
+        self.nspin = ""
+        with open("lake_environment.inc", "r") as inc:
+            lines = inc.readlines()
+            nspin_line = lines[53] # depends on the .inc file
+            idx = 0
+            while nspin_line[idx] != "=":
+                idx += 1
+            idx += 1
+            while nspin_line[idx] != ")":
+                self.nspin += nspin_line[idx]
+                idx += 1
+            self.nspin = int(self.nspin)
+
+        # generate data (Using BCC-ERA for now)
+        with open("BCC-ERA-Tlake-humid_surf.dat", "r") as data:
+            line_num = 0
+            for line in data:
+                line_vals = line.split() # convert each line into a list of floats
+                if line_num >= self.nspin * 12:
+                    xval = int(float(line_vals[0]) % 405)
+                    if xval in self.ydict: # if xval is already a key in ydict
+                        self.ydict[xval].append(float(line_vals[column])) # update y array with desired value
+                    else: # xval not a key in ydict yet
+                        self.ydict[xval] = []
+                line_num += 1
+
+        # After yval array is formed for each xval, generate the axtual yaxis data
+        self.yaxis = [] # actual plotting data for y
+        for xval in range(15, 376, 30): # count from 15 to 375 by 30's
+            self.yaxis.append(mean(self.ydict[xval])) # mean the yvals for each xval and append it to yaxis
+
+        self.f.clf()
+        self.plt = self.f.add_subplot(111)
+        self.plt.set_title(r'' + varstring + ' Seasonal Cycle')
+        self.plt.set_xlabel('Day of the Year')
+        self.plt.set_ylabel('Average ' + varstring)
+        self.plt.scatter(self.xaxis, self.yaxis, color="#ff6053")
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.get_tk_widget().grid(
+            row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+        self.canvas.draw()
+
+"""
+Page to run carbonate sensor model and plot data
+"""
 class PageCarbonate(tk.Frame):
+
+    def __init__(self, parent, controller):
+        rowIdx = 1
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+        label = tk.Label(
+            self, text="Run Carbonate Sensor Model", font=LARGE_FONT)
+        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
+
+        rowIdx += 3
+
+        self.model = tk.StringVar()
+        self.model.set("ONeil")
+        model_names = ["ONeil", "Kim-ONeil", "ErezLuz", "Bemis", "Lynch"]
+        for name in model_names:
+            tk.Radiobutton(self, text=name, value=name, variable=self.model).grid(row=rowIdx, column=0, sticky="W")
+            rowIdx += 1
+        tk.Button(self, text="Submit Model", command=self.run_carbonate_model).grid(
+            row=rowIdx, column=0, sticky="W")
+        rowIdx += 1
+
+        tk.Button(self, text="Generate Graph of Carbonate Proxy Data", command=self.generate_graph).grid(
+            row=rowIdx, column=0, sticky="W")
+        rowIdx+=1
+        tk.Button(self, text="Save Graph Data as .csv", command=self.download_carb_data).grid(
+            row=rowIdx, column=0, sticky="W")
+        rowIdx+=1
+
+        # Return to Start Page
+        tk.Button(self, text="Back to start", 
+                                command=lambda: controller.show_frame("StartPage")).grid(
+                                row=rowIdx, column=0, sticky="W")
+
+        self.f = Figure(figsize=(10, 5), dpi=100)
+        self.plt = self.f.add_subplot(111)
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+        self.plt.set_title(r'SENSOR', fontsize=12)
+        self.plt.set_xlabel('Time')
+        self.plt.set_ylabel('Simulated Carbonate Data')
+
+    """
+    Create time series data for carbonate sensor
+    """
+
+    def run_carbonate_model(self):
+        surf_tempr = []
+        self.nspin = ""
+        with open("lake_environment.inc", "r") as inc:
+            lines = inc.readlines()
+            nspin_line = lines[53]
+            idx = 0
+            while nspin_line[idx] != "=":
+                idx += 1
+            idx += 1
+            while nspin_line[idx] != ")":
+                self.nspin += nspin_line[idx]
+                idx += 1
+            self.nspin = int(self.nspin)
+            
+        with open("BCC-ERA-Tlake-humid_surf.dat", 'r') as data:
+            tempr_yr = []
+            for line in data:
+                line_vals = line.split()
+                tempr_yr.append(line_vals[1])
+            surf_tempr.append(tempr_yr[self.nspin * 12:len(tempr_yr)])
+        surf_tempr = np.array(surf_tempr[0], dtype=float)
+        self.LST = surf_tempr
+        self.d180w = -2
+        self.carb_proxy = carb.carb_sensor(self.LST, self.d180w, model=self.model.get())
+
+
+    def generate_graph(self):
+        self.days = []
+        with open("BCC-ERA-Tlake-humid_surf.dat", "r") as data:
+            line_num = 0
+            for line in data:
+                line_vals = line.split()
+                if line_num >= self.nspin * 12:
+                    self.days.append(line_vals[0])
+                line_num += 1
+        self.days = [int(float(day)) for day in self.days]
+        self.f.clf()
+        self.plt = self.f.add_subplot(111)
+        self.plt.set_title(r'SENSOR')
+        self.plt.set_xlabel('Time')
+        self.plt.set_ylabel('Simulated Carbonate Data')
+        self.plt.scatter(self.days, self.carb_proxy, color="#ff6053")
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+        self.canvas.draw()
+
+    def download_carb_data(self):
+        df = pd.DataFrame({"Time":self.days, "Simulated Carbonate Data":self.carb_proxy})
+        path = fd.askdirectory()
+        df.to_csv(path+"/carbonate_timeseries.csv", index=False)
+
+
+"""
+Page to run GDGT Model and plot data
+"""
+class PageGDGT(tk.Frame):
     
     def __init__(self, parent, controller):
         rowIdx = 1
@@ -295,10 +723,25 @@ class PageCarbonate(tk.Frame):
             row=rowIdx, column=0, sticky="W")
         rowIdx+=1
 
-        tk.Button(self, text="Download GDGT Proxy Data", command=self.download_gdgt_data).grid(
-            row=rowIdx, column=0, sticky="W")
-        self.f = Figure(figsize=(9, 5), dpi=100)
 
+        tk.Button(self, text="Generate Graph of GDGT Proxy Data", command=self.generate_graph).grid(
+            row=rowIdx, column=0, sticky="W")
+        rowIdx+=1
+        tk.Button(self, text="Save Graph Data as .csv", command=self.download_gdgt_data).grid(
+            row=rowIdx, column=0, sticky="W")
+        rowIdx+=1
+
+        # Return to Start Page
+        tk.Button(self, text="Back to start", 
+                                command=lambda: controller.show_frame("StartPage")).grid(
+                                row=rowIdx, column=0, sticky="W")
+
+        # # previousPageB.pack(anchor = "w", side = "bottom")
+        # homeButton.grid(row=rowIdx, column=3, ipadx=25,
+        #                 ipady=3, pady=30, sticky="W")
+        # rowIdx += 1
+
+        self.f = Figure(figsize=(9, 5), dpi=100)
         self.plt = self.f.add_subplot(111)
         self.plt.set_title(r'SENSOR', fontsize=12)
         self.plt.set_xlabel('Time')
@@ -315,7 +758,7 @@ class PageCarbonate(tk.Frame):
         self.nspin=""
         with open("lake_environment.inc", "r") as inc:
             lines = inc.readlines()
-            nspin_line = lines[69]
+            nspin_line = lines[53]
             idx = 0
             while nspin_line[idx] != "=":
                 idx+=1
@@ -324,7 +767,8 @@ class PageCarbonate(tk.Frame):
                 self.nspin+=nspin_line[idx]
                 idx+=1
             self.nspin=int(self.nspin)
-        with open("surface_output.dat", 'r') as data:
+            # print(nspin)
+        with open("BCC-ERA-Tlake-humid_surf.dat", 'r') as data:
             tempr_yr = []
             for line in data:
                 line_vals = line.split()
@@ -347,21 +791,35 @@ class PageCarbonate(tk.Frame):
         self.beta = 1./50.
         self.gdgt_proxy = gdgt.gdgt_sensor(self.LST,self.MAAT,self.beta,model=self.model.get())
 
-
-    def download_gdgt_data(self):
-        days = []
-        with open("surface_output.dat", "r") as data:
+    def generate_graph(self):
+        self.days = []
+        with open("BCC-ERA-Tlake-humid_surf.dat", "r") as data:
             line_num = 0
             for line in data:
                 line_vals = line.split()
-                if line_num >= self.nspin*12:
-                    days.append(line_vals[0])
-                line_num+=1
-        days = [int(float(day)) for day in days]
-        gdgt_plot = pd.Series(self.gdgt_proxy, days)
-        gdgt_plot.plot()
-        plt.show()
+                if line_num >= self.nspin * 12:
+                    self.days.append(line_vals[0])
+                line_num += 1
+        self.days = [int(float(day)) for day in self.days]
+        print(len(self.days), len(self.gdgt_proxy))
+        self.f.clf()
+        self.plt = self.f.add_subplot(111)
+        self.plt.set_title(r'SENSOR')
+        self.plt.set_xlabel('Time')
+        self.plt.set_ylabel('Simulated GDGT Data')
+        self.plt.scatter(self.days, self.gdgt_proxy, color="#ff6053")
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+        self.canvas.draw()
 
+    def download_gdgt_data(self):
+        df = pd.DataFrame({"Time":self.days, "Simulated GDGT Data":self.gdgt_proxy})
+        path = fd.askdirectory()
+        df.to_csv(path+"/gdgt_timeseries.csv", index=False)
+
+"""
+Page to run leafwax sensor model and plot data
+"""
 class PageLeafwax(tk.Frame):
     def __init__(self, parent, controller):
         rowIdx = 1
@@ -461,7 +919,7 @@ class PageLeafwax(tk.Frame):
         self.nspin = ""
         with open("lake_environment.inc", "r") as inc:
             lines = inc.readlines()
-            nspin_line = lines[69]
+            nspin_line = lines[53]
             idx = 0
             while nspin_line[idx] != "=":
                 idx += 1
@@ -500,7 +958,6 @@ class PageLeafwax(tk.Frame):
         self.days = [int(float(day)) for day in self.days]
         # TEMPORARY: CUTTING NUMBER OF DAYS SO THAT X AND Y IS SAME SIZE
         self.leafwax_proxy = self.leafwax_proxy[:24]
-        print(len(self.days), len(self.leafwax_proxy))
         self.f.clf()
         self.plt = self.f.add_subplot(111)
         self.plt.set_title(r'SENSOR')
@@ -529,130 +986,6 @@ class PageLeafwax(tk.Frame):
         df = pd.DataFrame({"Time":self.days, "Simulated Leafwax Data":self.leafwax_proxy})
         path = fd.askdirectory()
         df.to_csv(path+"/leafwax_timeseries.csv", index=False)
-
-class PageGDGT(tk.Frame):
-    
-    def __init__(self, parent, controller):
-        rowIdx = 1
-        tk.Frame.__init__(self, parent)
-        self.controller = controller
-        label = tk.Label(
-            self, text="Run GDGT Sensor Model", font=LARGE_FONT)
-        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
-
-        rowIdx += 3
-
-        self.model = tk.StringVar()
-        self.model.set("TEX86-tierney")
-        model_names = ["TEX86-tierney","TEX86-powers","TEX86-loomis","MBT-R","MBT-J"]
-        for name in model_names:
-            tk.Radiobutton(self, text=name, value=name, variable=self.model).grid(row=rowIdx, column=0, sticky="W")
-            rowIdx+=1
-        tk.Button(self, text="Submit Model", command=self.run_gdgt_model).grid(
-            row=rowIdx, column=0, sticky="W")
-        rowIdx+=1
-
-
-        tk.Button(self, text="Generate Graph of GDGT Proxy Data", command=self.generate_graph).grid(
-            row=rowIdx, column=0, sticky="W")
-        rowIdx+=1
-        tk.Button(self, text="Save Graph Data as .csv", command=self.download_gdgt_data).grid(
-            row=rowIdx, column=0, sticky="W")
-        rowIdx+=3
-        # Return to Start Page
-        tk.Button(self, text="Back to start", font=f, 
-                                command=lambda: controller.show_frame("StartPage")).grid(
-                                row=rowIdx, column=0, sticky="W")
-
-        # # previousPageB.pack(anchor = "w", side = "bottom")
-        # homeButton.grid(row=rowIdx, column=3, ipadx=25,
-        #                 ipady=3, pady=30, sticky="W")
-        # rowIdx += 1
-
-        self.f = Figure(figsize=(9, 5), dpi=100)
-        self.plt = self.f.add_subplot(111)
-        self.plt.set_title(r'SENSOR', fontsize=12)
-        self.plt.set_xlabel('Time')
-        self.plt.set_ylabel('Simulated GDGT Data')
-        self.canvas = FigureCanvasTkAgg(self.f, self)
-        self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
-        self.canvas.draw()
-    """
-    Create time series data for GDGT sensor
-    """
-
-    def run_gdgt_model(self):
-        surf_tempr = []
-        self.nspin=""
-        with open("lake_environment.inc", "r") as inc:
-            lines = inc.readlines()
-            nspin_line = lines[69]
-            idx = 0
-            while nspin_line[idx] != "=":
-                idx+=1
-            idx+=1
-            while nspin_line[idx] != ")":
-                self.nspin+=nspin_line[idx]
-                idx+=1
-            self.nspin=int(self.nspin)
-
-
-        with open("BCC-ERA-Tlake-humid_surf.dat", 'r') as data:
-            tempr_yr = []
-            for line in data:
-                line_vals = line.split()
-                tempr_yr.append(line_vals[1])
-            surf_tempr.append(tempr_yr[self.nspin*12:len(tempr_yr)])
-        surf_tempr = np.array(surf_tempr[0], dtype=float)
-
-        climate_input = 'ERA_INTERIM_climatology_Tang_2yr.txt'
-        air_tempr = []
-        with open(climate_input, 'r') as data:
-            airtemp_yr = []
-            for line in data:
-                line_vals = line.split()
-                airtemp_yr.append(line_vals[2])
-            air_tempr.append(airtemp_yr)
-        air_tempr = np.array(air_tempr[0], dtype = float)
-        #why is the length of gdgt_proxy 0?
-
-        self.LST = surf_tempr
-        self.MAAT = air_tempr
-        # print(len(self.LST))
-        # print(len(self.MAAT))
-        self.beta = 1./50.
-        self.gdgt_proxy = gdgt.gdgt_sensor(self.LST,self.MAAT,self.beta,model=self.model.get())
-
-    def generate_graph(self):
-        self.days = []
-        with open("BCC-ERA-Tlake-humid_surf.dat", "r") as data:
-            line_num = 0
-            for line in data:
-                line_vals = line.split()
-                if line_num >= self.nspin * 12:
-                    # print(line_num)
-                    self.days.append(line_vals[0])
-                line_num += 1
-
-        self.days = [int(float(day)) for day in self.days]
-        #CUT NUM OF DAYS AS TEMPORARY FIX
-        self.days = self.days[106:]
-        print(len(self.days), len(self.gdgt_proxy))
-        self.f.clf()
-        self.plt = self.f.add_subplot(111)
-        self.plt.set_title(r'SENSOR')
-        self.plt.set_xlabel('Time')
-        self.plt.set_ylabel('Simulated GDGT Data')
-        self.plt.scatter(self.days, self.gdgt_proxy, color="#ff6053")
-        self.canvas = FigureCanvasTkAgg(self.f, self)
-        self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
-        self.canvas.draw()
-
-    def download_gdgt_data(self):
-        df = pd.DataFrame({"Time":self.days, "Simulated GDGT Data":self.gdgt_proxy})
-        path = fd.askdirectory()
-        df.to_csv(path+"/gdgt_timeseries.csv", index=False)
-
 
 if __name__ == "__main__":
     app = SampleApp()
