@@ -243,7 +243,7 @@ class PageEnvModel(tk.Frame):
         self.txtfilename = fd.askopenfilename(
             filetypes=(('text files', 'txt'),))
         self.currentTxtFileLabel.configure(text=basename(self.txtfilename))
-        with open("lake_environment.f90", "r+") as f:
+        with open("env_heatflux.f90", "r+") as f:
             new = f.readlines()
             if self.txtfilename != "":
                 new[18] = "      !data_input_filename = '"+self.txtfilename+"'\n"
@@ -252,10 +252,10 @@ class PageEnvModel(tk.Frame):
             f.truncate()
             f.writelines(new)
             f.close()
-        with open("lake_environment.inc","r+") as f:
+        with open("Malawi.inc","r+") as f:
             new = f.readlines()
             if self.txtfilename != "":
-                new[61] = "    character(38) :: datafile='"+self.txtfilename+"' ! the data file to open in FILE_OPEN subroutine\n"
+                new[56] = "    character(38) :: datafile='"+self.txtfilename+"' ! the data file to open in FILE_OPEN subroutine\n"
             f.seek(0)
             f.truncate()
             f.writelines(new)
@@ -266,7 +266,7 @@ class PageEnvModel(tk.Frame):
     """
 
     def editInc(self, parameters, comments):
-        with open("lake_environment.inc", "r+") as f:
+        with open("Malawi.inc", "r+") as f:
             new = f.readlines()
             #names of the parameters that need to be modified
             names = ["oblq","xlat","xlon","gmt","max_dep","basedep","b_area","cdrn","eta","f","alb_slush",
@@ -312,11 +312,13 @@ class PageEnvModel(tk.Frame):
         btn["state"]="disabled"
         model_process = multiprocessing.Process(target=self.computeModel)
         model_process.start()
+        """
         pbar = ttk.Progressbar(self, orient="horizontal", length=100, mode="indeterminate")
         pbar.grid(row=30,column=1, sticky="W")
         pbar.start()
         file_path = os.getcwd() + "/profile_output.dat"
         self.after(30000, lambda: self.check_file(file_path, 0, pbar, btn))
+        """
 
 
     """
@@ -326,7 +328,7 @@ class PageEnvModel(tk.Frame):
     def computeModel(self):
         # Runs f2py terminal command then (hopefully) terminates (takes a bit)
         subprocess.run(
-            ['f2py', '-c', '-m', 'lakepsm', 'lake_environment.f90'])
+            ['f2py', '-c', '-m', 'lakepsm', 'env_heatflux.f90'])
 
         # imports the wrapper
         import lakepsm
@@ -434,9 +436,9 @@ class PageEnvTimeSeries(tk.Frame):
         
         # determining nspin
         self.nspin = ""
-        with open("lake_environment.inc", "r") as inc:
+        with open("Malawi.inc", "r") as inc:
             lines = inc.readlines()
-            nspin_line = lines[53] # depends on the .inc file
+            nspin_line = lines[62] # depends on the .inc file
             idx = 0
             while nspin_line[idx] != "=":
                 idx += 1
@@ -458,7 +460,8 @@ class PageEnvTimeSeries(tk.Frame):
                     self.yaxis.append(line_vals[column])
                 line_num += 1
 
-        self.days = [int(float(day)) for day in self.days] # convert days to int
+        self.days = [int(float(day)) for day in self.days] # convert days to ints
+        self.yaxis = [float(value) for value in self.yaxis] # convert yaxis to floats
 
         self.f.clf()
         self.plt = self.f.add_subplot(111)
@@ -555,9 +558,9 @@ class PageEnvSeasonalCycle(tk.Frame):
 
         # determining nspin
         self.nspin = ""
-        with open("lake_environment.inc", "r") as inc:
+        with open("Malawi.inc", "r") as inc:
             lines = inc.readlines()
-            nspin_line = lines[53] # depends on the .inc file
+            nspin_line = lines[62] # depends on the .inc file
             idx = 0
             while nspin_line[idx] != "=":
                 idx += 1
@@ -648,9 +651,9 @@ class PageCarbonate(tk.Frame):
     def run_carbonate_model(self):
         surf_tempr = []
         self.nspin = ""
-        with open("lake_environment.inc", "r") as inc:
+        with open("Malawi.inc", "r") as inc:
             lines = inc.readlines()
-            nspin_line = lines[53]
+            nspin_line = lines[62]
             idx = 0
             while nspin_line[idx] != "=":
                 idx += 1
@@ -756,9 +759,9 @@ class PageGDGT(tk.Frame):
     def run_gdgt_model(self):
         surf_tempr = []
         self.nspin=""
-        with open("lake_environment.inc", "r") as inc:
+        with open("Malawi.inc", "r") as inc:
             lines = inc.readlines()
-            nspin_line = lines[53]
+            nspin_line = lines[62]
             idx = 0
             while nspin_line[idx] != "=":
                 idx+=1
@@ -917,9 +920,9 @@ class PageLeafwax(tk.Frame):
     def run_leafwax_model(self):
 
         self.nspin = ""
-        with open("lake_environment.inc", "r") as inc:
+        with open("Malawi.inc", "r") as inc:
             lines = inc.readlines()
-            nspin_line = lines[53]
+            nspin_line = lines[62]
             idx = 0
             while nspin_line[idx] != "=":
                 idx += 1
