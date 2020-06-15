@@ -14,7 +14,7 @@ import threading
 import sensor_carbonate as carb
 
 # GDGT
-import gdgt
+import sensor_gdgt as gdgt
 
 # Leafwax sensor
 import sensor_leafwax as leafwax
@@ -243,7 +243,7 @@ class PageEnvModel(tk.Frame):
         self.txtfilename = fd.askopenfilename(
             filetypes=(('text files', 'txt'),))
         self.currentTxtFileLabel.configure(text=basename(self.txtfilename))
-        with open("lake_environment.f90", "r+") as f:
+        with open("env_heatflux.f90", "r+") as f:
             new = f.readlines()
             if self.txtfilename != "":
                 new[18] = "      !data_input_filename = '"+self.txtfilename+"'\n"
@@ -252,7 +252,7 @@ class PageEnvModel(tk.Frame):
             f.truncate()
             f.writelines(new)
             f.close()
-        with open("lake_environment.inc","r+") as f:
+        with open("env_heatflux.inc","r+") as f:
             new = f.readlines()
             if self.txtfilename != "":
                 new[61] = "    character(38) :: datafile='"+self.txtfilename+"' ! the data file to open in FILE_OPEN subroutine\n"
@@ -266,7 +266,7 @@ class PageEnvModel(tk.Frame):
     """
 
     def editInc(self, parameters, comments):
-        with open("lake_environment.inc", "r+") as f:
+        with open("env_heatflux.inc", "r+") as f:
             new = f.readlines()
             #names of the parameters that need to be modified
             names = ["oblq","xlat","xlon","gmt","max_dep","basedep","b_area","cdrn","eta","f","alb_slush",
@@ -326,7 +326,7 @@ class PageEnvModel(tk.Frame):
     def computeModel(self):
         # Runs f2py terminal command then (hopefully) terminates (takes a bit)
         subprocess.run(
-            ['f2py', '-c', '-m', 'lakepsm', 'lake_environment.f90'])
+            ['f2py', '-c', '-m', 'lakepsm', 'env_heatflux.f90'])
 
         # imports the wrapper
         import lakepsm
@@ -434,7 +434,7 @@ class PageEnvTimeSeries(tk.Frame):
         
         # determining nspin
         self.nspin = ""
-        with open("lake_environment.inc", "r") as inc:
+        with open("env_heatflux.inc", "r") as inc:
             lines = inc.readlines()
             nspin_line = lines[53] # depends on the .inc file
             idx = 0
@@ -555,7 +555,7 @@ class PageEnvSeasonalCycle(tk.Frame):
 
         # determining nspin
         self.nspin = ""
-        with open("lake_environment.inc", "r") as inc:
+        with open("env_heatflux.inc", "r") as inc:
             lines = inc.readlines()
             nspin_line = lines[53] # depends on the .inc file
             idx = 0
@@ -648,7 +648,7 @@ class PageCarbonate(tk.Frame):
     def run_carbonate_model(self):
         surf_tempr = []
         self.nspin = ""
-        with open("lake_environment.inc", "r") as inc:
+        with open("env_heatflux.inc", "r") as inc:
             lines = inc.readlines()
             nspin_line = lines[53]
             idx = 0
@@ -701,6 +701,7 @@ class PageCarbonate(tk.Frame):
 """
 Page to run GDGT Model and plot data
 """
+
 class PageGDGT(tk.Frame):
     
     def __init__(self, parent, controller):
@@ -729,10 +730,9 @@ class PageGDGT(tk.Frame):
         rowIdx+=1
         tk.Button(self, text="Save Graph Data as .csv", command=self.download_gdgt_data).grid(
             row=rowIdx, column=0, sticky="W")
-        rowIdx+=1
-
+        rowIdx+=3
         # Return to Start Page
-        tk.Button(self, text="Back to start", 
+        tk.Button(self, text="Back to start", font=f, 
                                 command=lambda: controller.show_frame("StartPage")).grid(
                                 row=rowIdx, column=0, sticky="W")
 
@@ -758,7 +758,7 @@ class PageGDGT(tk.Frame):
         self.nspin=""
         with open("lake_environment.inc", "r") as inc:
             lines = inc.readlines()
-            nspin_line = lines[53]
+            nspin_line = lines[69]
             idx = 0
             while nspin_line[idx] != "=":
                 idx+=1
@@ -767,7 +767,8 @@ class PageGDGT(tk.Frame):
                 self.nspin+=nspin_line[idx]
                 idx+=1
             self.nspin=int(self.nspin)
-            # print(nspin)
+
+
         with open("BCC-ERA-Tlake-humid_surf.dat", 'r') as data:
             tempr_yr = []
             for line in data:
@@ -783,24 +784,30 @@ class PageGDGT(tk.Frame):
             for line in data:
                 line_vals = line.split()
                 airtemp_yr.append(line_vals[2])
-            air_tempr.append(airtemp_yr[:-12])
+            air_tempr.append(airtemp_yr)
         air_tempr = np.array(air_tempr[0], dtype = float)
+        #why is the length of gdgt_proxy 0?
 
         self.LST = surf_tempr
         self.MAAT = air_tempr
+        # print(len(self.LST))
+        # print(len(self.MAAT))
         self.beta = 1./50.
         self.gdgt_proxy = gdgt.gdgt_sensor(self.LST,self.MAAT,self.beta,model=self.model.get())
 
     def generate_graph(self):
         self.days = []
-        with open("BCC-ERA-Tlake-humid_surf.dat", "r") as data:
+        with open("ERA_INTERIM_climatology_Tang_2yr.txt", "r") as data:
             line_num = 0
             for line in data:
                 line_vals = line.split()
                 if line_num >= self.nspin * 12:
+                    # print(line_num)
                     self.days.append(line_vals[0])
                 line_num += 1
+
         self.days = [int(float(day)) for day in self.days]
+
         print(len(self.days), len(self.gdgt_proxy))
         self.f.clf()
         self.plt = self.f.add_subplot(111)
@@ -917,7 +924,7 @@ class PageLeafwax(tk.Frame):
     def run_leafwax_model(self):
 
         self.nspin = ""
-        with open("lake_environment.inc", "r") as inc:
+        with open("env_heatflux.inc", "r") as inc:
             lines = inc.readlines()
             nspin_line = lines[53]
             idx = 0
