@@ -7,7 +7,9 @@ import pandas as pd
 import webbrowser
 import sensor_carbonate as carb
 import sensor_leafwax as leafwax
+import lake_archive_bioturb as bio
 from subprocess import Popen, PIPE
+import copy
 
 # Imports for Lake Model
 import numpy as np
@@ -51,7 +53,8 @@ class SampleApp(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-        for F in (StartPage, PageOne, PageEnvTimeSeries, PageEnvSeasonalCycle, PageCarbonate, PageLeafwax):
+        for F in (StartPage, PageOne, PageEnvTimeSeries, PageEnvSeasonalCycle, PageCarbonate, PageLeafwax,
+                  PageBioturbation):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
@@ -115,7 +118,10 @@ class StartPage(tk.Frame):
                             command=lambda: controller.show_frame("PageLeafwax"))
         leafButton.pack(ipadx=30, ipady=3, pady=(5, 5))
 
-
+        # Leads to PageLeafwax
+        bioButton = tk.Button(self, text="Run Bioturbation Model", font=f,
+                               command=lambda: controller.show_frame("PageBioturbation"))
+        bioButton.pack(ipadx=30, ipady=3, pady=(5, 5))
 
 class PageOne(tk.Frame):
 
@@ -594,6 +600,8 @@ class PageCarbonate(tk.Frame):
 
     def run_carbonate_model(self):
         surf_tempr = []
+        self.days = []
+        """
         self.nspin = ""
         with open("heatflux.inc", "r") as inc:
             lines = inc.readlines()
@@ -613,12 +621,29 @@ class PageCarbonate(tk.Frame):
                 tempr_yr.append(line_vals[1])
             surf_tempr.append(tempr_yr[self.nspin*12+2:len(tempr_yr)])
         surf_tempr = np.array(surf_tempr[0], dtype=float)
+        """
+        with open("BCC-ERA-Tlake-humid_surf.dat") as data:
+            tempr_yr = []
+            lines = data.readlines()
+            cur_row = lines[len(lines)-1].split()
+            next_row = lines[len(lines)-2].split()
+            i = 2
+            while int(float(cur_row[0])) > int(float(next_row[0])):
+                tempr_yr.insert(0, cur_row[1])
+                self.days.insert(0, int(float(cur_row[0])))
+                cur_row = copy.copy(next_row)
+                i+=1
+                next_row = lines[len(lines)-i].split()
+            tempr_yr.insert(0, cur_row[1])
+            self.days.insert(0, int(float(cur_row[0])))
+            surf_tempr.append(tempr_yr[:])
+        surf_tempr = np.array(surf_tempr[0], dtype=float)
         self.LST = surf_tempr
         self.d180w = -2
         self.carb_proxy = carb.carb_sensor(self.LST, self.d180w, model=self.model.get())
 
     def generate_graph(self):
-        self.days = []
+        """
         with open("BCC-ERA-Tlake-humid_surf.dat", "r") as data:
             line_num = 0
             for line in data:
@@ -626,6 +651,7 @@ class PageCarbonate(tk.Frame):
                 self.days.append(line_vals[0])
             self.days = self.days[self.nspin * 12 + 2:len(self.days)]
         self.days = [int(float(day)) for day in self.days]
+        """
         self.f.clf()
         self.plt = self.f.add_subplot(111)
         self.plt.set_title(r'SENSOR')
@@ -638,8 +664,8 @@ class PageCarbonate(tk.Frame):
 
     def download_carb_data(self):
         df = pd.DataFrame({"Time":self.days, "Simulated Carbonate Data":self.carb_proxy})
-        path = fd.askdirectory()
-        df.to_csv(path+"/carbonate_timeseries.csv", index=False)
+        export_file_path = fd.asksaveasfilename(defaultextension='.csv')
+        df.to_csv(export_file_path, index=None)
 
 class PageLeafwax(tk.Frame):
     def __init__(self, parent, controller):
@@ -647,7 +673,7 @@ class PageLeafwax(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.controller = controller
         label = tk.Label(
-            self, text="Run Lake Environment Model", font=LARGE_FONT)
+            self, text="Run Leafwax Model", font=LARGE_FONT)
         label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
 
         rowIdx += 3
@@ -776,16 +802,15 @@ class PageLeafwax(tk.Frame):
                     self.days.append(line_vals[0])
                 line_num += 1
         self.days = [int(float(day)) for day in self.days]
-        # TEMPORARY: CUTTING NUMBER OF DAYS SO THAT X AND Y IS SAME SIZE
-        print(len(self.days), len(self.leafwax_proxy))
         self.f.clf()
         self.plt = self.f.add_subplot(111)
         self.plt.set_title(r'SENSOR')
         self.plt.set_xlabel('Time')
         self.plt.set_ylabel('Simulated Leaf Wax Data')
 
-        self.plt.fill_between(self.days,self.Q1,self.Q2)
-        self.plt.scatter(self.days, self.leafwax_proxy, color="#ff6053")
+        self.plt.fill_between(self.days,self.Q1,self.Q2,facecolor='grey',edgecolor='none',alpha=0.20)
+        self.plt.plot(self.days, self.leafwax_proxy, color="#000000", linewidth=3)
+        self.plt.scatter(self.days, self.leafwax_proxy, color="#000000")
         self.canvas = FigureCanvasTkAgg(self.f, self)
         self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
         self.canvas.draw()
@@ -796,6 +821,81 @@ class PageLeafwax(tk.Frame):
         path = fd.askdirectory()
         df.to_csv(path+"/leafwax_timeseries.csv", index=False)
 
+class PageBioturbation(tk.Frame):
+    def __init__(self, parent, controller):
+        rowIdx = 1
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+        label = tk.Label(
+            self, text="Run Bioturbation Model", font=LARGE_FONT)
+        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
+        rowIdx += 3
+        # Instructions for uploading .txt and .inc files
+        tk.Label(self,
+                 text=
+                 """
+                 1) Upload a .csv file with a column "Pseudoproxy" containing pseudoproxy timeseries data. \n
+                 2) Enter parameters for bioturbation\n
+                 3) You cannot leave parameters empty
+                 """, font=f, justify="left"
+                 ).grid(row=rowIdx, columnspan=3, rowspan=3, pady=15)
+        rowIdx += 3
+        tk.Label(self, text="Current File Uploaded:", font=f).grid(
+            row=rowIdx, column=0, sticky="W")
+        self.currentTxtFileLabel = tk.Label(self, text="No file", font=f)
+        self.currentTxtFileLabel.grid(
+            row=rowIdx, column=1, columnspan=2, pady=10, sticky="W")
+        rowIdx += 1
+        tk.Button(self, text="Submit Data", command=self.upload_csv, font=f).grid(
+            row=rowIdx, column=0, sticky="W")
+        rowIdx += 1
+        parameters = ["Start Year:","End Year:", "Mixed Layer Thickness Coefficient:", "Abundance:", "Number of Carriers:"]
+        param_values = []
+        for i in range(rowIdx, rowIdx + 5):
+            tk.Label(self, text=parameters[i - rowIdx], font=f).grid(
+                row=i, column=0, sticky="W")
+            p = tk.Entry(self)
+            p.grid(row=i, column=1, sticky="W")
+            param_values.append(p)
+        rowIdx+=5
+        tk.Button(self, text="Submit Parameters", font=f, command=lambda: self.run_bioturb_model([p.get() for p in param_values])).grid(
+            row=rowIdx, column=0, sticky="W")
+
+    def upload_csv(self):
+        # Open the file choosen by the user
+        self.txtfilename = fd.askopenfilename(filetypes=(('csv files', 'csv'),))
+        self.currentTxtFileLabel.configure(text=basename(self.txtfilename))
+
+    def run_bioturb_model(self, params):
+        for p in params:
+            if not p:
+                tk.messagebox.showerror(title="Run Bioturbation Model", message="Not all parameters were entered.")
+                return
+        params = [int(p) for p in params]
+        if params[0] > params[1]:
+            tk.messagebox.showerror(title="Run Bioturbation Model", message="Start year cannot be greater than end year")
+        self.age = params[1] - params[0]
+        self.mxl = np.ones(self.age)*params[2]
+        print(np.ones(self.age)*params[3])
+        self.abu2 = list(np.ones(self.age)*params[3])[(-(self.age)-1):-1]
+        print(self.abu2)
+        self.numb = params[4]
+        self.iso = pd.read_csv(self.txtfilename)["Pseudoproxy"]
+        self.oriabu, self.bioabu, self.oriiso, self.bioiso = bio.bioturbation(self.abu2, self.iso, self.mxl, self.numb)
+        print(self.oriabu)
+
+        """
+        self.f.clf()
+        self.plt = self.f.add_subplot(111)
+        self.plt.set_title(r'ARCHIVE')
+        self.plt.set_xlabel('Time')
+        self.plt.set_ylabel('Bioturbated Data')
+
+        self.plt.plot(self.days, self.bioiso, color="#000000", linewidth=3)
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+        self.canvas.draw()
+        """
 
 if __name__ == "__main__":
     app = SampleApp()
