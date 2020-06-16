@@ -9,6 +9,7 @@ import webbrowser
 from tkinter import ttk
 import multiprocessing
 import threading
+import copy
 
 # Carbonate sensor
 import sensor_carbonate as carb
@@ -38,6 +39,7 @@ if you want the user to upload something from the same directory as the gui
 then you can use initialdir=os.getcwd() as the first parameter of askopenfilename
 """
 LARGE_FONT = ("Verdana", 26)
+MED_FONT = ("Verdana", 18)
 f = ("Verdana", 12)
 
 def callback(url):
@@ -609,7 +611,7 @@ class PageCarbonate(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.controller = controller
         label = tk.Label(
-            self, text="Run Carbonate Sensor Model", font=LARGE_FONT)
+            self, text="Carbonate Sensor Model", font=LARGE_FONT)
         label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
 
         rowIdx += 3
@@ -618,21 +620,25 @@ class PageCarbonate(tk.Frame):
         self.model.set("ONeil")
         model_names = ["ONeil", "Kim-ONeil", "ErezLuz", "Bemis", "Lynch"]
         for name in model_names:
-            tk.Radiobutton(self, text=name, value=name, variable=self.model).grid(row=rowIdx, column=0, sticky="W")
+            tk.Radiobutton(self, text=name, font=MED_FONT, value=name, variable=self.model).grid(row=rowIdx, column=0, pady=1,
+                         ipadx=20, ipady=5, sticky="W")
             rowIdx += 1
-        tk.Button(self, text="Submit Model", command=self.run_carbonate_model).grid(
-            row=rowIdx, column=0, sticky="W")
+        tk.Button(self, text="Submit Model", font=MED_FONT, command=self.run_carbonate_model).grid(
+            row=rowIdx, column=0, pady=1,
+                         ipadx=20, ipady=5, sticky="W")
         rowIdx += 1
 
-        tk.Button(self, text="Generate Graph of Carbonate Proxy Data", command=self.generate_graph).grid(
-            row=rowIdx, column=0, sticky="W")
+        tk.Button(self, text="Generate Graph of Carbonate Proxy Data", font=MED_FONT, command=self.generate_graph).grid(
+            row=rowIdx, column=0, pady=1,
+                         ipadx=20, ipady=5, sticky="W")
         rowIdx+=1
-        tk.Button(self, text="Save Graph Data as .csv", command=self.download_carb_data).grid(
-            row=rowIdx, column=0, sticky="W")
+        tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_carb_data).grid(
+            row=rowIdx, column=0, pady=1,
+                         ipadx=20, ipady=5, sticky="W")
         rowIdx+=1
 
         # Return to Start Page
-        tk.Button(self, text="Back to start", 
+        tk.Button(self, text="Back to start", font=f,
                                 command=lambda: controller.show_frame("StartPage")).grid(
                                 row=rowIdx, column=0, sticky="W")
 
@@ -650,25 +656,22 @@ class PageCarbonate(tk.Frame):
 
     def run_carbonate_model(self):
         surf_tempr = []
-        self.nspin = ""
-        with open("Malawi.inc", "r") as inc:
-            lines = inc.readlines()
-            nspin_line = lines[62]
-            idx = 0
-            while nspin_line[idx] != "=":
-                idx += 1
-            idx += 1
-            while nspin_line[idx] != ")":
-                self.nspin += nspin_line[idx]
-                idx += 1
-            self.nspin = int(self.nspin)
-            
-        with open("BCC-ERA-Tlake-humid_surf.dat", 'r') as data:
+        self.days = []
+        with open("BCC-ERA-Tlake-humid_surf.dat") as data:
             tempr_yr = []
-            for line in data:
-                line_vals = line.split()
-                tempr_yr.append(line_vals[1])
-            surf_tempr.append(tempr_yr[self.nspin * 12:len(tempr_yr)])
+            lines = data.readlines()
+            cur_row = lines[len(lines)-1].split()
+            next_row = lines[len(lines)-2].split()
+            i = 2
+            while int(float(cur_row[0])) > int(float(next_row[0])):
+                tempr_yr.insert(0, cur_row[1])
+                self.days.insert(0, int(float(cur_row[0])))
+                cur_row = copy.copy(next_row)
+                i+=1
+                next_row = lines[len(lines)-i].split()
+            tempr_yr.insert(0, cur_row[1])
+            self.days.insert(0, int(float(cur_row[0])))
+            surf_tempr.append(tempr_yr[:])
         surf_tempr = np.array(surf_tempr[0], dtype=float)
         self.LST = surf_tempr
         self.d180w = -2
@@ -676,15 +679,6 @@ class PageCarbonate(tk.Frame):
 
 
     def generate_graph(self):
-        self.days = []
-        with open("BCC-ERA-Tlake-humid_surf.dat", "r") as data:
-            line_num = 0
-            for line in data:
-                line_vals = line.split()
-                if line_num >= self.nspin * 12:
-                    self.days.append(line_vals[0])
-                line_num += 1
-        self.days = [int(float(day)) for day in self.days]
         self.f.clf()
         self.plt = self.f.add_subplot(111)
         self.plt.set_title(r'SENSOR')
@@ -697,8 +691,8 @@ class PageCarbonate(tk.Frame):
 
     def download_carb_data(self):
         df = pd.DataFrame({"Time":self.days, "Simulated Carbonate Data":self.carb_proxy})
-        path = fd.askdirectory()
-        df.to_csv(path+"/carbonate_timeseries.csv", index=False)
+        export_file_path = fd.asksaveasfilename(defaultextension='.csv')
+        df.to_csv(export_file_path, index=None)
 
 
 """
@@ -758,27 +752,25 @@ class PageGDGT(tk.Frame):
 
     def run_gdgt_model(self):
         surf_tempr = []
-        self.nspin=""
-        with open("Malawi.inc", "r") as inc:
-            lines = inc.readlines()
-            nspin_line = lines[62]
-            idx = 0
-            while nspin_line[idx] != "=":
-                idx+=1
-            idx+=1
-            while nspin_line[idx] != ")":
-                self.nspin+=nspin_line[idx]
-                idx+=1
-            self.nspin=int(self.nspin)
-            # print(nspin)
-        with open("BCC-ERA-Tlake-humid_surf.dat", 'r') as data:
+        self.days = []
+        with open("BCC-ERA-Tlake-humid_surf.dat") as data:
             tempr_yr = []
-            for line in data:
-                line_vals = line.split()
-                tempr_yr.append(line_vals[1])
-            surf_tempr.append(tempr_yr[self.nspin*12:len(tempr_yr)])
+            lines = data.readlines()
+            cur_row = lines[len(lines)-1].split()
+            next_row = lines[len(lines)-2].split()
+            i = 2
+            while int(float(cur_row[0])) > int(float(next_row[0])):
+                tempr_yr.insert(0, cur_row[1])
+                self.days.insert(0, int(float(cur_row[0])))
+                cur_row = copy.copy(next_row)
+                i+=1
+                next_row = lines[len(lines)-i].split()
+            tempr_yr.insert(0, cur_row[1])
+            self.days.insert(0, int(float(cur_row[0])))
+            surf_tempr.append(tempr_yr[:])
         surf_tempr = np.array(surf_tempr[0], dtype=float)
 
+        # unchanged
         climate_input = 'ERA_INTERIM_climatology_Tang_2yr.txt'
         air_tempr = []
         with open(climate_input, 'r') as data:
@@ -786,7 +778,7 @@ class PageGDGT(tk.Frame):
             for line in data:
                 line_vals = line.split()
                 airtemp_yr.append(line_vals[2])
-            air_tempr.append(airtemp_yr[:-12])
+            air_tempr.append(airtemp_yr)
         air_tempr = np.array(air_tempr[0], dtype = float)
 
         self.LST = surf_tempr
@@ -795,16 +787,6 @@ class PageGDGT(tk.Frame):
         self.gdgt_proxy = gdgt.gdgt_sensor(self.LST,self.MAAT,self.beta,model=self.model.get())
 
     def generate_graph(self):
-        self.days = []
-        with open("BCC-ERA-Tlake-humid_surf.dat", "r") as data:
-            line_num = 0
-            for line in data:
-                line_vals = line.split()
-                if line_num >= self.nspin * 12:
-                    self.days.append(line_vals[0])
-                line_num += 1
-        self.days = [int(float(day)) for day in self.days]
-        print(len(self.days), len(self.gdgt_proxy))
         self.f.clf()
         self.plt = self.f.add_subplot(111)
         self.plt.set_title(r'SENSOR')
@@ -817,8 +799,8 @@ class PageGDGT(tk.Frame):
 
     def download_gdgt_data(self):
         df = pd.DataFrame({"Time":self.days, "Simulated GDGT Data":self.gdgt_proxy})
-        path = fd.askdirectory()
-        df.to_csv(path+"/gdgt_timeseries.csv", index=False)
+        export_file_path = fd.asksaveasfilename(defaultextension='.csv')
+        df.to_csv(export_file_path, index=None)
 
 """
 Page to run leafwax sensor model and plot data
