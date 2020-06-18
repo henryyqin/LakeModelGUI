@@ -259,49 +259,39 @@ class PageOne(tk.Frame):
     """
     Checks whether a string represents a valid signed/unsigned floating-point number
     """
+
     def check_float(self, str):
-        nums = str.partition(".")
-        for num in nums:
-            if num != "" and num != "." and (not (num.isdigit())) and num[0] != "-" and num[0] != "+":
-                return False
-            if num.count("-") > 1 or num.count("+") > 1:
-                return False
-        return True
+        try:
+            float(str)
+            return True
+        except:
+            return False
 
+    """
+    Returns False if any parameter value is invalid
+    """
 
+    def validate_params(self, parameters):
+        for i in range(len(parameters)):
+            if (i <= 18 or i == 24) and (not parameters[i] == ""):
+                if not self.check_float(parameters[i]):
+                    tk.messagebox.showerror(title="Run Lake Model", message="Non-numerical value was entered as a value"
+                                                                            "for a numerical parameter.")
+                    return
+            # input is not .false. or .true. for a boolean entry
+            elif (i > 18 and i < 24) and (
+            not (parameters[i] == ".false." or parameters[i] == ".true." or parameters[i] == "")):
+                print(parameters[i], i)
+                tk.messagebox.showerror(title="Run Lake Model", message="Neither .true. or .false. was entered for a"
+                                                                        " boolean parameter.")
+                return False
     """
     Edits the parameters in the .inc file
     """
 
     def editInc(self, parameters, comments):
-        for i in range(len(parameters)):
-            if (i <=18 or i == 24) and (not parameters[i]==""):
-                #input has more than 1 decimal point
-                if parameters[i].count(".") > 1 and parameters[i].count("e") == 0:
-                    tk.messagebox.showerror(title="Run Lake Model", message="Non-numerical value was entered as a value"
-                                                                        "for a numerical parameter.")
-                    return
-                #input is not a valid floating-point number
-                if not self.check_float(parameters[i]) and parameters[i].count("e") == 0:
-                    tk.messagebox.showerror(title="Run Lake Model",
-                                                message="Non-numerical value was entered as a value"
-                                                        " for a numerical parameter.")
-                    return
-                #input is not correctly expressed in scientific notation
-                nums = parameters[i].partition("e")
-                for num in nums:
-                    if num != "" and num != "e" and (not self.check_float(num)):
-                        tk.messagebox.showerror(title="Run Lake Model",
-                                                message="Non-numerical value was entered as a value"
-                                                        " for a numerical parameter.")
-                        return
-            #input is not .false. or .true. for a boolean entry
-            elif (i > 18 and i < 24) and (not (parameters[i] == ".false." or parameters[i] == ".true." or parameters[i] == "")):
-                print(parameters[i], i)
-                tk.messagebox.showerror(title="Run Lake Model", message = "Neither .true. or .false. was entered for a"
-                                                                          " boolean parameter.")
-                return
-
+        if not self.validate_params(parameters):
+            return
         with open("heatflux.inc", "r+") as f:
             new = f.readlines()
             # names of the parameters that need to be modified
@@ -642,27 +632,6 @@ class PageCarbonate(tk.Frame):
     def run_carbonate_model(self):
         surf_tempr = []
         self.days = []
-        """
-        self.nspin = ""
-        with open("heatflux.inc", "r") as inc:
-            lines = inc.readlines()
-            nspin_line = lines[69]
-            idx = 0
-            while nspin_line[idx] != "=":
-                idx += 1
-            idx += 1
-            while nspin_line[idx] != ")":
-                self.nspin += nspin_line[idx]
-                idx += 1
-            self.nspin = int(self.nspin)
-        with open("BCC-ERA-Tlake-humid_surf.dat", 'r') as data:
-            tempr_yr = []
-            for line in data:
-                line_vals = line.split()
-                tempr_yr.append(line_vals[1])
-            surf_tempr.append(tempr_yr[self.nspin*12+2:len(tempr_yr)])
-        surf_tempr = np.array(surf_tempr[0], dtype=float)
-        """
         with open("ERA-HIST-Tlake_surf.dat") as data:
             tempr_yr = []
             lines = data.readlines()
@@ -684,15 +653,6 @@ class PageCarbonate(tk.Frame):
         self.carb_proxy = carb.carb_sensor(self.LST, self.d180w, model=self.model.get())
 
     def generate_graph(self):
-        """
-        with open("BCC-ERA-Tlake-humid_surf.dat", "r") as data:
-            line_num = 0
-            for line in data:
-                line_vals = line.split()
-                self.days.append(line_vals[0])
-            self.days = self.days[self.nspin * 12 + 2:len(self.days)]
-        self.days = [int(float(day)) for day in self.days]
-        """
         self.f.clf()
         self.plt = self.f.add_subplot(111)
         self.plt.set_title(r'SENSOR')
@@ -916,19 +876,51 @@ class PageBioturbation(tk.Frame):
         self.txtfilename = fd.askopenfilename(filetypes=(('csv files', 'csv'),))
         self.currentTxtFileLabel.configure(text=basename(self.txtfilename))
 
-    def run_bioturb_model(self, params):
+    """
+     Checks whether a string represents a valid signed/unsigned floating-point number
+     """
+
+    def check_float(self, str):
+        try:
+            float(str)
+            return True
+        except:
+            return False
+
+    """
+    Returns false is any parameter value is invalid
+    """
+    def validate_params(self, params):
         for p in params:
             if not p:
                 tk.messagebox.showerror(title="Run Bioturbation Model", message="Not all parameters were entered.")
-                return
-        params = [int(p) for p in params]
-        if params[0] > params[1]:
-            tk.messagebox.showerror(title="Run Bioturbation Model", message="Start year cannot be greater than end year")
-        self.age = params[1] - params[0]
-        self.mxl = np.ones(self.age)*params[2]
-        self.abu = np.ones(self.age)*params[3]
-        self.numb = params[4]
-        pseudoproxy = pd.read_csv(self.txtfilename)["Pseudoproxy"]
+                return False
+        if not (params[0].isdigit() and params[1].isdigit()):
+            tk.messagebox.showerror(title="Run Bioturbation Model",
+                                    message="Years must be positive integers")
+            return False
+        for i in range(2,5):
+            if not self.check_float(params[i]):
+                tk.messagebox.showerror(title="Run Bioturbation Model", message=str(params[i])+" is not a proper value")
+                return False
+        #convert parameters to integers for further validation
+        params_copy = copy.deepcopy(params)
+        params_copy = [float(p) for p in params_copy]
+        if params_copy[0] >= params_copy[1]:
+            tk.messagebox.showerror(title="Run Bioturbation Model",
+                                    message="Start year cannot be greater than or equal to end year")
+            return False
+        if self.days[-1] != params_copy[1]-params_copy[0]:
+            tk.messagebox.showerror(title="Run Bioturbation Model", message="The time interval "+params[0]+"-"+
+                                    params[1]+" is not the same length as the time interval within the uploaded data")
+            return False
+
+    def run_bioturb_model(self, params):
+        #check whether csv file can be opened
+        try:
+            pseudoproxy = pd.read_csv(self.txtfilename)["Pseudoproxy"]
+        except:
+            tk.messagebox.showerror(title="Run Bioturbation Model", message="Error with reading csv file")
         self.days = []
         self.iso = []
         year = []
@@ -938,9 +930,17 @@ class PageBioturbation(tk.Frame):
                 self.iso.append(mean(year))
                 self.days.append((i+1)/12)
                 year.clear()
+        if not self.validate_params(params):
+            return
+        self.age = int(params[1]) - int(params[0])
+        self.mxl = np.ones(self.age) * float(params[2])
+        self.abu = np.ones(self.age) * float(params[3])
+        self.numb = float(params[4])
 
+        #Run the bioturbation model
         self.oriabu, self.bioabu, self.oriiso, self.bioiso = bio.bioturbation(self.abu, self.iso, self.mxl, self.numb)
 
+        #Plot the bioturbation model
         self.f.clf()
         self.plt = self.f.add_subplot(111)
         self.plt.set_title(r'ARCHIVE')
