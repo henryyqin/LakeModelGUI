@@ -9,6 +9,7 @@ import webbrowser
 from tkinter import ttk
 import multiprocessing
 import threading
+import copy
 
 # Carbonate sensor
 import sensor_carbonate as carb
@@ -38,6 +39,7 @@ if you want the user to upload something from the same directory as the gui
 then you can use initialdir=os.getcwd() as the first parameter of askopenfilename
 """
 LARGE_FONT = ("Verdana", 26)
+MED_FONT = ("Verdana", 18)
 f = ("Verdana", 12)
 
 def callback(url):
@@ -349,7 +351,7 @@ class PageEnvModel(tk.Frame):
     Downloads 'surface_output.dat' as a CSV to the user's desired location
     """
     def download_csv(self):
-        read_file = pd.read_csv("surface_output.dat")
+        read_file = pd.read_csv("ERA-HIST-Tlake_surf.dat")
         export_file_path = fd.asksaveasfilename(defaultextension='.csv')
         read_file.to_csv(export_file_path, index=None)
 
@@ -373,45 +375,73 @@ class PageEnvTimeSeries(tk.Frame):
         self.canvas = FigureCanvasTkAgg(self.f, self)
         self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
         self.plt.set_title(r'Time Series', fontsize=12)
-        self.plt.set_xlabel('Time')
+        self.plt.set_xlabel('Days')
         self.plt.set_ylabel('Lake Surface Temperature')
-
-        # Graph button for each variable
+ 
 
         # Lake Surface Temperature
         LSTButton = tk.Button(self, text="Graph Surface Temperature", font=f, 
-                        command=lambda : self.generate_env_time_series(1, 'Lake Surface Temperature (\N{DEGREE SIGN}C)')) # 2nd column
-        LSTButton.grid(row=rowIdx, column=1, pady=1,
-                         ipadx=30, ipady=10, sticky="W")
+                        command=lambda : self.generate_env_time_series(1, 'Surface Temperature')) # 2nd column
+        LSTButton.grid(row=rowIdx, column=1, pady=5,
+                         ipadx=25, ipady=5, sticky="W")
         rowIdx+=1
 
         # Mixing Depth
         MDButton = tk.Button(self, text="Graph Mixing Depth", font=f, 
-                        command=lambda : self.generate_env_time_series(2, 'Mixing Depth (m)')) # 3rd column
-        MDButton.grid(row=rowIdx, column=1, pady=1,
-                         ipadx=30, ipady=10, sticky="W")
+                        command=lambda : self.generate_env_time_series(2, 'Mixing Depth')) # 3rd column
+        MDButton.grid(row=rowIdx, column=1, pady=5,
+                         ipadx=25, ipady=5, sticky="W")
         rowIdx+=1
 
         # Evaporation Rate
-        ERButton = tk.Button(self, text="Graph Evaporation Rate", font=f, 
-                        command=lambda : self.generate_env_time_series(3, 'Evaporation Rate (mm/day)')) # 4th column
-        ERButton.grid(row=rowIdx, column=1, pady=1,
-                         ipadx=30, ipady=10, sticky="W")
+        ERButton = tk.Button(self, text="Graph Evaporation", font=f, 
+                        command=lambda : self.generate_env_time_series(3, 'Evaporation')) # 4th column
+        ERButton.grid(row=rowIdx, column=1, pady=5,
+                         ipadx=25, ipady=5, sticky="W")
         rowIdx+=1
 
         # Latent Heat Flux
-        LHFButton = tk.Button(self, text="Graph Latent Heat Flux", font=f, 
-                        command=lambda : self.generate_env_time_series(3, 'Latent Heat Flux (W/$m^2$)')) # 4th column
-        LHFButton.grid(row=rowIdx, column=1, pady=1,
-                         ipadx=30, ipady=10, sticky="W")
+        LHFButton = tk.Button(self, text="Graph Latent Heat (QEW)", font=f, 
+                        command=lambda : self.generate_env_time_series(4, 'Latent Heat Flux (QEW)')) # 5th column
+        LHFButton.grid(row=rowIdx, column=1, pady=5,
+                         ipadx=25, ipady=5, sticky="W")
         rowIdx+=1
 
         # Sensible Heat Flux
-        SHFButton = tk.Button(self, text="Graph Sensible Heat Flux", font=f, 
-                        command=lambda : self.generate_env_time_series(3, 'Sensible Heat Flux (W/$m^2$)')) # 4th column
-        SHFButton.grid(row=rowIdx, column=1, pady=1,
-                         ipadx=30, ipady=10, sticky="W")
+        SHFButton = tk.Button(self, text="Graph Sensible Heat (QHW)", font=f, 
+                        command=lambda : self.generate_env_time_series(5, 'Sensible Heat (QHW)')) # 6th column
+        SHFButton.grid(row=rowIdx, column=1, pady=5,
+                         ipadx=25, ipady=5, sticky="W")
+        rowIdx+=1
+
+        # Downwelling Shortwave Radiation (SWW)
+        SWWButton = tk.Button(self, text="Graph Downwelling Shortwave Radiation (SWW)", font=f, 
+                        command=lambda : self.generate_env_time_series(6, 'Downwelling Shortwave Radiation (SWW)')) # 6th column
+        SWWButton.grid(row=rowIdx, column=1, pady=5,
+                         ipadx=25, ipady=5, sticky="W")
+        rowIdx+=1
+
+        # Upwelling Longwave Raditation (LUW)
+        LUWButton = tk.Button(self, text="Graph Upwelling Longwave Raditation (LUW)", font=f, 
+                        command=lambda : self.generate_env_time_series(7, 'Upwelling Longwave Raditation (LUW)')) # 6th column
+        LUWButton.grid(row=rowIdx, column=1, pady=5,
+                         ipadx=25, ipady=5, sticky="W")
+        rowIdx+=1
+
+        # Max Mixing Depth
+        MMDButton = tk.Button(self, text="Graph Max Mixing Depth", font=f, 
+                        command=lambda : self.generate_env_time_series(8, 'Max Mixing Depth')) # 6th column
+        MMDButton.grid(row=rowIdx, column=1, pady=5,
+                         ipadx=25, ipady=5, sticky="W")
+        rowIdx+=1
+
+        # Lake Depth
+        LDButton = tk.Button(self, text="Graph Lake Depth", font=f, 
+                        command=lambda : self.generate_env_time_series(9, 'Lake Depth')) # 6th column
+        LDButton.grid(row=rowIdx, column=1, pady=5,
+                         ipadx=25, ipady=5, sticky="W")
         rowIdx+=10
+        
 
         # Return to Start Page
         homeButton = tk.Button(self, text="Back to start page", font=f,
@@ -430,49 +460,41 @@ class PageEnvTimeSeries(tk.Frame):
      - Nothing, just generates a graph on the page
     """
     # extracts data from .dat file and plots data based on given column number
+    # only takes data after the lake has reached equilibriam, e.g. when the days stop repeating
     def generate_env_time_series(self, column, varstring):
         self.days = [] # x-axis
         self.yaxis = [] # y-axis
-        
-        # determining nspin
-        self.nspin = ""
-        with open("Malawi.inc", "r") as inc:
-            lines = inc.readlines()
-            nspin_line = lines[62] # depends on the .inc file
-            idx = 0
-            while nspin_line[idx] != "=":
-                idx += 1
-            idx += 1
-            while nspin_line[idx] != ")":
-                self.nspin += nspin_line[idx]
-                idx += 1
-            self.nspin = int(self.nspin)
+
+        with open("ERA-HIST-Tlake_surf.dat") as data:
+            lines = data.readlines()
+            cur_row = lines[len(lines)-1].split()
+            next_row = lines[len(lines)-2].split()
+            i = 2
+            while int(float(cur_row[0])) > int(float(next_row[0])):
+                self.yaxis.insert(0, float(cur_row[column]))
+                self.days.insert(0, int(float(cur_row[0])))
+                cur_row = copy.copy(next_row)
+                i+=1
+                next_row = lines[len(lines)-i].split()
+            self.yaxis.insert(0, float(cur_row[column]))
+            self.days.insert(0, int(float(cur_row[0])))
 
 
-        # generate data (Using BCC-ERA for now)
-        with open("BCC-ERA-Tlake-humid_surf.dat", "r") as data:
-            line_num = 0
-            for line in data:
-                
-                line_vals = line.split()
-                if line_num >= self.nspin * 12:
-                    self.days.append(line_vals[0]) # ignore nspin
-                    self.yaxis.append(line_vals[column])
-                line_num += 1
 
-        self.days = [int(float(day)) for day in self.days] # convert days to ints
-        self.yaxis = [float(value) for value in self.yaxis] # convert yaxis to floats
 
         self.f.clf()
         self.plt = self.f.add_subplot(111)
+        self.plt.ticklabel_format(useOffset=False) # this is to disable matplotlib offset
         self.plt.set_title(r'' + varstring + ' over Time')
-        self.plt.set_xlabel('Time (Day of the Year)')
+        self.plt.set_xlabel('Days')
         self.plt.set_ylabel(varstring)
         self.plt.scatter(self.days, self.yaxis, color="#ff6053")
         self.canvas = FigureCanvasTkAgg(self.f, self)
         self.canvas.get_tk_widget().grid(
             row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
         self.canvas.draw()
+
+        
 
 """
 Page to plot seasonal cycle
@@ -491,6 +513,7 @@ class PageEnvSeasonalCycle(tk.Frame):
         # Empty graph, default
         self.f = Figure(figsize=(10, 5), dpi=100)
         self.plt = self.f.add_subplot(111)
+        self.plt.ticklabel_format(useOffset=False) # this is to disable matplotlib offset
         self.canvas = FigureCanvasTkAgg(self.f, self)
         self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
         self.plt.set_title(r'Seasonal Cycle', fontsize=12)
@@ -501,37 +524,65 @@ class PageEnvSeasonalCycle(tk.Frame):
 
         # Lake Surface Temperature
         LSTButton = tk.Button(self, text="Graph Surface Temperature", font=f, 
-                        command=lambda : self.generate_env_seasonal_cycle(1, 'Lake Surface Temperature (\N{DEGREE SIGN}C)')) # 2nd column
-        LSTButton.grid(row=rowIdx, column=1, pady=1,
-                         ipadx=30, ipady=10, sticky="W")
+                        command=lambda : self.generate_env_seasonal_cycle(1, 'Surface Temperature')) # 2nd column
+        LSTButton.grid(row=rowIdx, column=1, pady=5,
+                         ipadx=25, ipady=5, sticky="W")
         rowIdx+=1
 
         # Mixing Depth
         MDButton = tk.Button(self, text="Graph Mixing Depth", font=f, 
-                        command=lambda : self.generate_env_seasonal_cycle(2, 'Mixing Depth (m)')) # 3rd column
-        MDButton.grid(row=rowIdx, column=1, pady=1,
-                         ipadx=30, ipady=10, sticky="W")
+                        command=lambda : self.generate_env_seasonal_cycle(2, 'Mixing Depth')) # 3rd column
+        MDButton.grid(row=rowIdx, column=1, pady=5,
+                         ipadx=25, ipady=5, sticky="W")
         rowIdx+=1
 
         # Evaporation Rate
-        ERButton = tk.Button(self, text="Graph Evaporation Rate", font=f, 
-                        command=lambda : self.generate_env_seasonal_cycle(3, 'Evaporation Rate (mm/day)')) # 4th column
-        ERButton.grid(row=rowIdx, column=1, pady=1,
-                         ipadx=30, ipady=10, sticky="W")
+        ERButton = tk.Button(self, text="Graph Evaporation", font=f, 
+                        command=lambda : self.generate_env_seasonal_cycle(3, 'Evaporation')) # 4th column
+        ERButton.grid(row=rowIdx, column=1, pady=5,
+                         ipadx=25, ipady=5, sticky="W")
         rowIdx+=1
 
         # Latent Heat Flux
-        LHFButton = tk.Button(self, text="Graph Latent Heat Flux", font=f, 
-                        command=lambda : self.generate_env_seasonal_cycle(3, 'Latent Heat Flux (W/$m^2$)')) # 4th column
-        LHFButton.grid(row=rowIdx, column=1, pady=1,
-                         ipadx=30, ipady=10, sticky="W")
+        LHFButton = tk.Button(self, text="Graph Latent Heat (QEW)", font=f, 
+                        command=lambda : self.generate_env_seasonal_cycle(4, 'Latent Heat Flux (QEW)')) # 5th column
+        LHFButton.grid(row=rowIdx, column=1, pady=5,
+                         ipadx=25, ipady=5, sticky="W")
         rowIdx+=1
 
         # Sensible Heat Flux
-        SHFButton = tk.Button(self, text="Graph Sensible Heat Flux", font=f, 
-                        command=lambda : self.generate_env_seasonal_cycle(3, 'Sensible Heat Flux (W/$m^2$)')) # 4th column
-        SHFButton.grid(row=rowIdx, column=1, pady=1,
-                         ipadx=30, ipady=10, sticky="W")
+        SHFButton = tk.Button(self, text="Graph Sensible Heat (QHW)", font=f, 
+                        command=lambda : self.generate_env_seasonal_cycle(5, 'Sensible Heat (QHW)')) # 6th column
+        SHFButton.grid(row=rowIdx, column=1, pady=5,
+                         ipadx=25, ipady=5, sticky="W")
+        rowIdx+=1
+
+        # Downwelling Shortwave Radiation (SWW)
+        SWWButton = tk.Button(self, text="Graph Downwelling Shortwave Radiation (SWW)", font=f, 
+                        command=lambda : self.generate_env_seasonal_cycle(6, 'Downwelling Shortwave Radiation (SWW)')) # 6th column
+        SWWButton.grid(row=rowIdx, column=1, pady=5,
+                         ipadx=25, ipady=5, sticky="W")
+        rowIdx+=1
+
+        # Upwelling Longwave Raditation (LUW)
+        LUWButton = tk.Button(self, text="Graph Upwelling Longwave Raditation (LUW)", font=f, 
+                        command=lambda : self.generate_env_seasonal_cycle(7, 'Upwelling Longwave Raditation (LUW)')) # 6th column
+        LUWButton.grid(row=rowIdx, column=1, pady=5,
+                         ipadx=25, ipady=5, sticky="W")
+        rowIdx+=1
+
+        # Max Mixing Depth
+        MMDButton = tk.Button(self, text="Graph Max Mixing Depth", font=f, 
+                        command=lambda : self.generate_env_seasonal_cycle(8, 'Max Mixing Depth')) # 6th column
+        MMDButton.grid(row=rowIdx, column=1, pady=5,
+                         ipadx=25, ipady=5, sticky="W")
+        rowIdx+=1
+
+        # Lake Depth
+        LDButton = tk.Button(self, text="Graph Lake Depth", font=f, 
+                        command=lambda : self.generate_env_seasonal_cycle(9, 'Lake Depth')) # 6th column
+        LDButton.grid(row=rowIdx, column=1, pady=5,
+                         ipadx=25, ipady=5, sticky="W")
         rowIdx+=10
 
         # Return to Start Page
@@ -553,47 +604,48 @@ class PageEnvSeasonalCycle(tk.Frame):
     # Treating 375 as part of the year for now
     # Treating everything >375 to be 15, 45, etc.
     def generate_env_seasonal_cycle(self, column, varstring):
-        self.xaxis = [15, 45, 75, 105, 135, 165, 195, 225, 255, 285, 315, 345, 375] # x-axis
-        self.ydict = {} # dict to list all y of an x as an array, to be meaned later
+        self.days = [] # x-axis
+        self.yaxis = [] # y-axis
 
-        # determining nspin
-        self.nspin = ""
-        with open("Malawi.inc", "r") as inc:
-            lines = inc.readlines()
-            nspin_line = lines[62] # depends on the .inc file
-            idx = 0
-            while nspin_line[idx] != "=":
-                idx += 1
-            idx += 1
-            while nspin_line[idx] != ")":
-                self.nspin += nspin_line[idx]
-                idx += 1
-            self.nspin = int(self.nspin)
+        with open("ERA-HIST-Tlake_surf.dat") as data:
+            lines = data.readlines()
+            cur_row = lines[len(lines)-1].split()
+            next_row = lines[len(lines)-2].split()
+            i = 2
+            while int(float(cur_row[0])) > int(float(next_row[0])):
+                self.yaxis.insert(0, float(cur_row[column]))
+                self.days.insert(0, int(float(cur_row[0])))
+                cur_row = copy.copy(next_row)
+                i+=1
+                next_row = lines[len(lines)-i].split()
+            self.yaxis.insert(0, float(cur_row[column]))
+            self.days.insert(0, int(float(cur_row[0])))
 
-        # generate data (Using BCC-ERA for now)
-        with open("BCC-ERA-Tlake-humid_surf.dat", "r") as data:
-            line_num = 0
-            for line in data:
-                line_vals = line.split() # convert each line into a list of floats
-                if line_num >= self.nspin * 12:
-                    xval = int(float(line_vals[0]) % 405)
-                    if xval in self.ydict: # if xval is already a key in ydict
-                        self.ydict[xval].append(float(line_vals[column])) # update y array with desired value
-                    else: # xval not a key in ydict yet
-                        self.ydict[xval] = []
-                line_num += 1
+        # At this point, self.days and self.yaxis are identical to the ones in envtimeseries
+
+        self.ydict = {} # dictionary to store the y values for each day from 15 to 375
+        for day in self.days: # 15, 45, ...
+            # if the day is not a key, then make an empty list
+            if day % 390 not in self.ydict:
+                self.ydict[day % 390] = []
+            # otherwise append to that list
+            else:
+                self.ydict[day % 390].append(self.yaxis[int((day - 15)/30)]) # (day - 15)/30 gets the correct index
+
 
         # After yval array is formed for each xval, generate the axtual yaxis data
-        self.yaxis = [] # actual plotting data for y
-        for xval in range(15, 376, 30): # count from 15 to 375 by 30's
-            self.yaxis.append(mean(self.ydict[xval])) # mean the yvals for each xval and append it to yaxis
+        self.seasonal_yaxis = [] # actual plotting data for y
+        self.seasonal_days = range(15, 376, 30) # actual plotting data for x, count from 15 to 375 by 30's
+        for day in self.seasonal_days:
+            self.seasonal_yaxis.append(mean(self.ydict[day])) # mean the values of each day
 
         self.f.clf()
         self.plt = self.f.add_subplot(111)
+        self.plt.ticklabel_format(useOffset=False) # this is to disable matplotlib offset
         self.plt.set_title(r'' + varstring + ' Seasonal Cycle')
         self.plt.set_xlabel('Day of the Year')
         self.plt.set_ylabel('Average ' + varstring)
-        self.plt.scatter(self.xaxis, self.yaxis, color="#ff6053")
+        self.plt.scatter(self.seasonal_days, self.seasonal_yaxis, color="#ff6053")
         self.canvas = FigureCanvasTkAgg(self.f, self)
         self.canvas.get_tk_widget().grid(
             row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
@@ -609,7 +661,7 @@ class PageCarbonate(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.controller = controller
         label = tk.Label(
-            self, text="Run Carbonate Sensor Model", font=LARGE_FONT)
+            self, text="Carbonate Sensor Model", font=LARGE_FONT)
         label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
 
         rowIdx += 3
@@ -618,21 +670,25 @@ class PageCarbonate(tk.Frame):
         self.model.set("ONeil")
         model_names = ["ONeil", "Kim-ONeil", "ErezLuz", "Bemis", "Lynch"]
         for name in model_names:
-            tk.Radiobutton(self, text=name, value=name, variable=self.model).grid(row=rowIdx, column=0, sticky="W")
+            tk.Radiobutton(self, text=name, font=MED_FONT, value=name, variable=self.model).grid(row=rowIdx, column=0, pady=1,
+                         ipadx=20, ipady=5, sticky="W")
             rowIdx += 1
-        tk.Button(self, text="Submit Model", command=self.run_carbonate_model).grid(
-            row=rowIdx, column=0, sticky="W")
+        tk.Button(self, text="Submit Model", font=MED_FONT, command=self.run_carbonate_model).grid(
+            row=rowIdx, column=0, pady=1,
+                         ipadx=20, ipady=5, sticky="W")
         rowIdx += 1
 
-        tk.Button(self, text="Generate Graph of Carbonate Proxy Data", command=self.generate_graph).grid(
-            row=rowIdx, column=0, sticky="W")
+        tk.Button(self, text="Generate Graph of Carbonate Proxy Data", font=MED_FONT, command=self.generate_graph).grid(
+            row=rowIdx, column=0, pady=1,
+                         ipadx=20, ipady=5, sticky="W")
         rowIdx+=1
-        tk.Button(self, text="Save Graph Data as .csv", command=self.download_carb_data).grid(
-            row=rowIdx, column=0, sticky="W")
+        tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_carb_data).grid(
+            row=rowIdx, column=0, pady=1,
+                         ipadx=20, ipady=5, sticky="W")
         rowIdx+=1
 
         # Return to Start Page
-        tk.Button(self, text="Back to start", 
+        tk.Button(self, text="Back to start", font=f,
                                 command=lambda: controller.show_frame("StartPage")).grid(
                                 row=rowIdx, column=0, sticky="W")
 
@@ -650,25 +706,22 @@ class PageCarbonate(tk.Frame):
 
     def run_carbonate_model(self):
         surf_tempr = []
-        self.nspin = ""
-        with open("Malawi.inc", "r") as inc:
-            lines = inc.readlines()
-            nspin_line = lines[62]
-            idx = 0
-            while nspin_line[idx] != "=":
-                idx += 1
-            idx += 1
-            while nspin_line[idx] != ")":
-                self.nspin += nspin_line[idx]
-                idx += 1
-            self.nspin = int(self.nspin)
-            
-        with open("BCC-ERA-Tlake-humid_surf.dat", 'r') as data:
+        self.days = []
+        with open("ERA-HIST-Tlake_surf.dat") as data:
             tempr_yr = []
-            for line in data:
-                line_vals = line.split()
-                tempr_yr.append(line_vals[1])
-            surf_tempr.append(tempr_yr[self.nspin * 12:len(tempr_yr)])
+            lines = data.readlines()
+            cur_row = lines[len(lines)-1].split()
+            next_row = lines[len(lines)-2].split()
+            i = 2
+            while int(float(cur_row[0])) > int(float(next_row[0])):
+                tempr_yr.insert(0, cur_row[1])
+                self.days.insert(0, int(float(cur_row[0])))
+                cur_row = copy.copy(next_row)
+                i+=1
+                next_row = lines[len(lines)-i].split()
+            tempr_yr.insert(0, cur_row[1])
+            self.days.insert(0, int(float(cur_row[0])))
+            surf_tempr.append(tempr_yr[:])
         surf_tempr = np.array(surf_tempr[0], dtype=float)
         self.LST = surf_tempr
         self.d180w = -2
@@ -676,15 +729,6 @@ class PageCarbonate(tk.Frame):
 
 
     def generate_graph(self):
-        self.days = []
-        with open("BCC-ERA-Tlake-humid_surf.dat", "r") as data:
-            line_num = 0
-            for line in data:
-                line_vals = line.split()
-                if line_num >= self.nspin * 12:
-                    self.days.append(line_vals[0])
-                line_num += 1
-        self.days = [int(float(day)) for day in self.days]
         self.f.clf()
         self.plt = self.f.add_subplot(111)
         self.plt.set_title(r'SENSOR')
@@ -697,8 +741,8 @@ class PageCarbonate(tk.Frame):
 
     def download_carb_data(self):
         df = pd.DataFrame({"Time":self.days, "Simulated Carbonate Data":self.carb_proxy})
-        path = fd.askdirectory()
-        df.to_csv(path+"/carbonate_timeseries.csv", index=False)
+        export_file_path = fd.asksaveasfilename(defaultextension='.csv')
+        df.to_csv(export_file_path, index=None)
 
 
 """
@@ -758,27 +802,25 @@ class PageGDGT(tk.Frame):
 
     def run_gdgt_model(self):
         surf_tempr = []
-        self.nspin=""
-        with open("Malawi.inc", "r") as inc:
-            lines = inc.readlines()
-            nspin_line = lines[62]
-            idx = 0
-            while nspin_line[idx] != "=":
-                idx+=1
-            idx+=1
-            while nspin_line[idx] != ")":
-                self.nspin+=nspin_line[idx]
-                idx+=1
-            self.nspin=int(self.nspin)
-            # print(nspin)
-        with open("BCC-ERA-Tlake-humid_surf.dat", 'r') as data:
+        self.days = []
+        with open("ERA-HIST-Tlake_surf.dat") as data:
             tempr_yr = []
-            for line in data:
-                line_vals = line.split()
-                tempr_yr.append(line_vals[1])
-            surf_tempr.append(tempr_yr[self.nspin*12:len(tempr_yr)])
+            lines = data.readlines()
+            cur_row = lines[len(lines)-1].split()
+            next_row = lines[len(lines)-2].split()
+            i = 2
+            while int(float(cur_row[0])) > int(float(next_row[0])):
+                tempr_yr.insert(0, cur_row[1])
+                self.days.insert(0, int(float(cur_row[0])))
+                cur_row = copy.copy(next_row)
+                i+=1
+                next_row = lines[len(lines)-i].split()
+            tempr_yr.insert(0, cur_row[1])
+            self.days.insert(0, int(float(cur_row[0])))
+            surf_tempr.append(tempr_yr[:])
         surf_tempr = np.array(surf_tempr[0], dtype=float)
 
+        # unchanged
         climate_input = 'ERA_INTERIM_climatology_Tang_2yr.txt'
         air_tempr = []
         with open(climate_input, 'r') as data:
@@ -786,7 +828,7 @@ class PageGDGT(tk.Frame):
             for line in data:
                 line_vals = line.split()
                 airtemp_yr.append(line_vals[2])
-            air_tempr.append(airtemp_yr[:-12])
+            air_tempr.append(airtemp_yr)
         air_tempr = np.array(air_tempr[0], dtype = float)
 
         self.LST = surf_tempr
@@ -795,16 +837,6 @@ class PageGDGT(tk.Frame):
         self.gdgt_proxy = gdgt.gdgt_sensor(self.LST,self.MAAT,self.beta,model=self.model.get())
 
     def generate_graph(self):
-        self.days = []
-        with open("BCC-ERA-Tlake-humid_surf.dat", "r") as data:
-            line_num = 0
-            for line in data:
-                line_vals = line.split()
-                if line_num >= self.nspin * 12:
-                    self.days.append(line_vals[0])
-                line_num += 1
-        self.days = [int(float(day)) for day in self.days]
-        print(len(self.days), len(self.gdgt_proxy))
         self.f.clf()
         self.plt = self.f.add_subplot(111)
         self.plt.set_title(r'SENSOR')
@@ -817,8 +849,8 @@ class PageGDGT(tk.Frame):
 
     def download_gdgt_data(self):
         df = pd.DataFrame({"Time":self.days, "Simulated GDGT Data":self.gdgt_proxy})
-        path = fd.askdirectory()
-        df.to_csv(path+"/gdgt_timeseries.csv", index=False)
+        export_file_path = fd.asksaveasfilename(defaultextension='.csv')
+        df.to_csv(export_file_path, index=None)
 
 """
 Page to run leafwax sensor model and plot data
@@ -951,7 +983,7 @@ class PageLeafwax(tk.Frame):
 
     def generate_graph(self):
         self.days = []
-        with open("BCC-ERA-Tlake-humid_surf.dat", "r") as data:
+        with open("ERA-HIST-Tlake_surf.dat", "r") as data:
             line_num = 0
             for line in data:
                 line_vals = line.split()
