@@ -257,10 +257,51 @@ class PageOne(tk.Frame):
             f.close()
 
     """
+    Checks whether a string represents a valid signed/unsigned floating-point number
+    """
+    def check_float(self, str):
+        nums = str.partition(".")
+        for num in nums:
+            if num != "" and num != "." and (not (num.isdigit())) and num[0] != "-" and num[0] != "+":
+                return False
+            if num.count("-") > 1 or num.count("+") > 1:
+                return False
+        return True
+
+
+    """
     Edits the parameters in the .inc file
     """
 
     def editInc(self, parameters, comments):
+        for i in range(len(parameters)):
+            if (i <=18 or i == 24) and (not parameters[i]==""):
+                #input has more than 1 decimal point
+                if parameters[i].count(".") > 1 and parameters[i].count("e") == 0:
+                    tk.messagebox.showerror(title="Run Lake Model", message="Non-numerical value was entered as a value"
+                                                                        "for a numerical parameter.")
+                    return
+                #input is not a valid floating-point number
+                if not self.check_float(parameters[i]) and parameters[i].count("e") == 0:
+                    tk.messagebox.showerror(title="Run Lake Model",
+                                                message="Non-numerical value was entered as a value"
+                                                        " for a numerical parameter.")
+                    return
+                #input is not correctly expressed in scientific notation
+                nums = parameters[i].partition("e")
+                for num in nums:
+                    if num != "" and num != "e" and (not self.check_float(num)):
+                        tk.messagebox.showerror(title="Run Lake Model",
+                                                message="Non-numerical value was entered as a value"
+                                                        " for a numerical parameter.")
+                        return
+            #input is not .false. or .true. for a boolean entry
+            elif (i > 18 and i < 24) and (not (parameters[i] == ".false." or parameters[i] == ".true." or parameters[i] == "")):
+                print(parameters[i], i)
+                tk.messagebox.showerror(title="Run Lake Model", message = "Neither .true. or .false. was entered for a"
+                                                                          " boolean parameter.")
+                return
+
         with open("heatflux.inc", "r+") as f:
             new = f.readlines()
             # names of the parameters that need to be modified
@@ -622,7 +663,7 @@ class PageCarbonate(tk.Frame):
             surf_tempr.append(tempr_yr[self.nspin*12+2:len(tempr_yr)])
         surf_tempr = np.array(surf_tempr[0], dtype=float)
         """
-        with open("BCC-ERA-Tlake-humid_surf.dat") as data:
+        with open("ERA-HIST-Tlake_surf.dat") as data:
             tempr_yr = []
             lines = data.readlines()
             cur_row = lines[len(lines)-1].split()
@@ -861,6 +902,15 @@ class PageBioturbation(tk.Frame):
         tk.Button(self, text="Submit Parameters", font=f, command=lambda: self.run_bioturb_model([p.get() for p in param_values])).grid(
             row=rowIdx, column=0, sticky="W")
 
+        self.f = Figure(figsize=(9, 5), dpi=100)
+        self.plt = self.f.add_subplot(111)
+        self.plt.set_title(r'SENSOR', fontsize=12)
+        self.plt.set_xlabel('Time')
+        self.plt.set_ylabel('Bioturbated Sensor Data')
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+        self.canvas.draw()
+
     def upload_csv(self):
         # Open the file choosen by the user
         self.txtfilename = fd.askopenfilename(filetypes=(('csv files', 'csv'),))
@@ -876,26 +926,31 @@ class PageBioturbation(tk.Frame):
             tk.messagebox.showerror(title="Run Bioturbation Model", message="Start year cannot be greater than end year")
         self.age = params[1] - params[0]
         self.mxl = np.ones(self.age)*params[2]
-        print(np.ones(self.age)*params[3])
-        self.abu2 = list(np.ones(self.age)*params[3])[(-(self.age)-1):-1]
-        print(self.abu2)
+        self.abu = np.ones(self.age)*params[3]
         self.numb = params[4]
-        self.iso = pd.read_csv(self.txtfilename)["Pseudoproxy"]
-        self.oriabu, self.bioabu, self.oriiso, self.bioiso = bio.bioturbation(self.abu2, self.iso, self.mxl, self.numb)
-        print(self.oriabu)
+        pseudoproxy = pd.read_csv(self.txtfilename)["Pseudoproxy"]
+        self.days = []
+        self.iso = []
+        year = []
+        for i in range(len(pseudoproxy)):
+            year.append(pseudoproxy[i])
+            if (i+1)%12==0:
+                self.iso.append(mean(year))
+                self.days.append((i+1)/12)
+                year.clear()
 
-        """
+        self.oriabu, self.bioabu, self.oriiso, self.bioiso = bio.bioturbation(self.abu, self.iso, self.mxl, self.numb)
+
         self.f.clf()
         self.plt = self.f.add_subplot(111)
         self.plt.set_title(r'ARCHIVE')
         self.plt.set_xlabel('Time')
-        self.plt.set_ylabel('Bioturbated Data')
-
+        self.plt.set_ylabel('Bioturbated Sensor Data')
         self.plt.plot(self.days, self.bioiso, color="#000000", linewidth=3)
+        self.plt.plot(self.days, self.oriiso, color="#00FF00", linewidth=3)
         self.canvas = FigureCanvasTkAgg(self.f, self)
         self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
         self.canvas.draw()
-        """
 
 if __name__ == "__main__":
     app = SampleApp()
