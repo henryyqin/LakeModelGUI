@@ -1,7 +1,37 @@
-      program lakemodel
+      program lake_env
 
       implicit none
-      include 'lake_environment.inc' ! info for simulation
+      
+      call lakemodel()
+      
+      stop
+      end
+      
+      
+      subroutine lakemodel ()
+      implicit none
+      
+      !!!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      !character*32 :: lake_data_filename
+      !character*80 :: lake_data_filename, data_input_filename
+      !character*80 :: data_output_profile, data_output_surface
+
+      !data_input_filename = 'ERA_INTERIM_1979_2016_Tanganyika.txt'
+      !data_input_filename = 'input_file.txt'
+      !data_output_profile = 'profile_output.dat'
+      !data_output_surface = 'surface_output.dat'
+      !!!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    !f2py real(8) intent(in) :: lake_data_filename, data_input_filename
+    !f2py real(8) intent(out) :: data_output_profile, data_output_surface
+      !!!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      
+      !include trim(lake_data_filename)
+      !include "heatflux.inc" ! info for simulation
+      
+      !program lakemodel
+
+      !implicit none
+      include 'heatflux.inc' ! info for simulation
 
       real year,day,ta_in,dp_in,ua_in,rlwd_in,sw_in,qa_in,  &
            prec_in,ps_in,runin_in,declin,ta_i,qa_i,ua_i,  &
@@ -19,7 +49,7 @@
       ispin = 0
 
 !	  Begin Ashling
-      !Read in data based on
+      !Read in data based on 
       if (wb_flag) then
         !variable lake depth, with or without isotopes
         if(deutflag.and..not.o18flag) then
@@ -33,9 +63,9 @@
           read(15,*,end=998) year(1),day(1),ta_in(1),dp_in(1),   &
                          ua_in(1),sw_in(1),rlwd_in(1),ps_in(1),       &
                          prec_in(1), o18prec_in(1), &
-                         runin_in(1), o18run_in(1)
+                         runin_in(1), o18run_in(1)          
         else if(o18flag.and.deutflag) then
-          !read for deut and o18
+          !read for deut and o18      
           read(15,*,end=998) year(1),day(1),ta_in(1),dp_in(1),   &
                          ua_in(1),sw_in(1),rlwd_in(1),ps_in(1),       &
                          prec_in(1), deutprec_in(1), o18prec_in(1), &
@@ -71,9 +101,9 @@
           read(15,*,end=998) year(2),day(2),ta_in(2),dp_in(2),   &
                          ua_in(2),sw_in(2),rlwd_in(2),ps_in(2),       &
                          prec_in(2), o18prec_in(2), &
-                         runin_in(2), o18run_in(2)
+                         runin_in(2), o18run_in(2)          
         else if(o18flag.and.deutflag) then
-          !read for deut and o18
+          !read for deut and o18      
           read(15,*,end=998) year(2),day(2),ta_in(2),dp_in(2),   &
                          ua_in(2),sw_in(2),rlwd_in(2),ps_in(2),       &
                          prec_in(2), deutprec_in(2), o18prec_in(2), &
@@ -126,7 +156,7 @@
         rewind 15
         goto 150
       end if
-
+	  
       year(1) = year(2)                 ! increment year,day,hour
       day(1) = day(2)
 
@@ -150,7 +180,7 @@
                             deutprec_i,o18prec_i,deutrun_i,o18run_i)
 
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       real lnetw,lneti,lui,lu,julian,ps,prec,sw,rlwd,      &         !SD HEATBUDGET DELETED SWW, LUW
            rh,runin,tempice,hice,hsnow,fracice,t,tcutoff,u2w,t2w,     &
            q2w,ti,u2i,t2i,q2i,ta_i,qa_i,ua_i,ta,ua,qa,taC,albs,albi,  &
@@ -442,7 +472,7 @@
       subroutine adjust_flux (sw, tp, tcutoff, hice, hsnow, ta, qa, &
                               ua, psurf, delq, evap, hsen, rlwd)
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       real sw,tp,tcutoff,hice,hsnow,ta,qa,ua,psurf,delq,evap,  &
            hsen,rlwd,t4,x,a,b,qsen,qlat,qmet,condbar,val,val2, &
            q0,t0,tcutc,tposs,t,tlat
@@ -499,7 +529,7 @@
       subroutine bndry_flux(ta,qa,psurf,ua,tlake,Tcutoff,u2,t2,q2,hice)
 
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       real ta,qa,psurf,ua,tlake,Tcutoff,u2,t2,q2,pa,tlakeK,cappa,tfac, &
            cdmaxa,rhoa,cp,aloga,alogg,a,b,eo,qo,richu,stramu,strahu,  &
            cdh,cdm,fsena,fvapa,tau,za,zb,zt,ugrad,tgrad,qgrad,cdmaxb, &
@@ -575,7 +605,7 @@
       subroutine column_avg (depth,t,ti,salty,saltyi,fracprv)
 
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       integer j
       real t(max_dep,2),ti(max_dep,2),dnsty(max_dep)
       real salty (max_dep,n_trace), saltyi(max_dep,n_trace)
@@ -612,7 +642,7 @@
                       evap, rh, t, deutprec,deutrun, &
                       deutsnow,hs)
        implicit none
-       include 'lake_environment.inc'
+       include 'heatflux.inc'
        real runin,runout,surf_a,rain,evap,rh,deutrun,runout_len,  &
             runindeut,runoutdeut,deutprec,tk,alphadeut,rldeut,    &
             radeut,redeut,delvdeut,evapdeut,runin_len,precdeut,   &
@@ -649,12 +679,12 @@
       subroutine datain (ta_in,dp_in,ua_in,sw_in,rlwd_in,ps_in, &
                          prec_in,runin_in,qa_in,rh_in)
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       real ta_in,qa_in,dp_in,ua_in,ps_in,prec_in,runin_in,sw_in,   &
            rlwd_in,es,ea,rh_in
 
       if(sw_in.lt.0.0)sw_in=0.0
-!      ps_in = ps_in*100.                     ! convert from mb to Pa
+!      ps_in = ps_in*100.                     ! convert from mb to Pa   
       prec_in = prec_in/1000.                 ! convert from mm to m
       runin_in =runin_in/1000.                ! convert from mm to m
 
@@ -700,7 +730,7 @@
       rhostp=rhost  ! no pressure version
       rhostps=rhostp-1.D3
 
-      return
+      open(unit=15,file='ERA_INTERIM_1979_2016_Tanganyika.txt',status='old')
       end
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -715,7 +745,7 @@
       subroutine eddy (iwater,u2,t,de,depth,salty)
 
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       real u2,u,ks,N2,ws,Po,radmax,z,rad,Ri,dpdz,zhalf
       real de(depth), dnsty(depth), t(depth,2)
       real salty(max_dep,n_trace)
@@ -774,15 +804,15 @@
       subroutine file_open
       !Begin Ashling
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
 
 !      input files
       open(unit=15,file=datafile, status='old')
       !End Ashling
 
 !      output files
-!      open(unit=50,file='ERA-HIST-Tlake_prof.dat',status='unknown')
-      open(unit=51,file='BCC-ERA-Tlake-humid_surf.dat',status='unknown')
+      open(unit=50,file='ERA-HIST-Tlake_Tprof.dat',status='unknown')
+      open(unit=51,file='ERA-HIST-Tlake_surf.dat',status='unknown')
 !	  open(unit=52,file='ERA-HIST-Tlake_o18prof.dat',status='unknown')
 !	  open(unit=53,file='ERA-HIST-Tlake_deutprof.dat',status='unknown')
 
@@ -810,7 +840,7 @@
 !     stram=stratification factor for momentum
 !     strah=stratification factor for heat/vap
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
 
       real tb,tt,ttfac,zt,alb,alt,u,rich,stram,strah,zb,x,c,sqri
 
@@ -840,7 +870,7 @@
       subroutine ice_form (psurf,qnetice,t,depth,Tcutoff,  &
                           fracprv,salty,fracadd,fracice,hi)
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       real t(max_dep,2), salty(max_dep,n_trace)
       real qnetice,Tcutoff,fracprv,fracadd,fracice,hi,sum,extra,  &
            cp,di,xfrac,dnsty,psurf
@@ -883,7 +913,7 @@
       subroutine ice_rad (sw, hi, hs, condbar, val, val2)
 
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       real  a,b,c,d,sw,hi,hs,val,val2,condbar
 
       condbar=(hs*condi+hi*conds)/(condi*conds)
@@ -906,7 +936,7 @@
       subroutine init_lake
 
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       integer k
 
 !==============================================================
@@ -922,9 +952,9 @@
 
 ! Begin Ashling
       do k=1,depth_a
-          temp_a(k)= tempinit
-          trace_a(k,1)= o18init
-          trace_a(k,2)= deutinit
+          temp_a(k)= tempinit 
+          trace_a(k,1)= o18init 
+          trace_a(k,2)= deutinit 
           trace_a(k,3)= salty_a  ! salinity
       enddo
  ! End Ashling
@@ -969,7 +999,7 @@
                               melt_flag)
 
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       real tair,tcutoff,albs,albi,albw,tdiffs,albgl,   &
            albgs,tdiff,julian
       logical melt_flag
@@ -989,12 +1019,12 @@
       else
          albs=alb_snow  ! albedo of snow
       end if
-
+	  
       if (xlat.ge.0.0) then  ! northern hemisphere
          albw = 0.08 + 0.02 * sin(2. * pi * julian / 365. + pi / 2.)
 	  else                   ! southern hemisphere
 		 albw = 0.08 + 0.02 * sin(2. * pi * julian / 365. - pi / 2.)
-	  endif
+	  endif	
 
       return
       end
@@ -1007,7 +1037,7 @@
       subroutine lake_drag (tlakek, t1k, u1, cdrx)
 
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       real tlakek,t1k,u1,cdrx,cdrmin,cdr,ribn,ribd,rib,zs
 
 !     cdrn=(kv/alog(z2/zo))**2.  ! neutral drag coefficient
@@ -1045,7 +1075,7 @@
                            tcutoff,sw,hi,hs,ds,twater,qbot,  &
                            qw,evapi,qnetice,fracice,evaps)
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       real radlwd,qsen,qlat,tcutoff,sw,hi,hs,twater,qbot,      &
            qw,ds,evapi,qnetice,fracice,evaps,tmelt,t4,x, &
            q0t0,condqw,evapl,tprev,qmet,val,val2,q0,tempice,   &
@@ -1186,7 +1216,7 @@
       subroutine latsens (tsurf, Tcutoff, hice, t2,    &
                           q2, u2, psurf, delq, evap, qsen)
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       real tsurf,tcutoff,hice,t2,q2,u2,psurf,delq,evap,qsen,  &
            elake,qlake,rai,cdrx,a,b,delt,rash,relhum,pv,pd,rhosurf
 
@@ -1226,7 +1256,7 @@
       subroutine O18 (runin,runout,surf_a,rain,evap,rh,t,  &
                       o18prec,o18run,o18snow,hs)
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       real runin,runout,surf_a,rain,evap,rh,tk,alphao18,rlo18,    &
            rao18,reo18,delvo18,evapo18,runin_len,runin_o18,       &
            preco18,o18prec,o18run,runout_len,runout_o18,o18snow,  &
@@ -1313,7 +1343,7 @@
                           o18snow,deutsnow,surf_a,ti_shuf,mixmax,   &
                           evap,runout,melt_flag,nsteps,qew,qhw,sww,luw)
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       real tempice,hice,hsnow,fracice,surf_a,evap,xtime,day, &
            t_shuf (max_dep,2),ti_shuf(max_dep,2),econv,runout,&
            o18snow,deutsnow,qew,qhw,sww,luw
@@ -1388,8 +1418,8 @@
         if (xtime.eq.1.) then    ! print daily averages
            econv = 60.*60.*24      ! convert from mm/s to mm/day
 
-! Begin Ashling
-! Fixed so that oxygen and hydrogen isotopes can be written separetely
+! Begin Ashling          
+! Fixed so that oxygen and hydrogen isotopes can be written separetely 
 ! Moved format inside of if so that it formats correctly
 ! I removed ice from my output; would need to be added back in; format adjusted accordingly
            if (o18flag.and.deutflag) then
@@ -1407,22 +1437,22 @@
 !                         o18_ave/nsteps, &
 !                         deut_ave/nsteps,runout_sum,mixmax,&
 !                         depth,d_frac
-  361      format(F9.2,1x,9(F7.2,1x),2(I5,1x),F6.2)
+  361      format(F9.2,1x,9(F7.2,1x),2(I5,1x),F6.2)                             
 !          write(50,*) day,((temp_ave(k)/48.),k=1,depth)
            write(50,362) day,((temp_ave(k)/nsteps),k=1,depth)
 !sd		   write(52,362) day,((o18pro_ave(k)/nsteps),k=1,depth)
 !sd		   write(53,362) day,((deutpro_ave(k)/nsteps),k=1,depth)
-  362      format(58(F11.2,1x))
-           else if (o18flag.and..not.deutflag) then
+  362      format(58(F11.2,1x))           
+           else if (o18flag.and..not.deutflag) then 
          write(51,371) day,tsurf_ave/nsteps,&
                          evap_ave*econv/nsteps,&
                          mix_ave/nsteps,&
                          o18_ave/nsteps, &
                          runout_sum,mixmax,&
                          depth,d_frac
-  371      format(F9.2,1x,5(F6.2,1x),2(I5,1x),F6.2)
-           write(50,372) day,((temp_ave(k)/nsteps),k=1,depth)
-  372      format(58(F11.2,1x))
+  371      format(F9.2,1x,5(F6.2,1x),2(I5,1x),F6.2) 
+           write(50,372) day,((temp_ave(k)/nsteps),k=1,depth)    
+  372      format(58(F11.2,1x))                                
            else if (.not.o18flag.and.deutflag) then
          write(51,381) day,tsurf_ave/nsteps,&
                          evap_ave*econv/nsteps,&
@@ -1430,9 +1460,9 @@
                          deut_ave/nsteps, &
                          runout_sum,mixmax,&
                          depth,d_frac
-  381      format(F9.2,1x,5(F6.2,1x),2(I5,1x),F6.2)
-           write(50,382) day,((temp_ave(k)/nsteps),k=1,depth)
-  382      format(58(F11.2,1x))
+  381      format(F9.2,1x,5(F6.2,1x),2(I5,1x),F6.2)  
+           write(50,382) day,((temp_ave(k)/nsteps),k=1,depth)   
+  382      format(58(F11.2,1x))                               
            else
 !SD           write(51,391) day,tsurf_ave/nsteps,mix_ave/nsteps,&
 !SD                         evap_ave*econv/nsteps,mixmax,depth
@@ -1442,7 +1472,7 @@
                          luw_ave/nsteps,mixmax,depth
            write(50,392) day,((temp_ave(k)/nsteps),k=1,depth)
   391      format(8(F11.4,1x),2(i3,1x))
-  392      format(58(F11.2,1x)) !Here change the temperature profile format.
+  392      format(58(F11.2,1x)) !Here change the temperature profile format.           
            end if
 
 ! End Ashling
@@ -1481,7 +1511,7 @@
       subroutine solar_dec (julian, declin)
 
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       real declin,obecl,sinob,olong,arg,julian
 
       obecl=oblq*raddeg
@@ -1524,7 +1554,7 @@
       subroutine temp_profile( iwater, qbot, qw, t, sw, lnet, Qe, &
                                Qh, de, depth, salty)
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       real qbot,qw,sw,lnet,Qe,Qh,area_2,t1,cnextra,swtop,    &
            dist12,area_1,top,bot
       integer az,k,iwater,ktop
@@ -1673,7 +1703,7 @@
                           o18prec_i,runin_in,runin_i, deutrun_in,&
                           deutrun_i,o18run_in,o18run_i)
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       real ta_in,ta_i,qa_in,qa_i,ua_in,ua_i,sw_in,sw_i,rh_in,rh_i, &
            rlwd_in,rlwd_i,ps_in,ps_i,prec_in,prec_i,runin_in,runin_i, &
            deutrun_in, deutprec_in, o18prec_in, o18run_in, &
@@ -1739,7 +1769,7 @@
       subroutine tracer_avg (depth, fracprv)
 
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       real fracprv
       integer j,i_tr
 
@@ -1762,7 +1792,7 @@
       subroutine tracer_mixer (t, dnsty, depth, salty, mixdep, iwater)
 
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       integer k,mixprev,i_tr,iwater,m,mixdep,kk,k2
       real avet,avev,avev_tr,cp,vol,vol_tr,tav,densnew,rho_max
       real t(depth,2), dnsty(depth), tr_work(max_dep,n_trace)
@@ -1910,7 +1940,7 @@
       subroutine tracer_profile (de, depth, iwater)
 
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       real dist12,area_1,area_2,cnextra
       integer az,i_tr,k,i_water,iwater,ktop
       parameter (az = 1000) ! length of arrays first dimensioned here
@@ -2131,7 +2161,7 @@
       subroutine water_balance (depth,d_frac,prec,evap1,evap2,snowmelt,&
                                 runin, runout, surf_a, n_slice, isave_d)
       implicit none
-      include 'lake_environment.inc'
+      include 'heatflux.inc'
       real prec, runin, run_len, surf_a, elevsurf, run_s,   &
            d_level, remain, d_area, s_surf, r_salt, runout, &
            evap1, evap2, snowmelt

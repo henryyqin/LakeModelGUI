@@ -27,13 +27,13 @@
 ! Lake specific parameters ********************************************
 
     parameter (oblq = 23.4)   ! obliquity
-    parameter (xlat = -12.11)   ! latitude (negative for South)
-    parameter (xlon = 34.22)   ! longitude (negative for West)
+    parameter (xlat = 293847.239587)   ! latitude (negative for South)
+    parameter (xlon = -63-6)   ! longitude (negative for West)
     parameter (gmt = +3)   ! local time relative to gmt in hours
     parameter (max_dep = 292)   ! depth of lake at sill in meters
     parameter (basedep = 468.)   ! Elevation of Basin Bottom in Meters
     parameter (b_area = 2960000.)   ! Area of Catchment+Lake in Hectares
-    parameter (cdrn = 17.e-3)   ! neutral drag coefficient 1.8 HAD 1.7GISS 1.2CCSM
+    parameter (cdrn = 1.7e-3)   ! neutral drag coefficient 1.8 HAD 1.7GISS 1.2CCSM
     parameter (eta = 0.1)   ! shortwave extinction coefficient (1/m)
     parameter (f = 0.1)   ! fraction of advected air over lake
     parameter (alb_slush = 0.4)   ! albedo of melting snow
@@ -70,7 +70,7 @@
     parameter (nspin = 10)   ! number of years for spinup
     parameter (bndry_flag = .false.)   ! true for explict boundry layer computations; presently only for sigma coord climate models
     parameter (sigma = 0.96)   ! sigma level for boundary flag
-    parameter (wb_flag = .false.)   ! true for variable lake depth
+    parameter (wb_flag = .true)   ! true for variable lake depth
     parameter (iceflag = .true.)   ! true for variable ice cover
     parameter (s_flag = .false.)   ! true for variable salinity
     parameter (o18flag = .false.)   ! true for variable d18O
