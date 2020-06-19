@@ -1,26 +1,18 @@
-import tkinter as tk                # python 3
-from tkinter import font as tkfont  # python 3
-import os
-from os.path import basename
+#tkinter imports
+import tkinter as tk
+from tkinter import font as tkfont
 import tkinter.filedialog as fd
-import subprocess
-import pandas as pd
-import webbrowser
-from tkinter import ttk
-import multiprocessing
-import threading
-import copy
 
-# Carbonate sensor
+# Sensor Model Scripts
 import sensor_carbonate as carb
-
-# GDGT
-import gdgt
-
-# Leafwax sensor
+import sensor_gdgt as gdgt
 import sensor_leafwax as leafwax
 
-# Imports for Lake Model
+#Archive Model Scripts
+import lake_archive_bioturb as bio
+
+# Data Analytics
+import pandas as pd
 import numpy as np
 import matplotlib
 
@@ -28,19 +20,26 @@ matplotlib.use('TkAgg')  # Necessary for Mac Mojave
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
-from math import pi, sqrt, exp
 
 # Imports for plotting
 from statistics import mean
 plt.style.use('seaborn-whitegrid')
 
+#Miscellaneous imports
+import os
+from os.path import basename
+import subprocess
+import webbrowser
+import multiprocessing
+import copy
+
 """
 if you want the user to upload something from the same directory as the gui
 then you can use initialdir=os.getcwd() as the first parameter of askopenfilename
 """
-LARGE_FONT = ("Verdana", 26)
-MED_FONT = ("Verdana", 18)
-f = ("Verdana", 12)
+LARGE_FONT = ("Verdana", 20)
+MED_FONT = ("Verdana", 12)
+f = ("Verdana", 8)
 
 def callback(url):
     webbrowser.open_new(url)
@@ -64,7 +63,8 @@ class SampleApp(tk.Tk):
         container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
-        for F in (StartPage, PageEnvModel, PageEnvTimeSeries, PageEnvSeasonalCycle, PageCarbonate, PageLeafwax, PageGDGT):
+        for F in (StartPage, PageEnvModel, PageEnvTimeSeries, PageEnvSeasonalCycle, PageCarbonate, PageLeafwax, PageGDGT,
+                  PageBioturbation):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
@@ -132,6 +132,10 @@ class StartPage(tk.Frame):
         # Leads to PageLeafwax
         leafwaxButton = tk.Button(self, text="Run Leafwax Model", font=f, command=lambda: controller.show_frame("PageLeafwax"))
         leafwaxButton.pack(ipadx=30, ipady=3, pady=(5, 5))
+
+        # Leads to PageBioturbation
+        bioButton = tk.Button(self, text="Run Bioturbation Model", font=f, command=lambda: controller.show_frame("PageBioturbation"))
+        bioButton.pack(ipadx=30, ipady=3, pady=(5, 5))
 
 
 """
@@ -740,16 +744,15 @@ class PageCarbonate(tk.Frame):
         self.canvas.draw()
 
     def download_carb_data(self):
-        df = pd.DataFrame({"Time":self.days, "Simulated Carbonate Data":self.carb_proxy})
+        df = pd.DataFrame({"Time":self.days, "Pseudoproxy":self.carb_proxy})
         export_file_path = fd.asksaveasfilename(defaultextension='.csv')
         df.to_csv(export_file_path, index=None)
-
 
 """
 Page to run GDGT Model and plot data
 """
 class PageGDGT(tk.Frame):
-    
+
     def __init__(self, parent, controller):
         rowIdx = 1
         tk.Frame.__init__(self, parent)
@@ -759,34 +762,40 @@ class PageGDGT(tk.Frame):
         label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
 
         rowIdx += 3
+        graphButton = tk.Button(self, text="Upload own .txt File", font=f,
+                                command=self.uploadGDGTTxt)
+        graphButton.grid(row=rowIdx, column=0, pady=10,
+                         ipadx=30, ipady=3, sticky="W")
+        rowIdx += 1
+        # Shows the name of the current uploaded file, if any.
+        tk.Label(self, text="Current File Uploaded:", font=f).grid(
+            row=rowIdx, column=0, sticky="W")
+        self.currentFileLabel = tk.Label(self, text="No file", font=f)
+        self.currentFileLabel.grid(
+            row=rowIdx, column=1, columnspan=2, pady=10, sticky="W")
+        rowIdx += 3
 
         self.model = tk.StringVar()
         self.model.set("TEX86-tierney")
-        model_names = ["TEX86-tierney","TEX86-powers","TEX86-loomis","MBT-R","MBT-J"]
+        model_names = ["TEX86-tierney", "TEX86-powers", "TEX86-loomis", "MBT-R", "MBT-J"]
         for name in model_names:
             tk.Radiobutton(self, text=name, value=name, variable=self.model).grid(row=rowIdx, column=0, sticky="W")
-            rowIdx+=1
+            rowIdx += 1
         tk.Button(self, text="Submit Model", command=self.run_gdgt_model).grid(
             row=rowIdx, column=0, sticky="W")
-        rowIdx+=1
-
+        rowIdx += 1
 
         tk.Button(self, text="Generate Graph of GDGT Proxy Data", command=self.generate_graph).grid(
             row=rowIdx, column=0, sticky="W")
-        rowIdx+=1
+        rowIdx += 1
         tk.Button(self, text="Save Graph Data as .csv", command=self.download_gdgt_data).grid(
             row=rowIdx, column=0, sticky="W")
-        rowIdx+=1
+        rowIdx += 1
 
         # Return to Start Page
-        tk.Button(self, text="Back to start", 
-                                command=lambda: controller.show_frame("StartPage")).grid(
-                                row=rowIdx, column=0, sticky="W")
-
-        # # previousPageB.pack(anchor = "w", side = "bottom")
-        # homeButton.grid(row=rowIdx, column=3, ipadx=25,
-        #                 ipady=3, pady=30, sticky="W")
-        # rowIdx += 1
+        tk.Button(self, text="Back to start",
+                  command=lambda: controller.show_frame("StartPage")).grid(
+            row=rowIdx, column=0, sticky="W")
 
         self.f = Figure(figsize=(9, 5), dpi=100)
         self.plt = self.f.add_subplot(111)
@@ -796,6 +805,16 @@ class PageGDGT(tk.Frame):
         self.canvas = FigureCanvasTkAgg(self.f, self)
         self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
         self.canvas.draw()
+
+    """
+    Upload text file with air temperature data
+    """
+    def uploadGDGTTxt(self):
+        # Open the file choosen by the user
+        self.txtfilename = fd.askopenfilename(
+            filetypes=(('text files', 'txt'),))
+        self.currentFileLabel.configure(text=basename(self.txtfilename))
+
     """
     Create time series data for GDGT sensor
     """
@@ -806,22 +825,22 @@ class PageGDGT(tk.Frame):
         with open("ERA-HIST-Tlake_surf.dat") as data:
             tempr_yr = []
             lines = data.readlines()
-            cur_row = lines[len(lines)-1].split()
-            next_row = lines[len(lines)-2].split()
+            cur_row = lines[len(lines) - 1].split()
+            next_row = lines[len(lines) - 2].split()
             i = 2
             while int(float(cur_row[0])) > int(float(next_row[0])):
                 tempr_yr.insert(0, cur_row[1])
                 self.days.insert(0, int(float(cur_row[0])))
                 cur_row = copy.copy(next_row)
-                i+=1
-                next_row = lines[len(lines)-i].split()
+                i += 1
+                next_row = lines[len(lines) - i].split()
             tempr_yr.insert(0, cur_row[1])
             self.days.insert(0, int(float(cur_row[0])))
             surf_tempr.append(tempr_yr[:])
         surf_tempr = np.array(surf_tempr[0], dtype=float)
 
         # unchanged
-        climate_input = 'ERA_INTERIM_climatology_Tang_2yr.txt'
+        climate_input = self.txtfilename
         air_tempr = []
         with open(climate_input, 'r') as data:
             airtemp_yr = []
@@ -829,12 +848,12 @@ class PageGDGT(tk.Frame):
                 line_vals = line.split()
                 airtemp_yr.append(line_vals[2])
             air_tempr.append(airtemp_yr)
-        air_tempr = np.array(air_tempr[0], dtype = float)
+        air_tempr = np.array(air_tempr[0], dtype=float)
 
         self.LST = surf_tempr
         self.MAAT = air_tempr
-        self.beta = 1./50.
-        self.gdgt_proxy = gdgt.gdgt_sensor(self.LST,self.MAAT,self.beta,model=self.model.get())
+        self.beta = 1. / 50.
+        self.gdgt_proxy = gdgt.gdgt_sensor(self.LST, self.MAAT, self.beta, model=self.model.get())
 
     def generate_graph(self):
         self.f.clf()
@@ -848,7 +867,7 @@ class PageGDGT(tk.Frame):
         self.canvas.draw()
 
     def download_gdgt_data(self):
-        df = pd.DataFrame({"Time":self.days, "Simulated GDGT Data":self.gdgt_proxy})
+        df = pd.DataFrame({"Time": self.days, "Pseudoproxy": self.gdgt_proxy})
         export_file_path = fd.asksaveasfilename(defaultextension='.csv')
         df.to_csv(export_file_path, index=None)
 
@@ -861,7 +880,7 @@ class PageLeafwax(tk.Frame):
         tk.Frame.__init__(self, parent)
         self.controller = controller
         label = tk.Label(
-            self, text="Run Lake Environment Model", font=LARGE_FONT)
+            self, text="Run Leafwax Model", font=LARGE_FONT)
         label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
 
         rowIdx += 3
@@ -937,6 +956,7 @@ class PageLeafwax(tk.Frame):
             # Upload example file
             sample_input = 'IsoGSM_dDP_1953_2012.txt'
             self.currentFileLabel.configure(text=sample_input)
+            self.txtfilename = sample_input
             self.dDp = np.loadtxt(sample_input)
         else:
             # Open the file choosen by the user
@@ -951,18 +971,6 @@ class PageLeafwax(tk.Frame):
 
     def run_leafwax_model(self):
 
-        self.nspin = ""
-        with open("Malawi.inc", "r") as inc:
-            lines = inc.readlines()
-            nspin_line = lines[62]
-            idx = 0
-            while nspin_line[idx] != "=":
-                idx += 1
-            idx += 1
-            while nspin_line[idx] != ")":
-                self.nspin += nspin_line[idx]
-                idx += 1
-            self.nspin = int(self.nspin)
 
         self.fC_3 = 0.7  # fraction of C3 plants
         self.fC_4 = 0.3  # fraction of C4 plants
@@ -975,52 +983,182 @@ class PageLeafwax(tk.Frame):
 
         self.leafwax_proxy = leafwax.wax_sensor(self.dDp, self.fC_3, self.fC_4, self.eps_c3, self.eps_c4)
 
-        # add uncertainties in apparent fractionation via monte-carlo resampling process:
-        #self.delta_d_wax_mc, self.Q1, self.Q2 = leafwax.wax_uncertainty(self.dDp, self.fC_3, self.fC_4, self.eps_c3,
-                                                                        #self.eps_c4, self.eps_c3_err, self.eps_c4_err)
-
+        #add uncertainties in apparent fractionation via monte-carlo resampling process:
+        self.delta_d_wax_mc, self.Q1, self.Q2 = leafwax.wax_uncertainty(self.dDp, self.fC_3, self.fC_4, self.eps_c3,
+                                                                        self.eps_c4, self.eps_c3_err, self.eps_c4_err)
         # where Q1 is the 2.5th percentile, Q2 is the 97.5th percentile of the 1000 MC realizations
 
     def generate_graph(self):
         self.days = []
-        with open("ERA-HIST-Tlake_surf.dat", "r") as data:
-            line_num = 0
-            for line in data:
-                line_vals = line.split()
-                if line_num >= self.nspin * 12 and line_num >= 142:
-                    self.days.append(line_vals[0])
-                line_num += 1
-        self.days = [int(float(day)) for day in self.days]
-        # TEMPORARY: CUTTING NUMBER OF DAYS SO THAT X AND Y IS SAME SIZE
-        self.leafwax_proxy = self.leafwax_proxy[:24]
+        with open(self.txtfilename) as input:
+            for i in range(len(input.readlines())):
+                self.days.append(30*i+15)
         self.f.clf()
         self.plt = self.f.add_subplot(111)
         self.plt.set_title(r'SENSOR')
         self.plt.set_xlabel('Time')
         self.plt.set_ylabel('Simulated Leaf Wax Data')
-        # error line chart
-        # sigma = float(sigmaRaw)
-        # self.R3 = sigma 
-        # inputs = len(self.X)
-        # self.X = self.cell
-        # self.X = self.X.reshape(inputs,1)
-        # Xn = analytical_error.analytical_error(self.X, sigma, inputs)
-        # Xn = Xn[:,0,:].reshape(inputs, inputs) 
-        # self.gaussq1=mquantiles(Xn,prob=[0.025,0.975],axis=1)
-        # q2=self.time
-        # self.plt.fill_between(q2,self.gaussq1[:,0],self.gaussq1[:,1],
-        #     label='100 Gaussian Analytical Error Realizations, CI', facecolor='darkgray',alpha=0.5)
-        #self.plt.errorbar(self.days, self.leafwax_proxy, yerr=0.8, fmt='o', color='black', ecolor='lightgray', elinewidth=3, capsize=0)
 
-        self.plt.scatter(self.days, self.leafwax_proxy, color="#ff6053")
+        self.plt.fill_between(self.days,self.Q1,self.Q2,facecolor='grey',edgecolor='none',alpha=0.20)
+        self.plt.plot(self.days, self.leafwax_proxy, color="#000000", linewidth=3)
+        self.plt.scatter(self.days, self.leafwax_proxy, color="#000000")
         self.canvas = FigureCanvasTkAgg(self.f, self)
         self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
         self.canvas.draw()
 
     def download_leafwax_data(self):
-        df = pd.DataFrame({"Time":self.days, "Simulated Leafwax Data":self.leafwax_proxy})
-        path = fd.askdirectory()
-        df.to_csv(path+"/leafwax_timeseries.csv", index=False)
+        df = pd.DataFrame({"Time":self.days, "Pseudoproxy":self.leafwax_proxy, "95% CI Lower Bound":self.Q1,
+                           "95% CI Upper Bound":self.Q2})
+        export_file_path = fd.asksaveasfilename(defaultextension='.csv')
+        df.to_csv(export_file_path, index=None)
+
+"""
+Page to run bioturbation archive model and plot data
+"""
+class PageBioturbation(tk.Frame):
+    def __init__(self, parent, controller):
+        rowIdx = 1
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+        label = tk.Label(
+            self, text="Run Bioturbation Model", font=LARGE_FONT)
+        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
+        rowIdx += 3
+        # Instructions for uploading .txt and .inc files
+        tk.Label(self,
+                 text=
+                 """
+                 1) Upload a .csv file with a column "Pseudoproxy" containing pseudoproxy timeseries data. \n
+                 2) Enter parameters for bioturbation\n
+                 3) You cannot leave parameters empty
+                 """, font=f, justify="left"
+                 ).grid(row=rowIdx, columnspan=3, rowspan=3, pady=15)
+        rowIdx += 3
+        tk.Label(self, text="Current File Uploaded:", font=f).grid(
+            row=rowIdx, column=0, sticky="W")
+        self.currentTxtFileLabel = tk.Label(self, text="No file", font=f)
+        self.currentTxtFileLabel.grid(
+            row=rowIdx, column=1, columnspan=2, pady=10, sticky="W")
+        rowIdx += 1
+        tk.Button(self, text="Upload Data", command=self.upload_csv, font=f).grid(
+            row=rowIdx, column=0, sticky="W")
+        rowIdx += 1
+        parameters = ["Start Year:","End Year:", "Mixed Layer Thickness Coefficient:", "Abundance:", "Number of Carriers:"]
+        param_values = []
+        for i in range(rowIdx, rowIdx + 5):
+            tk.Label(self, text=parameters[i - rowIdx], font=f).grid(
+                row=i, column=0, sticky="W")
+            p = tk.Entry(self)
+            p.grid(row=i, column=1, sticky="W")
+            param_values.append(p)
+        rowIdx+=5
+        tk.Button(self, text="Submit Parameters", font=f, command=lambda: self.run_bioturb_model([p.get() for p in param_values])).grid(
+            row=rowIdx, column=0, sticky="W")
+        rowIdx+=1
+        tk.Button(self, text="Save Graph Data as .csv", font=f, command=self.download_leafwax_data).grid(
+            row=rowIdx, column=0, sticky="W")
+        rowIdx += 1
+
+        self.f = Figure(figsize=(9, 5), dpi=100)
+        self.plt = self.f.add_subplot(111)
+        self.plt.set_title(r'SENSOR', fontsize=12)
+        self.plt.set_xlabel('Time')
+        self.plt.set_ylabel('Bioturbated Sensor Data')
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+        self.canvas.draw()
+
+    def upload_csv(self):
+        # Open the file choosen by the user
+        self.txtfilename = fd.askopenfilename(filetypes=(('csv files', 'csv'),))
+        self.currentTxtFileLabel.configure(text=basename(self.txtfilename))
+
+    """
+     Checks whether a string represents a valid signed/unsigned floating-point number
+     """
+
+    def check_float(self, str):
+        try:
+            float(str)
+            return True
+        except:
+            return False
+
+    """
+    Returns false is any parameter value is invalid
+    """
+    def validate_params(self, params):
+        for p in params:
+            if not p:
+                tk.messagebox.showerror(title="Run Bioturbation Model", message="Not all parameters were entered.")
+                return False
+        if not (params[0].isdigit() and params[1].isdigit()):
+            tk.messagebox.showerror(title="Run Bioturbation Model",
+                                    message="Years must be positive integers")
+            return False
+        for i in range(2,5):
+            if not self.check_float(params[i]):
+                tk.messagebox.showerror(title="Run Bioturbation Model", message=str(params[i])+" is not a proper value")
+                return False
+        #convert parameters to integers for further validation
+        params_copy = copy.deepcopy(params)
+        params_copy = [float(p) for p in params_copy]
+        if params_copy[0] >= params_copy[1]:
+            tk.messagebox.showerror(title="Run Bioturbation Model",
+                                    message="Start year cannot be greater than or equal to end year")
+            return False
+        if self.days[-1] != params_copy[1]-params_copy[0]:
+            tk.messagebox.showerror(title="Run Bioturbation Model", message="The time interval "+params[0]+"-"+
+                                    params[1]+" is not the same length as the time interval within the uploaded data")
+            return False
+        return True
+
+    def run_bioturb_model(self, params):
+        #check whether csv file can be opened
+        try:
+            pseudoproxy = pd.read_csv(self.txtfilename)["Pseudoproxy"]
+        except:
+            tk.messagebox.showerror(title="Run Bioturbation Model", message="Error with reading csv file")
+        self.days = []
+        self.iso = []
+        year = []
+        for i in range(len(pseudoproxy)):
+            year.append(pseudoproxy[i])
+            if (i+1)%12==0:
+                self.iso.append(mean(year))
+                self.days.append((i+1)/12)
+                year.clear()
+        if not self.validate_params(params):
+            print("hello")
+            return
+        self.age = int(params[1]) - int(params[0])
+        self.mxl = np.ones(self.age) * float(params[2])
+        self.abu = np.ones(self.age) * float(params[3])
+        self.numb = int(params[4])
+        #Run the bioturbation model
+        self.oriabu, self.bioabu, self.oriiso, self.bioiso = bio.bioturbation(self.abu, self.iso, self.mxl, self.numb)
+
+        #Plot the bioturbation model
+        self.f.clf()
+        self.plt = self.f.add_subplot(111)
+        self.plt.set_title(r'ARCHIVE')
+        self.plt.set_xlabel('Time')
+        self.plt.set_ylabel('Bioturbated Sensor Data')
+        self.plt.plot(self.days, self.bioiso, color="#000000", linewidth=3)
+        self.plt.plot(self.days, self.oriiso, color="#00FF00", linewidth=3)
+        self.canvas = FigureCanvasTkAgg(self.f, self)
+        self.canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+        self.canvas.draw()
+
+    def download_leafwax_data(self):
+        bio1 = self.bioiso[:,0]
+        bio2 = self.bioiso[:,1]
+        ori = self.oriiso[:,0]
+        print(self.oriiso)
+        df = pd.DataFrame({"Time":self.days, "Original Pseudoproxy":ori,
+                           "Bioturbated Carrier 1":bio1, "Bioturbated Carrier 2":bio2})
+        export_file_path = fd.asksaveasfilename(defaultextension='.csv')
+        df.to_csv(export_file_path, index=None)
 
 if __name__ == "__main__":
     app = SampleApp()
