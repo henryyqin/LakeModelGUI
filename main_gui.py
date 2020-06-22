@@ -283,9 +283,16 @@ class PageEnvModel(tk.Frame):
         for i in range(rowIdx + 16, rowIdx + 25):
             tk.Label(self, text=parameters[i - rowIdx], font=f).grid(
                 row=i - 16, column=2, sticky="W")
-            p = tk.Entry(self)
-            p.grid(row=i - 16, column=3, sticky="W")
-            param_values.append(p)
+            if i in [rowIdx+16, rowIdx+18, rowIdx+24]:
+                p = tk.Entry(self)
+                p.grid(row=i - 16, column=3, sticky="W")
+                param_values.append(p)
+            else:
+                p = tk.IntVar()
+                c = tk.Checkbutton(self, variable=p)
+                c.grid(row=i-16, column=3, sticky="W")
+                param_values.append(p)
+
         rowIdx += 16
 
         # Submit entries for .inc file
@@ -378,13 +385,6 @@ class PageEnvModel(tk.Frame):
                     tk.messagebox.showerror(title="Run Lake Model", message="Non-numerical value was entered as a value"
                                                                             "for a numerical parameter.")
                     return False
-            # input is not .false. or .true. for a boolean entry
-            elif (i > 18 and i < 24) and (
-            not (parameters[i] == ".false." or parameters[i] == ".true." or parameters[i] == "")):
-                print(parameters[i], i)
-                tk.messagebox.showerror(title="Run Lake Model", message="Neither .true. or .false. was entered for a"
-                                                                        " boolean parameter.")
-                return False
         return True
 
     """
@@ -406,8 +406,16 @@ class PageEnvModel(tk.Frame):
             # line numbers in the .inc file that need to be modified
             rows = [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 42, 44, 45, 69, 70, 71, 72, 73, 74, 75, 76, 77]
             for i in range(0, len(parameters)):
-                if len(parameters[i]) != 0:
-                    new[rows[i]] = "    parameter (" + names[i] + " = " + parameters[i] + ")   ! " + comments[i] + "\n"
+                if len(str(parameters[i])) != 0:
+                    if i!=17 or not(i>=19 and i<24):
+                        if parameters[i]==1:
+                            new[rows[i]] = "    parameter (" + names[i] + " = .true.)   ! " + comments[
+                                i] + "\n"
+                        else:
+                            new[rows[i]] = "    parameter (" + names[i] + " = .false.)   ! " + comments[
+                                i] + "\n"
+                    else:
+                        new[rows[i]] = "    parameter (" + names[i] + " = " + parameters[i] + ")   ! " + comments[i] + "\n"
             f.seek(0)
             f.truncate()
             f.writelines(new)
