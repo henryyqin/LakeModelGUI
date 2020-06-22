@@ -256,15 +256,18 @@ class PageEnvModel(tk.Frame):
         parameters = ["obliquity", "latitude (negative for South)", "longitude (negative for West)",
                       "local time relative to gmt in hours", "depth of lake at sill in meters",
                       "Elevation of Basin Bottom in Meters", "Area of Catchment+Lake in Hectares",
-                      "neutral drag coefficient 1.8 HAD 1.7GISS 1.2CCSM", "shortwave extinction coefficient (1/m)",
+                      "neutral drag coefficient", "shortwave extinction coefficient (1/m)",
                       "fraction of advected air over lake", "albedo of melting snow", "albedo of non-melting snow",
                       "prescribed depth in meters", "prescribed salinity in ppt", "d18O of air above lake",
-                      "dD of air above lake", "number of years for spinup",
+                      "dD of air above lake", "temperature to initialize lake at in INIT_LAKE subroutine",
+                      "dD to initialize lake at in INIT_LAKE subroutine",
+                      "d18O to initialize lake at in INIT_LAKE subroutine", "number of years for spinup",
                       "true for explict boundry layer computations; presently only for sigma coord climate models",
                       "sigma level for boundary flag", "true for variable lake depth", "true for variable ice cover",
                       "true for variable salinity", "true for variable d18O", "true for variable dD",
                       "height of met inputs"]
         param_values = []
+        param_containers = []
         tk.Label(self, text="Lake-Specific Parameters", font=LARGE_FONT).grid(
             row=rowIdx, column=0, sticky="W")
         tk.Label(self, text="Simulation-Specific Parameters", font=LARGE_FONT).grid(
@@ -272,33 +275,43 @@ class PageEnvModel(tk.Frame):
         rowIdx += 1
 
         #List entries for lake-specific parameters
-        for i in range(rowIdx, rowIdx + 16):
+        for i in range(rowIdx, rowIdx + 19):
             tk.Label(self, text=parameters[i - rowIdx], font=f).grid(
                 row=i, column=0, sticky="W")
             p = tk.Entry(self)
             p.grid(row=i, column=1, sticky="W")
             param_values.append(p)
+            param_containers.append(p)
 
         #List entries for simulation-specific parameters
-        for i in range(rowIdx + 16, rowIdx + 25):
+        for i in range(rowIdx + 19, rowIdx + 28):
             tk.Label(self, text=parameters[i - rowIdx], font=f).grid(
-                row=i - 16, column=2, sticky="W")
-            if i in [rowIdx+16, rowIdx+18, rowIdx+24]:
+                row=i - 19, column=2, sticky="W")
+            if i in [rowIdx+19, rowIdx+21, rowIdx+27]:
                 p = tk.Entry(self)
-                p.grid(row=i - 16, column=3, sticky="W")
-                param_values.append(p)
+                p.grid(row=i - 19, column=3, sticky="W")
+                param_containers.append(p)
             else:
                 p = tk.IntVar()
                 c = tk.Checkbutton(self, variable=p)
-                c.grid(row=i-16, column=3, sticky="W")
-                param_values.append(p)
+                c.grid(row=i-19, column=3, sticky="W")
+                param_containers.append(c)
+            param_values.append(p)
 
-        rowIdx += 16
+        rowIdx += 19
 
         # Submit entries for .inc file
+        malawiButton = tk.Button(self, text="Autofill Malawi Parameters", font=f,
+                                 command = lambda: self.fill("Malawi", param_containers))
+        malawiButton.grid(row=rowIdx, column=1, ipadx=30, ipady=3, sticky="W")
+
+        tanganyikaButton = tk.Button(self, text="Autofill Tanganyika Parameters", font=f,
+                                 command=lambda: self.fill("Tanganyika", param_containers))
+        tanganyikaButton.grid(row=rowIdx, column=2, ipadx=30, ipady=3, sticky="W")
+
         submitButton = tk.Button(self, text="Submit Parameters", font=f,
                                  command=lambda: self.editInc([p.get() for p in param_values], parameters))
-        submitButton.grid(row=rowIdx, column=1, pady=10, ipadx=30, ipady=3, sticky="W")
+        submitButton.grid(row=rowIdx, column=3, ipadx=30, ipady=3, sticky="W")
         rowIdx += 1
 
         # Button to run the model (Mac/Linux only)
@@ -331,24 +344,24 @@ class PageEnvModel(tk.Frame):
             new = f.readlines()
             if self.txtfilename != "":
                 if nonbase == os.getcwd():
-                    new[18] = "      !data_input_filename = '" + base + "'\n"
-                    new[732] = "      open(unit=15,file='" + base + "',status='old')\n"
+                    new[19] = "      !data_input_filename = '" + base + "'\n"
                 else:
-                    new[18] = "      !data_input_filename = '" + self.txtfilename + "'\n"
-                    new[732] = "      open(unit=15,file='" + self.txtfilename + "',status='old')\n"
+                    new[19] = "      !data_input_filename = '" + self.txtfilename + "'\n"
             f.seek(0)
             f.truncate()
             f.writelines(new)
             f.close()
 
         # Modify the include file to read the input text file
-        with open("heatflux.inc","r+") as f:
+        with open("Malawi.inc","r+") as f:
             new = f.readlines()
             if self.txtfilename != "":
                 if nonbase == os.getcwd():
-                    new[61] = "    character(38) :: datafile='" + base + "' ! the data file to open in FILE_OPEN subroutine\n"
+                    new[55] = "      character(38) :: datafile='" + base + "' ! the data file to open in FILE_OPEN subroutine\n"
+                    new[56] = "      character(38) :: datafile='" + base + "'\n"
                 else:
-                    new[61] = "    character(38) :: datafile='"+self.txtfilename+"' ! the data file to open in FILE_OPEN subroutine\n"
+                    new[55] = "      character(38) :: datafile='"+self.txtfilename+"' ! the data file to open in FILE_OPEN subroutine\n"
+                    new[56] = "      character(38) :: datafile='" + self.txtfilename+"'\n"
             f.seek(0)
             f.truncate()
             f.writelines(new)
@@ -380,10 +393,10 @@ class PageEnvModel(tk.Frame):
     def validate_params(self, parameters):
         for i in range(len(parameters)):
             # Checks whether numerical values are indeed numerical
-            if (i <= 18 or i == 24) and (not parameters[i] == ""):
+            if (i <= 21 or i == 27) and (not parameters[i] == ""):
                 if not self.check_float(parameters[i]):
                     tk.messagebox.showerror(title="Run Lake Model", message="Non-numerical value was entered as a value"
-                                                                            "for a numerical parameter.")
+                                                                            " for a numerical parameter.")
                     return False
         return True
 
@@ -397,29 +410,52 @@ class PageEnvModel(tk.Frame):
     def editInc(self, parameters, comments):
         if not self.validate_params(parameters):
             return
-        with open("heatflux.inc", "r+") as f:
+        with open("Malawi.inc", "r+") as f:
             new = f.readlines()
             # names of the parameters that need to be modified
             names = ["oblq", "xlat", "xlon", "gmt", "max_dep", "basedep", "b_area", "cdrn", "eta", "f", "alb_slush",
-                     "alb_snow", "depth_begin", "salty_begin", "o18air", "deutair", "nspin", "bndry_flag",
-                     "sigma", "wb_flag", "iceflag", "s_flag", "o18flag", "deutflag", "z_screen"]
+                     "alb_snow", "depth_begin", "salty_begin", "o18air", "deutair", "tempinit", "deutinit", "o18init",
+                     "nspin", "bndry_flag", "sigma", "wb_flag", "iceflag", "s_flag", "o18flag", "deutflag", "z_screen"]
             # line numbers in the .inc file that need to be modified
-            rows = [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 42, 44, 45, 69, 70, 71, 72, 73, 74, 75, 76, 77]
-            for i in range(0, len(parameters)):
+            rows = [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 42, 44, 45, 57, 58, 59, 62, 63, 64, 65, 66, 67, 68, 69, 70]
+            for i in range(len(parameters)):
                 if len(str(parameters[i])) != 0:
-                    if i!=17 or not(i>=19 and i<24):
+                    if i==20 or (i>21 and i<27):
                         if parameters[i]==1:
-                            new[rows[i]] = "    parameter (" + names[i] + " = .true.)   ! " + comments[
-                                i] + "\n"
+                            new[rows[i]] = "      parameter (" + names[i] + " = .true.)   ! " + comments[i] + "\n"
                         else:
-                            new[rows[i]] = "    parameter (" + names[i] + " = .false.)   ! " + comments[
-                                i] + "\n"
+                            new[rows[i]] = "      parameter (" + names[i] + " = .false.)   ! " + comments[i] + "\n"
                     else:
-                        new[rows[i]] = "    parameter (" + names[i] + " = " + parameters[i] + ")   ! " + comments[i] + "\n"
+                        new[rows[i]] = "      parameter (" + names[i] + " = " + parameters[i] + ")   ! " + comments[i] + "\n"
             f.seek(0)
             f.truncate()
             f.writelines(new)
             f.close()
+
+    """
+    Fills in parameter values with either Malawi or Tanganyika parameters
+    """
+    def fill(self, lake, containers):
+        if lake=="Malawi":
+            values = ["23.4", "-12.11", "34.22", "+3", "292", "468.", "2960000.",
+                      "1.7e-3", "0.04", "0.1", "0.4", "0.7", "292", "0.0", "-28.",
+                      "-190.", "-4.8", "-96.1", "-11.3", "10", 0, "0.96", 0, 1,
+                      0, 0, 0, "5.0"]
+        else:
+            values = ["23.4", "-6.30", "29.5", "+3", "999", "733.", "23100000.",
+            "2.0e-3", "0.065", "0.3", "0.4", "0.7", "570", "0.0", "-14.0", "-96.",
+            "23.0", "24.0", "3.7", "10", 0, "0.9925561", 0, 0, 0, 0, 0, "5.0"]
+        for i in range(len(values)):
+            if i==20 or (i>21 and i<27):
+                containers[i].deselect()
+                if values[i]==1:
+                    containers[i].select()
+                else:
+                    containers[i].deselect()
+            else:
+                containers[i].delete(0, tk.END)
+                containers[i].insert(0, values[i])
+
 
     """
     Compiles the Fortran model by executing Cygwin commands to run gfortran
