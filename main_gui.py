@@ -20,6 +20,8 @@ import matplotlib
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
+import datetime as dt
+from matplotlib import dates as mdates
 from statistics import mean
 plt.style.use('seaborn-whitegrid')
 matplotlib.use('TkAgg')  # Necessary for Mac Mojave
@@ -32,13 +34,15 @@ import webbrowser
 import copy
 from subprocess import PIPE, Popen
 
-LARGE_FONT = ("Verdana", 20)
-MED_FONT = ("Verdana", 12)
-f = ("Verdana", 8)
-
 #===========GENERAL FUNCTIONS========================================
 def callback(url):
     webbrowser.open_new(url)
+
+def get_start_date():
+    with open("START_YEAR.txt", "r") as start:
+        lines = start.readlines()
+        global START_YEAR
+        START_YEAR = int(lines[0])
 
 def get_output_data(time, data, column):
     """
@@ -104,15 +108,61 @@ def plot_draw(frame, figure, title, x_axis, y_axis, x_data, y_data, plot_type, e
     plt.set_ylabel(y_axis)
     for line in y_data:
         if "normal" in plot_type:
-            plt.plot(x_data, line, color="#ff6053", linewidth=3)
+            plt.plot_date(x_data, line, color="#ff6053", linewidth=3)
         if "scatter" in plot_type:
             plt.scatter(x_data, line, color="#ff6053")
+        if "monthly" in plot_type:
+            date_format = mdates.DateFormatter('%b,%Y')
+            plt.xaxis.set_major_formatter(date_format)
     if error_lines != None:
         plt.fill_between(x_data, error_lines[0], error_lines[1], facecolor='grey', edgecolor='none', alpha=0.20)
     canvas = FigureCanvasTkAgg(figure, frame)
     canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
     canvas.draw()
-#=======================================================================
+
+def convert_to_monthly(time):
+    """
+    Converts timeseries x-axis into monthly units with proper labels
+    """
+    global START_YEAR
+    start_date = dt.date(START_YEAR, 1, 1)
+    dates = []
+    for day in time:
+        new_date = start_date + dt.timedelta(days=day-1)
+        dates.append(new_date)
+    return dates
+
+
+
+def convert_to_annual(data):
+    """
+    Converts timeseries data into annually averaged data with proper axis labels
+    """
+    global START_YEAR
+    start_date = dt.date(START_YEAR, 7, 2)
+    all_year_avgs = []
+    for column in data:
+        years = []
+        year_data = []
+        year_avgs = []
+        for i in range(len(column)):
+            year_data.append(column[i])
+            if (i + 1) % 12 == 0:
+                year_avgs.append(mean(year_data))
+                years.append(start_date+dt.timedelta(days=365*((i+1)/12)))
+                year_data.clear()
+        all_year_avgs.append(year_avgs)
+    return years, all_year_avgs
+
+#=====================GLOBAL VARIABLES=====================================================
+
+LARGE_FONT = ("Verdana", 20)
+MED_FONT = ("Verdana", 8)
+f = ("Verdana", 8)
+START_YEAR = None
+INPUT = None
+get_start_date()
+
 
 """
 Creates a GUI object
@@ -253,19 +303,19 @@ class PageEnvModel(tk.Frame):
         rowIdx += 3
 
         # Entries for .inc file
-        parameters = ["obliquity", "latitude (negative for South)", "longitude (negative for West)",
-                      "local time relative to gmt in hours", "depth of lake at sill in meters",
-                      "Elevation of Basin Bottom in Meters", "Area of Catchment+Lake in Hectares",
-                      "neutral drag coefficient", "shortwave extinction coefficient (1/m)",
-                      "fraction of advected air over lake", "albedo of melting snow", "albedo of non-melting snow",
-                      "prescribed depth in meters", "prescribed salinity in ppt", "d18O of air above lake",
-                      "dD of air above lake", "temperature to initialize lake at in INIT_LAKE subroutine",
-                      "dD to initialize lake at in INIT_LAKE subroutine",
-                      "d18O to initialize lake at in INIT_LAKE subroutine", "number of years for spinup",
-                      "true for explict boundry layer computations; presently only for sigma coord climate models",
-                      "sigma level for boundary flag", "true for variable lake depth", "true for variable ice cover",
-                      "true for variable salinity", "true for variable d18O", "true for variable dD",
-                      "height of met inputs"]
+        parameters = ["Obliquity", "Latitude (Negative For South)", "Longitude (Negative For West)",
+              "Local Time Relative To Gmt In Hours", "Depth Of Lake At Sill In Meters",
+              "Elevation Of Basin Bottom In Meters", "Area Of Catchment+Lake In Hectares",
+              "Neutral Drag Coefficient", "Shortwave Extinction Coefficient (1/M)",
+              "Fraction Of Advected Air Over Lake", "Albedo Of Melting Snow", "Albedo Of Non-Melting Snow",
+              "Prescribed Depth In Meters", "Prescribed Salinity In Ppt", "D18o Of Air Above Lake",
+              "Dd Of Air Above Lake", "Temperature To Initialize Lake At In INIT_LAKE Subroutine",
+              "Dd To Initialize Lake At In INIT_LAKE Subroutine",
+              "D18o To Initialize Lake At In INIT_LAKE Subroutine", "Number Of Years For Spinup",
+              "True For Explict Boundry Layer Computations; Presently Only For Sigma Coord Climate Models",
+              "Sigma Level For Boundary Flag", "True For Variable Lake Depth", "True For Variable Ice Cover",
+              "True For Variable Salinity", "True For Variable D18o", "True For Variable Dd",
+              "Height Of Met Inputs", "Start Year", "End Year"]
         param_values = []
         param_containers = []
         tk.Label(self, text="Lake-Specific Parameters", font=LARGE_FONT).grid(
@@ -284,10 +334,10 @@ class PageEnvModel(tk.Frame):
             param_containers.append(p)
 
         #List entries for simulation-specific parameters
-        for i in range(rowIdx + 19, rowIdx + 28):
+        for i in range(rowIdx + 19, rowIdx + 29):
             tk.Label(self, text=parameters[i - rowIdx], font=f).grid(
                 row=i - 19, column=2, sticky="W")
-            if i in [rowIdx+19, rowIdx+21, rowIdx+27]:
+            if i in [rowIdx+19, rowIdx+21, rowIdx+27, rowIdx+28]:
                 p = tk.Entry(self)
                 p.grid(row=i - 19, column=3, sticky="W")
                 param_containers.append(p)
@@ -297,6 +347,8 @@ class PageEnvModel(tk.Frame):
                 c.grid(row=i-19, column=3, sticky="W")
                 param_containers.append(c)
             param_values.append(p)
+
+
 
         rowIdx += 19
 
@@ -318,7 +370,7 @@ class PageEnvModel(tk.Frame):
         runButton = tk.Button(
             self, text="Run Model", font=f, command=self.compileModel)
         runButton.grid(row=rowIdx, column=1, ipadx=30, ipady=3, sticky="W")
-        rowIdx += 1
+
 
         # Return to Start Page
         homeButton = tk.Button(self, text="Back to start page", font=f,
@@ -335,6 +387,8 @@ class PageEnvModel(tk.Frame):
         # Open the file choosen by the user
         self.txtfilename = fd.askopenfilename(
             filetypes=(('text files', 'txt'),))
+        global INPUT
+        INPUT = self.txtfilename
         base = basename(self.txtfilename)
         nonbase = (self.txtfilename.replace("/","\\")).replace(base,'')[:-1]
         self.currentTxtFileLabel.configure(text=base)
@@ -398,6 +452,21 @@ class PageEnvModel(tk.Frame):
                     tk.messagebox.showerror(title="Run Lake Model", message="Non-numerical value was entered as a value"
                                                                             " for a numerical parameter.")
                     return False
+            if (i==28):
+                try:
+                    int(parameters[i])
+                except:
+                    tk.messagebox.showerror(title="Run Lake Model", message="Years must be integer values")
+                    return False
+        global START_YEAR
+        START_YEAR = int(parameters[28])
+        with open("START_YEAR.txt", "r+") as start:
+            new = start.readlines()
+            new[0] = str(START_YEAR)
+            start.seek(0)
+            start.truncate()
+            start.writelines(new)
+            start.close()
         return True
 
     """
@@ -418,7 +487,7 @@ class PageEnvModel(tk.Frame):
                      "nspin", "bndry_flag", "sigma", "wb_flag", "iceflag", "s_flag", "o18flag", "deutflag", "z_screen"]
             # line numbers in the .inc file that need to be modified
             rows = [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 42, 44, 45, 57, 58, 59, 62, 63, 64, 65, 66, 67, 68, 69, 70]
-            for i in range(len(parameters)):
+            for i in range(len(parameters)-1):
                 if len(str(parameters[i])) != 0:
                     if i==20 or (i>21 and i<27):
                         if parameters[i]==1:
@@ -440,11 +509,11 @@ class PageEnvModel(tk.Frame):
             values = ["23.4", "-12.11", "34.22", "+3", "292", "468.", "2960000.",
                       "1.7e-3", "0.04", "0.1", "0.4", "0.7", "292", "0.0", "-28.",
                       "-190.", "-4.8", "-96.1", "-11.3", "10", 0, "0.96", 0, 1,
-                      0, 0, 0, "5.0"]
+                      0, 0, 0, "5.0", "1979"]
         else:
             values = ["23.4", "-6.30", "29.5", "+3", "999", "733.", "23100000.",
             "2.0e-3", "0.065", "0.3", "0.4", "0.7", "570", "0.0", "-14.0", "-96.",
-            "23.0", "24.0", "3.7", "10", 0, "0.9925561", 0, 0, 0, 0, 0, "5.0"]
+            "23.0", "24.0", "3.7", "10", 0, "0.9925561", 0, 0, 0, 0, 0, "5.0", "1979"]
         for i in range(len(values)):
             if i==20 or (i>21 and i<27):
                 containers[i].deselect()
@@ -504,71 +573,28 @@ class PageEnvTimeSeries(tk.Frame):
         self.f = Figure(figsize=(10, 5), dpi=100)
         plot_setup(self, self.f, "Time Series", "Days", "Lake Surface Temperature")
 
-        # Lake Surface Temperature
-        LSTButton = tk.Button(self, text="Graph Surface Temperature", font=f,
-                              command=lambda: self.generate_env_time_series(1, 'Surface Temperature'))  # 2nd column
-        LSTButton.grid(row=rowIdx, column=1, pady=5,
-                       ipadx=25, ipady=5, sticky="W")
-        rowIdx += 1
 
-        # Mixing Depth
-        MDButton = tk.Button(self, text="Graph Mixing Depth", font=f,
-                             command=lambda: self.generate_env_time_series(2, 'Mixing Depth'))  # 3rd column
-        MDButton.grid(row=rowIdx, column=1, pady=5,
-                      ipadx=25, ipady=5, sticky="W")
-        rowIdx += 1
+        button_text = ["Graph Surface Temperature", "Graph Mixing Depth", "Graph Evaporation", "Graph Latent Heat (QEW)",
+                       "Graph Sensible Heat (QHW)", "Graph Downwelling\nShortwave Radiation (SWW)",
+                       "Graph Upwelling\nLongwave Raditation (LUW)", "Graph Max\nMixing Depth"]
 
-        # Evaporation Rate
-        ERButton = tk.Button(self, text="Graph Evaporation", font=f,
-                             command=lambda: self.generate_env_time_series(3, 'Evaporation'))  # 4th column
-        ERButton.grid(row=rowIdx, column=1, pady=5,
-                      ipadx=25, ipady=5, sticky="W")
-        rowIdx += 1
+        button_params = [(1, 'Surface Temperature'), (2, 'Mixing Depth'), (3, 'Evaporation'), (4, 'Latent Heat Flux (QEW)'),
+                         (5, 'Sensible Heat (QHW)'), (6, 'Downwelling Shortwave Radiation (SWW)'),
+                         (7,'Upwelling Longwave Raditation (LUW)'), (8, 'Max Mixing Depth')]
 
-        # Latent Heat Flux
-        LHFButton = tk.Button(self, text="Graph Latent Heat (QEW)", font=f,
-                              command=lambda: self.generate_env_time_series(4, 'Latent Heat Flux (QEW)'))  # 5th column
-        LHFButton.grid(row=rowIdx, column=1, pady=5,
-                       ipadx=25, ipady=5, sticky="W")
-        rowIdx += 1
+        for i in range(len(button_text)):
+            col = button_params[i][0]
+            name = button_params[i][1]
+            tk.Button(self, text=button_text[i], font=f,
+                      command=lambda col=col, name=name:self.generate_env_time_series(col, name, isMonthly=True)).grid(
+                      row=rowIdx, column=1, pady=5, ipadx=25, ipady=5, sticky="W")
 
-        # Sensible Heat Flux
-        SHFButton = tk.Button(self, text="Graph Sensible Heat (QHW)", font=f,
-                              command=lambda: self.generate_env_time_series(5, 'Sensible Heat (QHW)'))  # 6th column
-        SHFButton.grid(row=rowIdx, column=1, pady=5,
-                       ipadx=25, ipady=5, sticky="W")
-        rowIdx += 1
+            tk.Button(self, text=button_text[i], font=f,
+                      command=lambda col=col, name=name:self.generate_env_time_series(col, name, isMonthly=False)).grid(
+                      row=rowIdx, column=2, pady=5, ipadx=25, ipady=5, sticky="W")
+            rowIdx+=1
 
-        # Downwelling Shortwave Radiation (SWW)
-        SWWButton = tk.Button(self, text="Graph Downwelling Shortwave Radiation (SWW)", font=f,
-                              command=lambda: self.generate_env_time_series(6,
-                                                                            'Downwelling Shortwave Radiation (SWW)'))  # 6th column
-        SWWButton.grid(row=rowIdx, column=1, pady=5,
-                       ipadx=25, ipady=5, sticky="W")
-        rowIdx += 1
-
-        # Upwelling Longwave Raditation (LUW)
-        LUWButton = tk.Button(self, text="Graph Upwelling Longwave Raditation (LUW)", font=f,
-                              command=lambda: self.generate_env_time_series(7,
-                                                                            'Upwelling Longwave Raditation (LUW)'))  # 6th column
-        LUWButton.grid(row=rowIdx, column=1, pady=5,
-                       ipadx=25, ipady=5, sticky="W")
-        rowIdx += 1
-
-        # Max Mixing Depth
-        MMDButton = tk.Button(self, text="Graph Max Mixing Depth", font=f,
-                              command=lambda: self.generate_env_time_series(8, 'Max Mixing Depth'))  # 6th column
-        MMDButton.grid(row=rowIdx, column=1, pady=5,
-                       ipadx=25, ipady=5, sticky="W")
-        rowIdx += 1
-
-        # Lake Depth
-        LDButton = tk.Button(self, text="Graph Lake Depth", font=f,
-                             command=lambda: self.generate_env_time_series(9, 'Lake Depth'))  # 6th column
-        LDButton.grid(row=rowIdx, column=1, pady=5,
-                      ipadx=25, ipady=5, sticky="W")
-        rowIdx += 10
-
+        rowIdx+=5
         # Return to Start Page
         homeButton = tk.Button(self, text="Back to start page", font=f,
                                command=lambda: controller.show_frame("StartPage"))
@@ -581,17 +607,25 @@ class PageEnvTimeSeries(tk.Frame):
     Inputs:
      - column, an int that corresponds to the column of the desired variable to be plotted
      - varstring, a string that is the name and unit of the variable
+     - isMonthly, a boolean which indicates whether the data should be presented in monthly units or annual averages
     """
 
     # extracts data from .dat file and plots data based on given column number
     # only takes data after the lake has reached equilibriam, e.g. when the days stop repeating
-    def generate_env_time_series(self, column, varstring):
+    def generate_env_time_series(self, column, varstring, isMonthly):
         self.days = []  # x-axis
         self.yaxis = []  # y-axis
 
         get_output_data(self.days, self.yaxis, column)
-        plot_draw(self, self.f, varstring+" over Time", "Days", varstring, self.days, [self.yaxis],
-                  "scatter")
+        if isMonthly:
+            self.days = convert_to_monthly(self.days)
+            plot_draw(self, self.f, varstring + " over Time", "Days", varstring, self.days, self.yaxis,
+                      "scatter monthly")
+        else:
+            self.days, self.yaxis = convert_to_annual([self.yaxis])
+            plot_draw(self, self.f, varstring + " over Time", "Days", varstring, self.days, self.yaxis,
+                      "scatter")
+
 
 """
 Page to plot seasonal cycle
@@ -613,71 +647,23 @@ class PageEnvSeasonalCycle(tk.Frame):
 
         # Graph button for each variable
 
-        # Lake Surface Temperature
-        LSTButton = tk.Button(self, text="Graph Surface Temperature", font=f,
-                              command=lambda: self.generate_env_seasonal_cycle(1, 'Surface Temperature'))  # 2nd column
-        LSTButton.grid(row=rowIdx, column=1, pady=5,
-                       ipadx=25, ipady=5, sticky="W")
-        rowIdx += 1
+        button_text = ["Graph Surface Temperature", "Graph Mixing Depth", "Graph Evaporation", "Graph Latent Heat (QEW)",
+                       "Graph Sensible Heat (QHW)", "Graph Downwelling\nShortwave Radiation (SWW)",
+                       "Graph Upwelling\nLongwave Raditation (LUW)", "Graph Max\nMixing Depth"]
 
-        # Mixing Depth
-        MDButton = tk.Button(self, text="Graph Mixing Depth", font=f,
-                             command=lambda: self.generate_env_seasonal_cycle(2, 'Mixing Depth'))  # 3rd column
-        MDButton.grid(row=rowIdx, column=1, pady=5,
-                      ipadx=25, ipady=5, sticky="W")
-        rowIdx += 1
+        button_params = [(1, 'Surface Temperature'), (2, 'Mixing Depth'), (3, 'Evaporation'), (4, 'Latent Heat Flux (QEW)'),
+                         (5, 'Sensible Heat (QHW)'), (6, 'Downwelling Shortwave Radiation (SWW)'),
+                         (7,'Upwelling Longwave Raditation (LUW)'), (8, 'Max Mixing Depth')]
 
-        # Evaporation Rate
-        ERButton = tk.Button(self, text="Graph Evaporation", font=f,
-                             command=lambda: self.generate_env_seasonal_cycle(3, 'Evaporation'))  # 4th column
-        ERButton.grid(row=rowIdx, column=1, pady=5,
-                      ipadx=25, ipady=5, sticky="W")
-        rowIdx += 1
+        for i in range(len(button_text)):
+            col = button_params[i][0]
+            name = button_params[i][1]
+            tk.Button(self, text=button_text[i], font=f,
+                      command=lambda col=col, name=name:self.generate_env_seasonal_cycle(col, name)).grid(
+                      row=rowIdx, column=1, pady=5, ipadx=25, ipady=5, sticky="W")
+            rowIdx+=1
 
-        # Latent Heat Flux
-        LHFButton = tk.Button(self, text="Graph Latent Heat (QEW)", font=f,
-                              command=lambda: self.generate_env_seasonal_cycle(4,
-                                                                               'Latent Heat Flux (QEW)'))  # 5th column
-        LHFButton.grid(row=rowIdx, column=1, pady=5,
-                       ipadx=25, ipady=5, sticky="W")
-        rowIdx += 1
-
-        # Sensible Heat Flux
-        SHFButton = tk.Button(self, text="Graph Sensible Heat (QHW)", font=f,
-                              command=lambda: self.generate_env_seasonal_cycle(5, 'Sensible Heat (QHW)'))  # 6th column
-        SHFButton.grid(row=rowIdx, column=1, pady=5,
-                       ipadx=25, ipady=5, sticky="W")
-        rowIdx += 1
-
-        # Downwelling Shortwave Radiation (SWW)
-        SWWButton = tk.Button(self, text="Graph Downwelling Shortwave Radiation (SWW)", font=f,
-                              command=lambda: self.generate_env_seasonal_cycle(6,
-                                                                               'Downwelling Shortwave Radiation (SWW)'))  # 6th column
-        SWWButton.grid(row=rowIdx, column=1, pady=5,
-                       ipadx=25, ipady=5, sticky="W")
-        rowIdx += 1
-
-        # Upwelling Longwave Raditation (LUW)
-        LUWButton = tk.Button(self, text="Graph Upwelling Longwave Raditation (LUW)", font=f,
-                              command=lambda: self.generate_env_seasonal_cycle(7,
-                                                                               'Upwelling Longwave Raditation (LUW)'))  # 6th column
-        LUWButton.grid(row=rowIdx, column=1, pady=5,
-                       ipadx=25, ipady=5, sticky="W")
-        rowIdx += 1
-
-        # Max Mixing Depth
-        MMDButton = tk.Button(self, text="Graph Max Mixing Depth", font=f,
-                              command=lambda: self.generate_env_seasonal_cycle(8, 'Max Mixing Depth'))  # 6th column
-        MMDButton.grid(row=rowIdx, column=1, pady=5,
-                       ipadx=25, ipady=5, sticky="W")
-        rowIdx += 1
-
-        # Lake Depth
-        LDButton = tk.Button(self, text="Graph Lake Depth", font=f,
-                             command=lambda: self.generate_env_seasonal_cycle(9, 'Lake Depth'))  # 6th column
-        LDButton.grid(row=rowIdx, column=1, pady=5,
-                      ipadx=25, ipady=5, sticky="W")
-        rowIdx += 10
+        rowIdx += 5
 
         # Return to Start Page
         homeButton = tk.Button(self, text="Back to start page", font=f,
@@ -746,14 +732,17 @@ class PageCarbonate(tk.Frame):
                                                                                                  ipadx=20, ipady=5,
                                                                                                  sticky="W")
             rowIdx += 1
-        tk.Button(self, text="Submit Model", font=MED_FONT, command=self.run_carbonate_model).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
 
-        tk.Button(self, text="Generate Graph of Carbonate Proxy Data", font=MED_FONT, command=self.generate_graph).grid(
+        tk.Button(self, text="Generate Graph of Carbonate Proxy Data\n(Annual Averages)", font=MED_FONT,
+                  command=lambda: self.generate_graph(isMonthly=True)).grid(
             row=rowIdx, column=0, pady=1,
             ipadx=20, ipady=5, sticky="W")
+
+        tk.Button(self, text="Generate Graph of Carbonate Proxy Data\n(Monthly Data)", font=MED_FONT,
+                  command=lambda: self.generate_graph(isMonthly=False)).grid(
+            row=rowIdx, column=1, pady=1,
+            ipadx=20, ipady=5, sticky="W")
+
         rowIdx += 1
         tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_carb_data).grid(
             row=rowIdx, column=0, pady=1,
@@ -772,20 +761,24 @@ class PageCarbonate(tk.Frame):
     Create time series data for carbonate sensor
     """
 
-    def run_carbonate_model(self):
+    def generate_graph(self, isMonthly):
         surf_tempr = []
         self.days = []
         get_output_data(self.days, surf_tempr, 1)
         self.LST = np.array(surf_tempr, dtype=float)
         self.d180w = -2
         self.carb_proxy = carb.carb_sensor(self.LST, self.d180w, model=self.model.get())
-
-    def generate_graph(self):
-        plot_draw(self, self.f, "SENSOR", "Time", "Simulated Carbonate Data", self.days, [self.carb_proxy],
+        if isMonthly:
+            self.time = convert_to_monthly(self.days)
+            plot_draw(self, self.f, "SENSOR", "Time", "Simulated Carbonate Data", self.time, [self.carb_proxy],
+                  "scatter monthly")
+        else:
+            self.time, self.carb_proxy = convert_to_annual([self.carb_proxy])
+            plot_draw(self, self.f, "SENSOR", "Time", "Simulated Carbonate Data", self.time, self.carb_proxy,
                   "scatter")
 
     def download_carb_data(self):
-        df = pd.DataFrame({"Time": self.days, "Pseudoproxy": self.carb_proxy})
+        df = pd.DataFrame({"Time": self.time, "Pseudoproxy": self.carb_proxy})
         export_file_path = fd.asksaveasfilename(defaultextension='.csv')
         df.to_csv(export_file_path, index=None)
 
