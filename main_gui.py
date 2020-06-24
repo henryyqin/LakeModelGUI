@@ -1,6 +1,6 @@
 #tkinter imports
 import tkinter as tk
-from tkinter import font as tkfont
+from tkinter import Canvas, Image, PhotoImage, font
 import tkinter.filedialog as fd
 
 # Sensor Model Scripts
@@ -33,11 +33,14 @@ import copy
 import subprocess
 import multiprocessing
 from subprocess import PIPE, Popen
+from tkinter.ttk import Label
+from PIL import Image, ImageTk
 
-LARGE_FONT = ("Verdana", 20)
-MED_FONT = ("Verdana", 12)
-f = ("Verdana", 8)
-
+TITLE_FONT = ("Courier New", 43)
+LARGE_FONT = ("Courier New", 26)
+MED_FONT = ("Consolas", 12)
+f = ("Consolas", 12)
+f_slant = ("Consolas", 12, "italic")
 #===========GENERAL FUNCTIONS========================================
 def callback(url):
     webbrowser.open_new(url)
@@ -126,17 +129,17 @@ class SampleApp(tk.Tk):
 
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
-        self.title_font = tkfont.Font(family='Verdana', size=24, weight="bold")
+        self.title_font = TITLE_FONT
         # title of window
         self.title("Lake Model GUI")
-        self.minsize(640, 400)
+        self.minsize(600, 300)
         # self.wm_iconbitmap('icon.ico')
 
         # the container is where we'll stack a bunch of frames
         # on top of each other, then the one we want visible
         # will be raised above the others
         container = tk.Frame(self)
-        container.pack(side="top", fill="both", expand=True)
+        container.pack(side="top", fill="none", expand=True)
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
 
@@ -165,55 +168,103 @@ Home/Title Page
 class StartPage(tk.Frame):
 
     def __init__(self, parent, controller):
+
         tk.Frame.__init__(self, parent)
         self.controller = controller
-        label = tk.Label(self, text="PRYSM Models", font=("Verdana", 40))
-        label.pack(pady=(200, 10), padx=10)
+        label = tk.Label(self, 
+                        text="PRYSMv2.0: Lake PSM", 
+                        fg= "black", 
+                        font= TITLE_FONT)
+        label.pack(pady=(40,20), padx=10)
 
-        descrip = tk.Label(self, text="A graphical user interface for Climate Proxy System Modeling Tools in Python",
-                           font=("Helvetica", 18))
-        descrip.pack(pady=10, padx=10)
+        #background image
+        photo=PhotoImage(file="C:\\Users\\xueya\\Downloads\\LakeModelGUI\\resize_640.png")
+        label = Label(self,image = photo, anchor=tk.CENTER)
+        label.image = photo # keep a reference!
+        label.pack(pady=2, padx=10)
 
-        authors = tk.Label(self, text="By: Sylvia Dee, Henry Qin, Xueyan Mu, and Vinay Tummarakota",
-                           font=("Helvetica", 18))
-        authors.pack(pady=10, padx=10)
 
-        website = tk.Label(self, text="Getting Started Guide", fg="blue", cursor="hand2", font=("Helvetica", 18))
-        website.pack(pady=10, padx=10)
+        lake_label = tk.Label(self, 
+                            text="Aerial view of Lake Tanganyika",
+                            font=f_slant)
+        lake_label.pack(pady=(0, 10), padx=10)
+
+
+        descrip = tk.Label(self, 
+                            text="A graphical user interface for Climate Proxy System Modeling Tools in Python",
+                            font=MED_FONT, 
+                            anchor=tk.CENTER,
+                            justify="center")
+        descrip.pack(pady=1, padx=10)
+
+
+        authors = tk.Label(self, 
+                            text="By: Henry Qin, Xueyan Mu, Vinay Tummarakota, and Sylvia Dee",
+                            font=MED_FONT, 
+                            justify="center")
+        authors.pack(pady=1, padx=10)
+
+        website = tk.Label(self, 
+                            text="Getting Started Guide", 
+                            fg="SlateBlue2", 
+                            cursor="hand2", 
+                            font=MED_FONT, 
+                            justify="center")
+        website.pack(pady=1, padx=10)
         website.bind("<Button-1>", lambda e: callback(
             "https://docs.google.com/document/d/1RHYEXm5AjXO3NppNxDLPmPnHPr8tQIaT_jH7F7pU2ic/edit?usp=sharing"))
 
-        github = tk.Label(self, text="Github", fg="blue", cursor="hand2", font=("Helvetica", 18))
-        github.pack(pady=10, padx=10)
+        paper = tk.Label(self, 
+                        text="Original Paper, 2018", 
+                        fg="SlateBlue2", 
+                        cursor="hand2", 
+                        font=MED_FONT)
+        paper.pack(pady=1, padx=10)
+        paper.bind("<Button-2>", lambda e: callback(
+            "https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2018PA003413"))
+
+
+        github = tk.Label(self,
+                        text="Github", 
+                        fg="SlateBlue2", 
+                        cursor="hand2", 
+                        font=MED_FONT)
+        github.pack(pady=1, padx=10)
         github.bind("<Button-1>", lambda e: callback("https://github.com/henryyqin/LakeModelGUI"))
 
+        # Leads to Run Lake Env Model
         envModelButton = tk.Button(self, text="Run Lake Environment Model", font=f, command=lambda: controller.show_frame("PageEnvModel"))
-        envModelButton.pack(ipadx=35, ipady=3, pady=(40, 5))
+        envModelButton.pack(ipadx=43, ipady=3, pady=(10,5))
 
         # Leads to PageEnvTimeSeries
         envTimeSeriesButton = tk.Button(self, text="Plot Environment Time Series", font=f, command=lambda: controller.show_frame("PageEnvTimeSeries"))
-        envTimeSeriesButton.pack(ipadx=35, ipady=3, pady=(5, 5))
+        envTimeSeriesButton.pack(ipadx=30, ipady=3, pady=(2,5))
+
 
         # Leads to PageEnvSeasonalCycle
         envTimeSeriesButton = tk.Button(self, text="Plot Environment Seasonal Cycle", font=f, command=lambda: controller.show_frame("PageEnvSeasonalCycle"))
-        envTimeSeriesButton.pack(ipadx=35, ipady=3, pady=(5, 5))
+        envTimeSeriesButton.pack(ipadx=37, ipady=3, pady=(2,5))
+
 
         # Leads to PageCarbonate
         carbButton = tk.Button(self, text="Run Carbonate Model", font=f,
                     command=lambda: controller.show_frame("PageCarbonate"))
-        carbButton.pack(ipadx=30, ipady=3, pady=(5, 5))
+        carbButton.pack(ipadx=37, ipady=3, pady=(2,5))
+
 
         # Leads to PageGDGT
         gdgtButton = tk.Button(self, text="Run GDGT Model", font=f, command=lambda: controller.show_frame("PageGDGT"))
-        gdgtButton.pack(ipadx=30, ipady=3, pady=(5, 5))
+        gdgtButton.pack(ipadx=37, ipady=3, pady=(2,5))
+
 
         # Leads to PageLeafwax
         leafwaxButton = tk.Button(self, text="Run Leafwax Model", font=f, command=lambda: controller.show_frame("PageLeafwax"))
-        leafwaxButton.pack(ipadx=30, ipady=3, pady=(5, 5))
+        leafwaxButton.pack(ipadx=37, ipady=3, pady=(2,5))
+
 
         # Leads to PageBioturbation
         bioButton = tk.Button(self, text="Run Bioturbation Model", font=f, command=lambda: controller.show_frame("PageBioturbation"))
-        bioButton.pack(ipadx=30, ipady=3, pady=(5, 5))
+        bioButton.pack(ipadx=37, ipady=3, pady=(2,50))
 
 """
 Page to run the environment model
@@ -222,40 +273,49 @@ class PageEnvModel(tk.Frame):
 
     def __init__(self, parent, controller):
         rowIdx = 1
-        tk.Frame.__init__(self, parent)
+        tk.Frame.__init__(self, parent, bg="white", bd=50, relief="flat")
         self.controller = controller
+
+        # Title
         label = tk.Label(
             self, text="Run Lake Environment Model", font=LARGE_FONT)
-        label.grid(row=rowIdx, columnspan=4, rowspan=3, pady=5, sticky="we")
+        label.grid(sticky="W", columnspan=3)
 
         rowIdx += 3
 
         # Instructions for uploading .txt and .inc files
         tk.Label(self,
-                 text=
-                 """
-                 1) Upload a text file to provide input data for the lake model\n
-                 2) Enter lake-specific and simulation-specific parameters\n
-                 3) If parameters are left empty, default parameters for Lake Tanganyika will be used instead
-                 """,  font=f, justify="left"
-                 ).grid(row=rowIdx, columnspan=4, rowspan=3, pady=15, sticky="we")
+                text="1) Upload a text file to provide input data for the lake model\n2) Enter lake-specific and simulation-specific parameters\n3) If parameters are left empty, default parameters for Lake Tanganyika will be used",
+                font=f, justify="left"
+                 ).grid(row=rowIdx,  columnspan=1, rowspan=1, pady=15, ipady=0, sticky="W")
         rowIdx += 3
 
         # Allows user to upload .txt data.
         tk.Label(self, text="Click to upload your .txt file:", font=f).grid(
-            row=rowIdx, column=0, pady=10, sticky="E")
+            row=rowIdx, column=0, pady=10, sticky="W")
         graphButton = tk.Button(self, text="Upload .txt File", font=f,
                                 command=self.uploadTxt)
-        graphButton.grid(row=rowIdx, column=1, pady=10,
-                         ipadx=30, ipady=3, sticky="W")
+        graphButton.grid(row=rowIdx, column=0, padx=340,
+                         ipadx=10, ipady=3, sticky="W")
         rowIdx += 1
 
         # Shows the name of the current uploaded file, if any.
         tk.Label(self, text="Current File Uploaded:", font=f).grid(
-            row=rowIdx, column=0, sticky="E")
+            row=rowIdx, column=0, sticky="W")
         self.currentTxtFileLabel = tk.Label(self, text="No file", font=f)
         self.currentTxtFileLabel.grid(
-            row=rowIdx, column=1, columnspan=2, pady=10, sticky="W")
+            row=rowIdx, column=0, columnspan=2, ipady=3, padx=340, pady=(2,10), sticky="W")
+        rowIdx+=1
+
+        # Autofill buttons
+        malawiButton = tk.Button(self, text="Autofill Malawi Parameters", font=f,
+                                 command=lambda: self.fill("Malawi", param_containers))
+        malawiButton.grid(row=rowIdx, column=0, ipadx=30, ipady=3, sticky="W")
+
+        tanganyikaButton = tk.Button(self, text="Autofill Tanganyika Parameters", font=f,
+                                     command=lambda: self.fill("Tanganyika", param_containers))
+        tanganyikaButton.grid(row=rowIdx, column=0, padx=340, ipadx=30, ipady=3, sticky="W")
+
         rowIdx += 3
 
         # Entries for .inc file
@@ -275,9 +335,9 @@ class PageEnvModel(tk.Frame):
         param_values = []
         param_containers = []
         tk.Label(self, text="Lake-Specific Parameters", font=LARGE_FONT).grid(
-            row=rowIdx, column=0, sticky="W")
+            row=rowIdx, column=0, pady=10, sticky="W")
         tk.Label(self, text="Simulation-Specific Parameters", font=LARGE_FONT).grid(
-            row=rowIdx, column=2, sticky="W")
+            row=rowIdx, column=0, pady=10, padx=750, sticky="W")
         rowIdx += 1
 
         # List entries for lake-specific parameters
@@ -285,50 +345,42 @@ class PageEnvModel(tk.Frame):
             tk.Label(self, text=parameters[i - rowIdx], font=f).grid(
                 row=i, column=0, sticky="W")
             p = tk.Entry(self)
-            p.grid(row=i, column=1, sticky="W")
+            p.grid(row=i, column=0, padx=550, sticky="W")
             param_values.append(p)
             param_containers.append(p)
 
         # List entries for simulation-specific parameters
         for i in range(rowIdx + 19, rowIdx + 28):
             tk.Label(self, text=parameters[i - rowIdx], font=f).grid(
-                row=i - 19, column=2, sticky="W")
+                row=i - 19, column=0, padx=750, sticky="W")
             if i in [rowIdx + 19, rowIdx + 21, rowIdx + 27]:
                 p = tk.Entry(self)
-                p.grid(row=i - 19, column=3, sticky="W")
+                p.grid(row=i - 19, column=0, padx=1300, sticky="W")
                 param_containers.append(p)
             else:
                 p = tk.IntVar()
                 c = tk.Checkbutton(self, variable=p)
-                c.grid(row=i - 19, column=3, sticky="W")
+                c.grid(row=i - 19, column=0, padx=1300, sticky="W")
                 param_containers.append(c)
             param_values.append(p)
 
         rowIdx += 19
 
         # Submit entries for .inc file
-        malawiButton = tk.Button(self, text="Autofill Malawi Parameters", font=f,
-                                 command=lambda: self.fill("Malawi", param_containers))
-        malawiButton.grid(row=rowIdx, column=1, ipadx=30, ipady=3, sticky="W")
-
-        tanganyikaButton = tk.Button(self, text="Autofill Tanganyika Parameters", font=f,
-                                     command=lambda: self.fill("Tanganyika", param_containers))
-        tanganyikaButton.grid(row=rowIdx, column=2, ipadx=30, ipady=3, sticky="W")
-
         submitButton = tk.Button(self, text="Submit Parameters", font=f,
                                  command=lambda: self.editInc([p.get() for p in param_values], parameters))
-        submitButton.grid(row=rowIdx, column=3, ipadx=30, ipady=3, sticky="W")
+        submitButton.grid(row=rowIdx, column=0, padx=1300, ipadx=3, ipady=3, sticky="W")
         rowIdx += 1
 
 
         # Button to run the model (Mac/Linux only)
         runButton = tk.Button(
             self, text="Run Model", font=f,command=lambda: self.runModel(runButton))
-        runButton.grid(row=rowIdx, column=1, ipadx=30, ipady=3, sticky="WE")
+        runButton.grid(row=rowIdx, column=0, padx=1300, ipadx=30, ipady=3, sticky="W")
         rowIdx+=1
 
         csvButton = tk.Button(self, text='Download CSV', font=f, command=lambda: self.download_csv())
-        csvButton.grid(row=rowIdx, column=2, ipadx=30, ipady=3, sticky="W")
+        csvButton.grid(row=rowIdx, column=0, padx=1300, ipadx=30, ipady=3, sticky="W")
 
         # Return to Start Page
         homeButton = tk.Button(self, text="Back to start page", font=f,
@@ -534,49 +586,50 @@ class PageEnvTimeSeries(tk.Frame):
 
     def __init__(self, parent, controller):
         rowIdx = 1
-        tk.Frame.__init__(self, parent)
+        tk.Frame.__init__(self, parent, bg="white", bd=50)
         self.controller = controller
         label = tk.Label(
             self, text="Environment Model Time Series", font=LARGE_FONT)
-        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5, sticky="we")
+        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=15, sticky="w")
         rowIdx += 3
 
         # Empty graph, default
         self.f = Figure(figsize=(10, 5), dpi=100)
         plot_setup(self, self.f, "Time Series", "Days", "Lake Surface Temperature")
+       
 
         # Lake Surface Temperature
         LSTButton = tk.Button(self, text="Graph Surface Temperature", font=f,
                               command=lambda: self.generate_env_time_series(1, 'Surface Temperature'))  # 2nd column
-        LSTButton.grid(row=rowIdx, column=1, pady=5,
+        LSTButton.grid(row=rowIdx, column=0, pady=5,
                        ipadx=25, ipady=5, sticky="W")
         rowIdx += 1
 
         # Mixing Depth
         MDButton = tk.Button(self, text="Graph Mixing Depth", font=f,
                              command=lambda: self.generate_env_time_series(2, 'Mixing Depth'))  # 3rd column
-        MDButton.grid(row=rowIdx, column=1, pady=5,
+        MDButton.grid(row=rowIdx, column=0, pady=5,
                       ipadx=25, ipady=5, sticky="W")
         rowIdx += 1
 
         # Evaporation Rate
         ERButton = tk.Button(self, text="Graph Evaporation", font=f,
                              command=lambda: self.generate_env_time_series(3, 'Evaporation'))  # 4th column
-        ERButton.grid(row=rowIdx, column=1, pady=5,
+        ERButton.grid(row=rowIdx, column=0, pady=5,
                       ipadx=25, ipady=5, sticky="W")
         rowIdx += 1
 
         # Latent Heat Flux
         LHFButton = tk.Button(self, text="Graph Latent Heat (QEW)", font=f,
                               command=lambda: self.generate_env_time_series(4, 'Latent Heat Flux (QEW)'))  # 5th column
-        LHFButton.grid(row=rowIdx, column=1, pady=5,
+        LHFButton.grid(row=rowIdx, column=0, pady=5,
                        ipadx=25, ipady=5, sticky="W")
         rowIdx += 1
 
         # Sensible Heat Flux
         SHFButton = tk.Button(self, text="Graph Sensible Heat (QHW)", font=f,
                               command=lambda: self.generate_env_time_series(5, 'Sensible Heat (QHW)'))  # 6th column
-        SHFButton.grid(row=rowIdx, column=1, pady=5,
+        SHFButton.grid(row=rowIdx, column=0, pady=5,
                        ipadx=25, ipady=5, sticky="W")
         rowIdx += 1
 
@@ -584,7 +637,7 @@ class PageEnvTimeSeries(tk.Frame):
         SWWButton = tk.Button(self, text="Graph Downwelling Shortwave Radiation (SWW)", font=f,
                               command=lambda: self.generate_env_time_series(6,
                                                                             'Downwelling Shortwave Radiation (SWW)'))  # 6th column
-        SWWButton.grid(row=rowIdx, column=1, pady=5,
+        SWWButton.grid(row=rowIdx, column=0, pady=5,
                        ipadx=25, ipady=5, sticky="W")
         rowIdx += 1
 
@@ -592,29 +645,29 @@ class PageEnvTimeSeries(tk.Frame):
         LUWButton = tk.Button(self, text="Graph Upwelling Longwave Raditation (LUW)", font=f,
                               command=lambda: self.generate_env_time_series(7,
                                                                             'Upwelling Longwave Raditation (LUW)'))  # 6th column
-        LUWButton.grid(row=rowIdx, column=1, pady=5,
+        LUWButton.grid(row=rowIdx, column=0, pady=5,
                        ipadx=25, ipady=5, sticky="W")
         rowIdx += 1
 
         # Max Mixing Depth
         MMDButton = tk.Button(self, text="Graph Max Mixing Depth", font=f,
                               command=lambda: self.generate_env_time_series(8, 'Max Mixing Depth'))  # 6th column
-        MMDButton.grid(row=rowIdx, column=1, pady=5,
+        MMDButton.grid(row=rowIdx, column=0, pady=5,
                        ipadx=25, ipady=5, sticky="W")
         rowIdx += 1
 
         # Lake Depth
         LDButton = tk.Button(self, text="Graph Lake Depth", font=f,
                              command=lambda: self.generate_env_time_series(9, 'Lake Depth'))  # 6th column
-        LDButton.grid(row=rowIdx, column=1, pady=5,
+        LDButton.grid(row=rowIdx, column=0, pady=5,
                       ipadx=25, ipady=5, sticky="W")
-        rowIdx += 10
+        rowIdx += 19
 
         # Return to Start Page
         homeButton = tk.Button(self, text="Back to start page", font=f,
                                command=lambda: controller.show_frame("StartPage"))
-        homeButton.grid(row=rowIdx, column=3, ipadx=25,
-                        ipady=3, pady=3, sticky="E")
+        homeButton.grid(row=50, column=0, ipadx=25,
+                        ipady=3, pady=390, sticky="w")
 
     """
     Plots the multiple values of a specific variable for each day of the year as a scatterplot
