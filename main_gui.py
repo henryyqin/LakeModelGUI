@@ -1,7 +1,10 @@
 #tkinter imports
 import tkinter as tk
 from tkinter import font as tkfont
+from tkinter import Canvas, Image, PhotoImage, font
 import tkinter.filedialog as fd
+from tkinter.ttk import Label
+from PIL import Image, ImageTk
 
 # Sensor Model Scripts
 import sensor_carbonate as carb
@@ -32,6 +35,7 @@ import os
 from os.path import basename
 import webbrowser
 import copy
+import subprocess
 from subprocess import PIPE, Popen
 
 #===========GENERAL FUNCTIONS========================================

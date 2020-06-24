@@ -17,7 +17,7 @@
       !character*80 :: data_output_profile, data_output_surface
 
       !lake_data_filename = 'Malawi.inc'
-      !data_input_filename = 'ERA_INTERIM_1979_2016_Tanganyika.txt'
+      !data_input_filename = 'ERA_INTERIM_1979_2016_Malawi (1).txt'
       !data_output_profile = 'profile_output.dat'
       !data_output_surface = 'surface_output.dat'
       !!!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
