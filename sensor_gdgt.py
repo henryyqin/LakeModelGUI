@@ -26,7 +26,6 @@ def gdgt_sensor(LST,MAAT,beta=1/50,model='TEX86-loomis'):
         OUTPUT: pseudoproxy timeseries (monthly)
     '''
 
-    print(len(LST))
     if (model=='beta'):
         pseudoproxy= beta*LST
 
@@ -40,6 +39,5 @@ def gdgt_sensor(LST,MAAT,beta=1/50,model='TEX86-loomis'):
         pseudoproxy=(MAAT + 1.21)/32.42 #russell2018distributions
     elif (model=='MBT-J'):
         pseudoproxy=(MAAT + 8.57)/31.45 # de jonge 2014
-    print(len(pseudoproxy))
     return pseudoproxy
 
