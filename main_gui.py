@@ -1,6 +1,6 @@
 #tkinter imports
 import tkinter as tk
-from tkinter import Canvas, Image, PhotoImage, font
+from tkinter import Canvas, Frame, Image, PhotoImage, Scrollbar, font
 import tkinter.filedialog as fd
 
 # Sensor Model Scripts
@@ -128,20 +128,41 @@ Creates a GUI object
 class SampleApp(tk.Tk):
 
     def __init__(self, *args, **kwargs):
-        tk.Tk.__init__(self, *args, **kwargs)
+        
+        window = tk.Tk.__init__(self, *args, **kwargs)
+        # window size
+        self.geometry("600x300")
         self.title_font = TITLE_FONT
+
         # title of window
         self.title("Lake Model GUI")
         self.minsize(600, 300)
+
+        # vertical scrollbar
+        SVBar = tk.Scrollbar(window) 
+        SVBar.pack (side = tk.RIGHT, 
+                    fill = "y") 
+        
+        SHBar = tk.Scrollbar(window,  
+                            orient = tk.HORIZONTAL) 
+        SHBar.pack (side = tk.BOTTOM,  
+                    fill = "x") 
+        # potential icon image
         # self.wm_iconbitmap('icon.ico')
 
         # the container is where we'll stack a bunch of frames
         # on top of each other, then the one we want visible
         # will be raised above the others
-        container = tk.Frame(self)
-        container.pack(side="top", fill="none", expand=True)
+        container = tk.Text(window, 
+                            height=500,
+                            width=500,
+                            yscrollcommand=SVBar.set,
+                            xscrollcommand=SHBar.set,
+                            wrap="none")
+        container.pack(side="top",expand = 0, fill = tk.BOTH)
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
+
 
         self.frames = {}
         for F in (StartPage, PageEnvModel, PageEnvTimeSeries, PageEnvSeasonalCycle, PageCarbonate, PageLeafwax, PageGDGT,
@@ -156,6 +177,9 @@ class SampleApp(tk.Tk):
             frame.grid(row=0, column=0, sticky="nsew")
 
         self.show_frame("StartPage")
+        container.insert(tk.END, self.show_frame)
+        SHBar.config(command = container.xview)
+        SVBar.config(command = container.yview)
 
     def show_frame(self, page_name):
         '''Show a frame for the given page name'''
@@ -169,8 +193,17 @@ class StartPage(tk.Frame):
 
     def __init__(self, parent, controller):
 
+
+
         tk.Frame.__init__(self, parent)
         self.controller = controller
+
+        h=Scrollbar(self, orient='horizontal')
+        h.pack(side="bottom", fill="x")
+        v=Scrollbar(self)
+        v.pack(side='right', fill='y')
+    
+
         label = tk.Label(self, 
                         text="PRYSMv2.0: Lake PSM", 
                         fg= "black", 
@@ -1256,6 +1289,7 @@ class PageBioturbation(tk.Frame):
                            "Bioturbated Carrier 1": bio1, "Bioturbated Carrier 2": bio2})
         export_file_path = fd.asksaveasfilename(defaultextension='.csv')
         df.to_csv(export_file_path, index=None)
+
 
 
 if __name__ == "__main__":
