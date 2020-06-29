@@ -139,6 +139,10 @@ def plot_draw(frame, figure, title, x_axis, y_axis, x_data, y_data, plot_type, c
                 date_format = mdates.DateFormatter('%b,%Y')
                 plt.xaxis.set_major_formatter(date_format)
                 plt.plot_date(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i], marker=None)
+            elif "month-only" in plot_type:
+                date_format = mdates.DateFormatter('%b')
+                plt.xaxis.set_major_formatter(date_format)
+                plt.plot_date(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i])
             else:
                 plt.plot_date(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i])
 
@@ -458,13 +462,13 @@ class PageEnvModel(tk.Frame):
               "Elevation Of Basin Bottom In Meters", "Area Of Catchment+Lake In Hectares",
               "Neutral Drag Coefficient", "Shortwave Extinction Coefficient (1/M)",
               "Fraction Of Advected Air Over Lake", "Albedo Of Melting Snow", "Albedo Of Non-Melting Snow",
-              "Prescribed Depth In Meters", "Prescribed Salinity In Ppt", "D18o Of Air Above Lake",
-              "Dd Of Air Above Lake", "Temperature To Initialize Lake At In INIT_LAKE Subroutine",
+              "Prescribed Depth In Meters", "Prescribed Salinity In Ppt", "\u0394¹⁸o Of Air Above Lake",
+              "\u0394d Of Air Above Lake", "Temperature To Initialize Lake At In INIT_LAKE Subroutine",
               "Dd To Initialize Lake At In INIT_LAKE Subroutine",
-              "D18o To Initialize Lake At In INIT_LAKE Subroutine", "Number Of Years For Spinup",
-              "True For Explict Boundry Layer Computations; Presently Only For Sigma Coord Climate Models",
-              "Sigma Level For Boundary Flag", "True For Variable Lake Depth", "True For Variable Ice Cover",
-              "True For Variable Salinity", "True For Variable D18o", "True For Variable Dd",
+              "\u0394¹⁸o To Initialize Lake At In INIT_LAKE Subroutine", "Number Of Years For Spinup",
+              "Check Mark For Explict Boundary Layer Computations;\nPresently Only For Sigma Coord Climate Models",
+              "Sigma Level For Boundary Flag", "Check Mark For Variable Lake Depth", "Check Mark For Variable Ice Cover",
+              "Check Mark For Variable Salinity", "Check Mark For Variable \u0394¹⁸o", "Check Mark For Variable \u0394d",
               "Height Of Met Inputs", "Start Year"]
         param_values = []
         param_containers = []
@@ -643,14 +647,16 @@ class PageEnvModel(tk.Frame):
             PARAMETERS = copy.copy(parameters)
             for i in range(len(parameters) - 1):
                 if len(str(parameters[i])) != 0:
+                    comments[i] = comments[i].replace("\u0394", "D")
+                    comments[i] = comments[i].replace("¹⁸", "18")
+                    comments[i] = comments[i].replace("Check Mark", "true")
                     if i == 20 or (i > 21 and i < 27):
                         if parameters[i] == 1:
                             new[rows[i]] = "      parameter (" + names[i] + " = .true.)   ! " + comments[i] + "\n"
                         else:
                             new[rows[i]] = "      parameter (" + names[i] + " = .false.)   ! " + comments[i] + "\n"
                     else:
-                        new[rows[i]] = "      parameter (" + names[i] + " = " + parameters[i] + ")   ! " + comments[
-                            i] + "\n"
+                        new[rows[i]] = "      parameter (" + names[i] + " = " + parameters[i] + ")   ! " + comments[i] + "\n"
             write_to_file(f, new)
 
     """
@@ -800,7 +806,7 @@ class PageEnvTimeSeries(tk.Frame):
 
         self.months = convert_to_monthly(self.days)
         plot_draw(self.scrollable_frame, self.f, varstring + " over Time", "Month", varstring, self.months, [self.yaxis],
-                  "normal monthly", ["#00FFFF"], [1], ["Monthly Data"])
+                  "normal monthly", ["b22222 "], [1], ["Monthly Data"])
 
         self.years, self.yaxis = convert_to_annual([self.yaxis])
         plot_draw(self.scrollable_frame, self.f, varstring + " over Time", "Year", varstring, self.years, self.yaxis,
@@ -840,7 +846,7 @@ class PageEnvSeasonalCycle(tk.Frame):
     def populate(self):
         rowIdx = 1
         label = tk.Label(
-            self.scrollable_frame, text="Environment Model Seasonal Cycle", font=LARGE_FONT)
+            self.scrollable_frame, text="Environment Model\nSeasonal Cycle", font=LARGE_FONT)
         label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5, sticky="we")
         rowIdx += 3
 
@@ -865,7 +871,7 @@ class PageEnvSeasonalCycle(tk.Frame):
             name = button_params[i][1]
             tk.Button(self.scrollable_frame, text=button_text[i], font=f,
                       command=lambda col=col, name=name: self.generate_env_seasonal_cycle(col, name)).grid(
-                row=rowIdx, column=1, pady=5, ipadx=25, ipady=5, sticky="W")
+                row=rowIdx, column=0, pady=5, ipadx=25, ipady=5, sticky="W")
             rowIdx += 1
 
         rowIdx += 5
@@ -873,8 +879,8 @@ class PageEnvSeasonalCycle(tk.Frame):
         # Return to Start Page
         homeButton = tk.Button(self.scrollable_frame, text="Back to start page", font=f,
                                command=lambda: self.parent.show_frame(["PageEnvSeasonalCycle"], "StartPage"))
-        homeButton.grid(row=rowIdx, column=3, ipadx=25,
-                        ipady=3, pady=3, sticky="E")
+        homeButton.grid(row=15, column=0, ipadx=25,
+                        ipady=3, pady=5, sticky="w")
 
     """
     Plots the average of a specific variable for each day of the year as a scatterplot
@@ -897,20 +903,22 @@ class PageEnvSeasonalCycle(tk.Frame):
         self.ydict = {}  # dictionary to store the y values for each day from 15 to 375
         for day in self.days:  # 15, 45, ...
             # if the day is not a key, then make an empty list
-            if day % 390 not in self.ydict:
-                self.ydict[day % 390] = []
-            # otherwise append to that list
-            else:
-                self.ydict[day % 390].append(self.yaxis[int((day - 15) / 30)])  # (day - 15)/30 gets the correct index
+            if day % 360 not in self.ydict:
+                self.ydict[day % 360] = []
+            self.ydict[day % 360].append(self.yaxis[int((day - 15) / 30)])  # (day - 15)/30 gets the correct index
 
         # After yval array is formed for each xval, generate the axtual yaxis data
         self.seasonal_yaxis = []  # actual plotting data for y
-        self.seasonal_days = range(15, 376, 30)  # actual plotting data for x, count from 15 to 375 by 30's
-        for day in self.seasonal_days:
-            self.seasonal_yaxis.append(mean(self.ydict[day]))  # mean the values of each day
+        self.seasonal_days = []
+        global START_YEAR
+        start = dt.date(START_YEAR, 1, 1)
+        for i in range(15, 346, 30):
+            date = start+dt.timedelta(days=(i-1))
+            self.seasonal_days.append(date)
+            self.seasonal_yaxis.append(mean(self.ydict[i]))
 
-        plot_draw(self, self.f, varstring + " Seasonal Cycle", "Day of the Year", "Average", self.seasonal_days,
-                  [self.seasonal_yaxis], "scatter")
+        plot_draw(self.scrollable_frame, self.f, varstring + " Seasonal Cycle", "Day of the Year", "Average", self.seasonal_days,
+                  [self.seasonal_yaxis], "normal month-only", ["#000000"], [3], ["Monthly Averaged Data"])
 
 
 """
@@ -992,7 +1000,7 @@ class PageCarbonate(tk.Frame):
 
         self.months = convert_to_monthly(self.days)
         plot_draw(self.scrollable_frame, self.f, "SENSOR", "Month", "Simulated Carbonate Data", self.months, [self.carb_proxy],
-                  "normal monthly", ["#00FFFF"], [1], ["Monthly Data"])
+                  "normal monthly", ["b22222 "], [1], ["Monthly Data"])
 
         self.years, self.yaxis = convert_to_annual([self.carb_proxy])
         plot_draw(self.scrollable_frame, self.f, "SENSOR", "Year", "Simulated Carbonate Data", self.years, self.yaxis,
@@ -1092,7 +1100,7 @@ class PageGDGT(tk.Frame):
 
         self.months = convert_to_monthly(self.days)
         plot_draw(self.scrollable_frame, self.f, "SENSOR", "Month", "Simulated GDGT Data", self.months, [self.gdgt_proxy],
-                  "normal monthly", ["#00FFFF"], [1], ["Monthly Data"])
+                  "normal monthly", ["b22222 "], [1], ["Monthly Data"])
 
         self.years, self.yaxis = convert_to_annual([self.gdgt_proxy])
         plot_draw(self.scrollable_frame, self.f, "SENSOR", "Year", "Simulated GDGT Data", self.years, self.yaxis,
@@ -1231,7 +1239,7 @@ class PageLeafwax(tk.Frame):
                 self.days.append(30 * i + 15)
         self.months = convert_to_monthly(self.days)
         plot_draw(self.scrollable_frame, self.f, "SENSOR", "Month", "Simulated Leaf Wax Data", self.months, [self.leafwax_proxy],
-                  "normal monthly", ["#00FFFF"], [1], ["Monthly Data"])
+                  "normal monthly", ["b22222 "], [1], ["Monthly Data"])
 
         self.years, self.leafwax_array = convert_to_annual([self.leafwax_proxy, self.Q1, self.Q2])
         plot_draw(self.scrollable_frame, self.f, "SENSOR", "Year", "Simulated Leaf Wax Data", self.years, [self.leafwax_array[0]],
@@ -1389,7 +1397,7 @@ class PageBioturbation(tk.Frame):
         self.bio2 = self.bioiso[:, 1]
         self.ori = self.oriiso[:, 0]
         plot_draw(self.scrollable_frame, self.f, "ARCHIVE", "Year", "Bioturbated Sensor Data", self.days, [self.bio1, self.bio2, self.ori],
-                  "normal", ["#00FFFF", "#00FFFF", "#000000"], [2,2,2], ["Bioturbated 1", "Bioturbated 2", "Original"])
+                  "normal", ["b22222 ", "b22222 ", "#000000"], [2,2,2], ["Bioturbated 1", "Bioturbated 2", "Original"])
 
     def download_bioturb_data(self):
         df = pd.DataFrame({"Time": self.days, "Pseudoproxy": self.ori,
