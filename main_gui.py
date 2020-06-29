@@ -1234,22 +1234,22 @@ class PageObservation(tk.Frame):
         extractDate = year[0]
 
         # Runs the actual model (takes several minutes)
-        ages = Bchron.Bchronology(ages=ages, ageSds=sd, positions=positions,
+        self.ages = Bchron.Bchronology(ages=ages, ageSds=sd, positions=positions,
                           calCurves=calCurves, predictPositions=predictPositions, extractDate=extractDate)
 
         # Creating arrays for plotting
-        thetaPredict = ages[4]
+        thetaPredict = self.ages[4]
         thetaPredict = np.array(thetaPredict)
         depths = np.array(predictPositions)
-        depth_horizons = depths[:-1]
+        self.depth_horizons = depths[:-1]
         chrons = thetaPredict[:, :-1]
-        chronsQ = np.quantile(chrons.transpose(), [0.025, 0.5, 0.975], axis=1)
+        self.chronsQ = np.quantile(chrons.transpose(), [0.025, 0.5, 0.975], axis=1)
 
         # Actual Plotting
         ax = self.f.add_subplot()
-        ax.fill_betweenx(depth_horizons, chronsQ[0], chronsQ[2],
+        ax.fill_betweenx(self.depth_horizons, self.chronsQ[0], self.chronsQ[2],
                           facecolor='Silver', edgecolor='Silver', lw=0.0) # horizontal fill between 2.5% - 97.5% of data
-        ax.plot(chronsQ[1], depth_horizons, color="black", lw=0.75) # median line
+        ax.plot(self.chronsQ[1], self.depth_horizons, color="black", lw=0.75) # median line
         ax.scatter(data['AGE'], data['DP'], marker="s") # squares
         ax.set_xlim(46000, 0)
         ax.set_ylim(650, -50)
@@ -1261,8 +1261,8 @@ class PageObservation(tk.Frame):
         canvas.draw()
 
     def download_obs_data(self):
-        df = pd.DataFrame({"Depth": depth_horizons, "Age (95% CI Lower Bound)": chronsQ[0],
-                        "Age (95% CI Median)": chronsQ[0], "Age (95% CI Upper Bound)": chronsQ[2]})
+        df = pd.DataFrame({"Depth": self.depth_horizons, "Age (95% CI Lower Bound)": self.chronsQ[0],
+                        "Age (95% CI Median)": self.chronsQ[0], "Age (95% CI Upper Bound)": self.chronsQ[2]})
         export_file_path = fd.asksaveasfilename(defaultextension='.csv')
         df.to_csv(export_file_path, index=None)
 
