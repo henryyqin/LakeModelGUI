@@ -24,7 +24,15 @@ import datetime as dt
 from matplotlib import dates as mdates
 from statistics import mean
 plt.style.use('seaborn-whitegrid')
-matplotlib.use('TkAgg')  # Necessary for Mac Mojave
+matplotlib.use('TkAgg')  # Necessary for Ma
+
+# Imports for Observation Model
+from rpy2.robjects import FloatVector
+from rpy2.robjects.vectors import StrVector
+import rpy2.robjects as robjects
+from rpy2.robjects.packages import importr
+import rpy2.robjects.numpy2ri
+rpy2.robjects.numpy2ri.activate()
 
 
 #Miscellaneous imports
@@ -217,7 +225,7 @@ class SampleApp(tk.Tk):
 
         self.frames = {}
         for F in (StartPage, PageEnvModel, PageEnvTimeSeries, PageEnvSeasonalCycle, PageCarbonate, PageLeafwax, PageGDGT,
-                  PageBioturbation):
+                  PageObservation, PageBioturbation):
             page_name = F.__name__
             frame = F(parent=container, controller=self)
             self.frames[page_name] = frame
@@ -333,6 +341,9 @@ class StartPage(tk.Frame):
         leafwaxButton = tk.Button(self, text="Run Leafwax Model", font=f, command=lambda: controller.show_frame("PageLeafwax"))
         leafwaxButton.pack(ipadx=37, ipady=3, pady=(2,5))
 
+        # Leads to PageObservation
+        observationButton = tk.Button(self, text="Run Observation Model", font=f, command=lambda: controller.show_frame("PageObservation"))
+        observationButton.pack(ipadx=37, ipady=3, pady=(2,5))
 
         # Leads to PageBioturbation
         bioButton = tk.Button(self, text="Run Bioturbation Model", font=f, command=lambda: controller.show_frame("PageBioturbation"))
@@ -1111,9 +1122,146 @@ class PageLeafwax(tk.Frame):
         df.to_csv(export_file_path, index=None)
 
 
+
 """
-Page to run bioturbation archive model and plot data
+Page to run observation model and plot data
 """
+
+class PageObservation(tk.Frame):
+    def __init__(self, parent, controller):
+        rowIdx = 1
+        tk.Frame.__init__(self, parent)
+        self.controller = controller
+        label = tk.Label(
+            self, text="Run Observation Model", font=LARGE_FONT)
+        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
+
+        rowIdx += 3
+
+        # Instructions for uploading file
+        tk.Label(self,
+                 text=
+                 """
+                 1) Upload a .txt file or choose the provided example .txt file
+                 2) Enter error stuff? [IDK]
+                 3) If parameters are left empty, [INSERT INSTRUCTIONS]
+                 """, font=f, justify="left"
+                 ).grid(row=rowIdx, columnspan=3, rowspan=3, pady=15)
+        rowIdx += 3
+
+        # Upload example file
+        tk.Label(self, text="Click to load data", font=f).grid(
+            row=rowIdx, column=0, pady=10, sticky="W")
+        exampleButton = tk.Button(self, text="Upload example file", font=f,
+                                command=lambda: self.uploadObsCsv("sample"))
+        exampleButton.grid(row=rowIdx, column=1, pady=10,
+                         ipadx=30, ipady=3, sticky="W")
+        # Upload own csv file
+        uploadButton = tk.Button(self, text="Upload own .csv File", font=f,
+                                command=lambda: self.uploadObsCsv("user_file"))
+        uploadButton.grid(row=rowIdx, column=2, pady=10,
+                         ipadx=30, ipady=3, sticky="W")
+        rowIdx += 1
+
+        # Shows the name of the current uploaded file, if any.
+        tk.Label(self, text="Current File Uploaded:", font=f).grid(
+            row=rowIdx, column=0, sticky="W")
+        self.currentFileLabel = tk.Label(self, text="No file", font=f)
+        self.currentFileLabel.grid(
+            row=rowIdx, column=1, columnspan=2, pady=10, sticky="W")
+
+        rowIdx += 3
+
+        self.f = Figure(figsize=(9, 5), dpi=100)
+        plot_setup(self, self.f, "Depth in Core (cm)", "Age (cal years BP)", "Observation Model")
+
+
+        tk.Button(self, text="Graph Observation Model", font=f, command=lambda: self.generate_graph()).grid(
+            row=rowIdx, column=0, sticky="W")
+
+        rowIdx += 1
+        tk.Button(self, text="Save Graph Data as .csv", font=f, command=self.download_obs_data).grid(
+            row=rowIdx, column=0, sticky="W")
+        rowIdx += 1
+        # Return to Start Page
+        tk.Button(self, text="Back to start", font=f,
+                  command=lambda: controller.show_frame("StartPage")).grid(
+            row=rowIdx, column=0, sticky="W")
+
+    """
+      Upload .csv file from user
+      """
+
+    def uploadObsCsv(self, type):
+        if type == "sample":
+            # Upload example file
+            sample_input = 'TEX86_cal.csv'
+            self.currentFileLabel.configure(text=sample_input)
+            self.csvfilename = sample_input
+        else:
+            # Open the file choosen by the user
+            self.csvfilename = fd.askopenfilename(
+                filetypes=(('csv files', 'csv'),))
+            self.currentFileLabel.configure(text=basename(self.csvfilename))
+
+
+    """
+    Plot observation model
+    """
+
+    def generate_graph(self):
+        # R packages
+        utils = importr("utils")
+        utils.chooseCRANmirror(ind=1)
+        packnames = ('Bchron', 'stats', 'graphics')
+        utils.install_packages(StrVector(packnames))
+        Bchron = importr('Bchron')
+        r = robjects.r
+
+        # Read in the data (csv file must be in the same directory as executable)
+        data = np.genfromtxt(self.csvfilename, delimiter=',', names=True, dtype=None)
+        year = data['AGE']
+        depth = data['DP']
+        sds = data['SD']
+        calCurves = np.repeat('normal', len(year))
+        nyears = year[-1]
+        d = depth[-1]
+        ages = FloatVector(year)
+        sd = FloatVector(sds)
+        positions = FloatVector(depth)
+        calCurves = StrVector(calCurves)
+        predictPositions = r.seq(0, d, by=d / nyears)
+        extractDate = year[0]
+
+        # Runs the actual model (takes several minutes)
+        ages = Bchron.Bchronology(ages=ages, ageSds=sd, positions=positions,
+                          calCurves=calCurves, predictPositions=predictPositions, extractDate=extractDate)
+
+        # Creating arrays for plotting
+        thetaPredict = ages[4]
+        thetaPredict = np.array(thetaPredict)
+        depths = np.array(predictPositions)
+        depth_horizons = depths[:-1]
+        chrons = thetaPredict[:, :-1]
+        chronsQ = np.quantile(chrons.transpose(), [0.025, 0.5, 0.975], axis=1)
+
+        # Actual Plotting
+        ax = self.f.add_subplot()
+        ax.fill_betweenx(depth_horizons, chronsQ[0], chronsQ[2],
+                          facecolor='Silver', edgecolor='Silver', lw=0.0) # horizontal fill between 2.5% - 97.5% of data
+        ax.plot(chronsQ[1], depth_horizons, color="black", lw=0.75) # median line
+        ax.scatter(data['AGE'], data['DP'], marker="s") # squares
+        ax.set_xlim(46000, 0)
+        ax.set_ylim(650, -50)
+        ax.set_xlabel('Age (cal years BP)')
+        ax.set_ylabel('Depth (mm)')
+
+        canvas = FigureCanvasTkAgg(self.f, self)
+        canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+        canvas.draw()
+
+    def download_obs_data(self):
+        pass
 
 
 """
