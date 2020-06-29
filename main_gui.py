@@ -1261,7 +1261,10 @@ class PageObservation(tk.Frame):
         canvas.draw()
 
     def download_obs_data(self):
-        pass
+        df = pd.DataFrame({"Depth": depth_horizons, "Age (95% CI Lower Bound)": chronsQ[0],
+                        "Age (95% CI Median)": chronsQ[0], "Age (95% CI Upper Bound)": chronsQ[2]})
+        export_file_path = fd.asksaveasfilename(defaultextension='.csv')
+        df.to_csv(export_file_path, index=None)
 
 
 """
