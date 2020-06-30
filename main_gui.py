@@ -372,9 +372,9 @@ class PageEnvModel(tk.Frame):
                  ).grid(row=rowIdx, column=0, rowspan=1, pady=15, ipady=0, sticky="W")
         rowIdx += 1
 
-        # Allows user to upload .txt data.
-        # tk.Label(self, text="Click to upload your .txt file:", font=f).grid(
-        #     row=rowIdx, column=0, pady=10, sticky="W")
+        #Allows user to upload .txt data.
+        tk.Label(self, text="Click to upload your .txt file:", font=f).grid(
+            row=rowIdx, column=0, pady=10, sticky="W")
         graphButton = tk.Button(self, text="Upload .txt File", font=f,
                                 command=self.uploadTxt)
         graphButton.grid(row=rowIdx, column=0, padx=340,
