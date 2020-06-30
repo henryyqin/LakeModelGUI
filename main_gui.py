@@ -37,6 +37,7 @@ import multiprocessing
 from subprocess import PIPE, Popen
 from tkinter.ttk import Label
 from PIL import Image, ImageTk
+from tkinter.filedialog import asksaveasfilename
 
 #===========GENERAL FUNCTIONS========================================
 def callback(url):
@@ -105,7 +106,7 @@ def plot_setup(frame, figure, title, x_axis, y_axis):
     """
     plt = figure.add_subplot(111)
     canvas = FigureCanvasTkAgg(figure, frame)
-    canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+    canvas.get_tk_widget().grid(row=0, column=3, rowspan=16, columnspan=10, sticky="nw")
     plt.set_title(title, fontsize=12)
     plt.set_xlabel(x_axis)
     plt.set_ylabel(y_axis)
@@ -149,7 +150,7 @@ def plot_draw(frame, figure, title, x_axis, y_axis, x_data, y_data, plot_type, c
         plt.fill_between(x_data, error_lines[0], error_lines[1], facecolor='grey', edgecolor='none', alpha=0.20)
     plt.legend()
     canvas = FigureCanvasTkAgg(figure, frame)
-    canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+    canvas.get_tk_widget().grid(row=0, column=3, rowspan=16, columnspan=15, sticky="nw")
     canvas.draw()
 
 
@@ -204,12 +205,13 @@ Creates a GUI object
 """
 class SampleApp(tk.Tk):
 
-    def __init__(self, *args, **kwargs):
-        tk.Tk.__init__(self, *args, **kwargs)
+    def __init__(self):
+        tk.Tk.__init__(self)
         self.title_font = TITLE_FONT
         # title of window
         self.title("Lake Model GUI")
-        self.minsize(600, 300)
+        self.minsize(300, 200)
+        #self.maxsize(1700,1200)
         # self.wm_iconbitmap('icon.ico')
 
         # the container is where we'll stack a bunch of frames
@@ -217,8 +219,8 @@ class SampleApp(tk.Tk):
         # will be raised above the others
         container = tk.Frame(self)
         container.pack(side="top", fill="none", expand=True)
-        container.grid_rowconfigure(0, weight=1)
-        container.grid_columnconfigure(0, weight=1)
+        container.grid_rowconfigure(0, weight=1, minsize=100)
+        container.grid_columnconfigure(0, weight=1, minsize=100)
 
         self.frames = {}
         for F in (StartPage, PageEnvModel, PageEnvTimeSeries, PageEnvSeasonalCycle, PageCarbonate, PageLeafwax, PageGDGT,
@@ -248,6 +250,8 @@ class StartPage(tk.Frame):
 
         tk.Frame.__init__(self, parent)
         self.controller = controller
+
+        
         label = tk.Label(self, 
                         text="PRYSMv2.0: Lake PSM", 
                         fg= "black", 
@@ -281,6 +285,7 @@ class StartPage(tk.Frame):
                             justify="center")
         authors.pack(pady=1, padx=10)
 
+
         website = tk.Label(self, 
                             text="Getting Started Guide", 
                             fg="SlateBlue2", 
@@ -290,6 +295,7 @@ class StartPage(tk.Frame):
         website.pack(pady=1, padx=10)
         website.bind("<Button-1>", lambda e: callback(
             "https://docs.google.com/document/d/1RHYEXm5AjXO3NppNxDLPmPnHPr8tQIaT_jH7F7pU2ic/edit?usp=sharing"))
+
 
         paper = tk.Label(self, 
                         text="Original Paper, 2018", 
@@ -317,11 +323,9 @@ class StartPage(tk.Frame):
         envTimeSeriesButton = tk.Button(self, text="Plot Environment Time Series", font=f, command=lambda: controller.show_frame("PageEnvTimeSeries"))
         envTimeSeriesButton.pack(ipadx=30, ipady=3, pady=(2,5))
 
-
         # Leads to PageEnvSeasonalCycle
         envTimeSeriesButton = tk.Button(self, text="Plot Environment Seasonal Cycle", font=f, command=lambda: controller.show_frame("PageEnvSeasonalCycle"))
         envTimeSeriesButton.pack(ipadx=37, ipady=3, pady=(2,5))
-
 
         # Leads to PageCarbonate
         carbButton = tk.Button(self, text="Run Carbonate Model", font=f,
@@ -669,7 +673,10 @@ class PageEnvModel(tk.Frame):
         read_file.to_csv(export_file_path, index=None)
 
     def download_png(self):
-        plt.savefig("simple_path.png") # save as png
+        file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
+        if file:
+            self.f.savefig(file)
+            tk.messagebox.showinfo("Sucess", "Saved graph")
 
 
 """
@@ -682,9 +689,11 @@ class PageEnvTimeSeries(tk.Frame):
         rowIdx = 1
         tk.Frame.__init__(self, parent, bg="white", bd=50)
         self.controller = controller
+
+        #Title
         label = tk.Label(
             self, text="Environment Model Time Series", font=LARGE_FONT)
-        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=15, sticky="w")
+        label.grid(sticky="W", columnspan=3, pady=(1, 20))
         rowIdx += 3
 
         # Empty graph, default
@@ -701,6 +710,7 @@ class PageEnvTimeSeries(tk.Frame):
                          (5, 'Sensible Heat (QHW)'), (6, 'Downwelling Shortwave Radiation (SWW)'),
                          (7, 'Upwelling Longwave Raditation (LUW)'), (8, 'Max Mixing Depth')]
 
+        
         for i in range(len(button_text)):
             col = button_params[i][0]
             name = button_params[i][1]
@@ -711,21 +721,21 @@ class PageEnvTimeSeries(tk.Frame):
 
 
         # Save as PNG and CSV
+        rowIdx += 8
+        tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv).grid(
+            row=rowIdx, column=0, pady=(5,5), #135
+            ipadx=20, ipady=5, sticky="SW")
         rowIdx += 1
-        tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv_data).grid(
+        tk.Button(self, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
             row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
-        tk.Button(self, text="Download graph as .png", font=MED_FONT, command=self.download_png_data).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="W")
+            ipadx=20, ipady=5, sticky="SW")
         rowIdx += 1
 
         # Return to Start Page
         homeButton = tk.Button(self, text="Back to start page", font=f,
                                command=lambda: controller.show_frame("StartPage"))
-        homeButton.grid(row=15, column=0, ipadx=25,
-                        ipady=3, pady=5, sticky="w")
+        homeButton.grid(row=rowIdx, column=0, ipadx=25,
+                        ipady=3, pady=25, sticky="sw")
 
     """
     Plots the multiple values of a specific variable for each day of the year as a scatterplot
@@ -753,15 +763,18 @@ class PageEnvTimeSeries(tk.Frame):
 
 
         print(len(self.days), len(self.yaxis))
-    def download_csv_data(self):
+    def download_csv(self):
         df = pd.DataFrame({"Time": self.days, "yaxis": self.yaxis})
-        export_file_path = fd.asksaveasfilename(defaultextension='.csv')
-        df.to_csv(export_file_path, index=None)
+        file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
+        if file:
+            df.to_csv(file, index=False)
+            tk.messagebox.showinfo("Success", "Saved Data")
 
-    def download_png_data(self):
-        df = pd.DataFrame({"Time": self.days, "yaxis": self.yaxis})
-        export_file_path = fd.asksaveasfilename(defaultextension='.png')
-        df.to_csv(export_file_path, index=None)
+    def download_png(self):
+        file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
+        if file:
+            self.f.savefig(file)
+            tk.messagebox.showinfo("Sucess", "Saved graph")
 
 """
 Page to plot seasonal cycle
@@ -772,11 +785,13 @@ class PageEnvSeasonalCycle(tk.Frame):
 
     def __init__(self, parent, controller):
         rowIdx = 1
-        tk.Frame.__init__(self, parent)
+        tk.Frame.__init__(self, parent, bg="white", bd=50)
         self.controller = controller
+
+        # Title
         label = tk.Label(
             self, text="Environment Model Seasonal Cycle", font=LARGE_FONT)
-        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5, sticky="we")
+        label.grid(sticky="W", columnspan=3, pady=(1, 20))
         rowIdx += 3
 
         # Empty graph, default
@@ -799,20 +814,17 @@ class PageEnvSeasonalCycle(tk.Frame):
             col = button_params[i][0]
             name = button_params[i][1]
             tk.Button(self, text=button_text[i], font=f,
-                      command=lambda col=col, name=name: self.generate_env_seasonal_cycle(col, name)).grid(
-                row=rowIdx, column=1, pady=5, ipadx=25, ipady=5, sticky="W")
-            rowIdx += 1
-
-        rowIdx += 5
-
+                      command=lambda col=col, name=name: self.generate_env_time_series(col, name)).grid(
+                row=rowIdx, column=0, pady=5, ipadx=25, ipady=5, sticky="W")
+            rowIdx+=1
 
         # Save as PNG and CSV
         rowIdx += 1
-        tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_seasonal_csv_data).grid(
-            row=rowIdx, column=0, pady=1,
+        tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv).grid(
+            row=rowIdx, column=0, pady=(135,5),
             ipadx=20, ipady=5, sticky="W")
         rowIdx += 1
-        tk.Button(self, text="Download graph as .png", font=MED_FONT, command=self.download_seasonal_png_data).grid(
+        tk.Button(self, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
             row=rowIdx, column=0, pady=1,
             ipadx=20, ipady=5, sticky="W")
         rowIdx += 1
@@ -820,8 +832,8 @@ class PageEnvSeasonalCycle(tk.Frame):
         # Return to Start Page
         homeButton = tk.Button(self, text="Back to start page", font=f,
                                command=lambda: controller.show_frame("StartPage"))
-        homeButton.grid(row=rowIdx, column=3, ipadx=25,
-                        ipady=3, pady=3, sticky="E")
+        homeButton.grid(row=15, column=0, ipadx=25,
+                        ipady=3, pady=25, sticky="w")
 
     """
     Plots the average of a specific variable for each day of the year as a scatterplot
@@ -859,15 +871,18 @@ class PageEnvSeasonalCycle(tk.Frame):
         plot_draw(self, self.f, varstring + " Seasonal Cycle", "Day of the Year", "Average", self.seasonal_days,
                   [self.seasonal_yaxis], "scatter")
 
-    def download_seasonal_csv_data(self):
+    def download_csv(self):
         df = pd.DataFrame({"Time": self.seasonal_days, "Pseudoproxy": self.seasonal_yaxis})
-        export_file_path = fd.asksaveasfilename(defaultextension='.csv')
-        df.to_csv(export_file_path, index=None)
+        file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
+        if file:
+            df.to_csv(file, index=False)
+            tk.messagebox.showinfo("Success", "Saved Data")
 
-    def download_seasonal_png_data(self):
-        df = pd.DataFrame({"Time": self.seasonal_days, "Pseudoproxy": self.seasonal_yaxis})
-        export_file_path = fd.asksaveasfilename(defaultextension='.png')
-        df.to_csv(export_file_path, index=None)
+    def download_png(self):
+        file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
+        if file:
+            self.f.savefig(file)
+            tk.messagebox.showinfo("Sucess", "Saved graph")
 """
 Page to run carbonate sensor model and plot data
 """
@@ -879,11 +894,13 @@ class PageCarbonate(tk.Frame):
         rowIdx = 1
         tk.Frame.__init__(self, parent, bg="white", bd=50)
         self.controller = controller
+
+        #Title
         label = tk.Label(
             self, text="Carbonate Sensor Model", font=LARGE_FONT)
-        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
+        label.grid(sticky="W", columnspan=3, pady=(1, 20))
 
-        rowIdx += 3
+        rowIdx += 8
 
         self.model = tk.StringVar()
         self.model.set("ONeil")
@@ -895,24 +912,25 @@ class PageCarbonate(tk.Frame):
                                                                                                  sticky="W")
             rowIdx += 1
         tk.Button(self, text="Generate Graph of Carbonate Proxy Data", font=MED_FONT, command=self.generate_graph).grid(
-            row=rowIdx, column=0, pady=1,
+            row=rowIdx, column=0, pady=(10, 5),
             ipadx=20, ipady=5, sticky="W")
 
         # Save as PNG and CSV
-        rowIdx += 1
-        tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv_data).grid(
-            row=rowIdx, column=0, pady=1,
+        rowIdx += 10
+        tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv).grid(
+            row=rowIdx, column=0, pady=(200,5),
             ipadx=20, ipady=5, sticky="W")
         rowIdx += 1
-        tk.Button(self, text="Download graph as .png", font=MED_FONT, command=self.download_png_data).grid(
+        tk.Button(self, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
             row=rowIdx, column=0, pady=1,
             ipadx=20, ipady=5, sticky="W")
         rowIdx += 1
 
         # Return to Start Page
-        tk.Button(self, text="Back to start", font=f,
-                  command=lambda: controller.show_frame("StartPage")).grid(
-            row=rowIdx, column=0, sticky="W")
+        homeButton = tk.Button(self, text="Back to start page", font=f,
+                               command=lambda: controller.show_frame("StartPage"))
+        homeButton.grid(row=rowIdx, column=0, ipadx=25,
+                        ipady=3, pady=25, sticky="w")
 
         self.f = Figure(figsize=(10, 5), dpi=100)
         plot_setup(self, self.f, "SENSOR", "Time", "Simulated Carbonate Data")
@@ -938,15 +956,17 @@ class PageCarbonate(tk.Frame):
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], overlay=True)
         
 
-    def download_csv_data(self):
+    def download_csv(self):
         df = pd.DataFrame({"Time": self.days, "Pseudoproxy": self.carb_proxy})
-        export_file_path = fd.asksaveasfilename(defaultextension='.csv')
-        df.to_csv(export_file_path, index=None)
-
-    def download_png_data(self):
-        df = pd.DataFrame({"Time": self.days, "Pseudoproxy": self.carb_proxy})
-        export_file_path = fd.asksaveasfilename(defaultextension='.png')
-        df.to_csv(export_file_path, index=None)
+        file = asksaveasfilename(initialfile="CarbonateData.csv", defaultextension=".csv")
+        if file:
+            df.to_csv(file, index=False)
+            tk.messagebox.showinfo("Success", "Saved Carbonate data")
+    def download_png(self):
+        file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
+        if file:
+            self.f.savefig(file)
+            tk.messagebox.showinfo("Success", "Saved graph")
 """
 Page to run GDGT Model and plot data
 """
@@ -958,9 +978,10 @@ class PageGDGT(tk.Frame):
         rowIdx = 1
         tk.Frame.__init__(self, parent, bg="white", bd=50)
         self.controller = controller
+        #Title
         label = tk.Label(
             self, text="Run GDGT Sensor Model", font=LARGE_FONT)
-        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
+        label.grid(sticky="W", columnspan=3, pady=(1, 20))
 
         rowIdx += 3
 
@@ -968,29 +989,33 @@ class PageGDGT(tk.Frame):
         self.model.set("TEX86-tierney")
         model_names = ["TEX86-tierney", "TEX86-powers", "TEX86-loomis", "MBT-R", "MBT-J"]
         for name in model_names:
-            tk.Radiobutton(self, text=name, value=name, font=MED_FONT, variable=self.model).grid(row=rowIdx, column=0, sticky="W")
+            tk.Radiobutton(self, text=name, value=name, font=MED_FONT, variable=self.model).grid(row=rowIdx, column=0,
+                                                                                                 pady=5,
+                                                                                                 ipadx=20, ipady=5,
+                                                                                                 sticky="W")
             rowIdx += 1
 
         tk.Button(self, text="Generate Graph of GDGT Proxy Data", font=MED_FONT, command=self.generate_graph).grid(
-            row=rowIdx, column=0, sticky="W")
+            row=rowIdx, column=0, pady=20, ipadx=20, ipady=5, sticky="W")
 
         # Save as PNG and CSV
         rowIdx += 1
-        tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv_data).grid(
-            row=rowIdx, column=0, pady=1,
+        tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv).grid(
+            row=rowIdx, column=0, pady=(135,5),
             ipadx=20, ipady=5, sticky="W")
         rowIdx += 1
-        tk.Button(self, text="Download graph as .png", font=MED_FONT, command=self.download_png_data).grid(
+        tk.Button(self, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
             row=rowIdx, column=0, pady=1,
             ipadx=20, ipady=5, sticky="W")
         rowIdx += 1
 
         # Return to Start Page
-        tk.Button(self, text="Back to start", font=MED_FONT,
-                  command=lambda: controller.show_frame("StartPage")).grid(
-            row=rowIdx, column=0, sticky="W")
+        homeButton = tk.Button(self, text="Back to start page", font=f,
+                               command=lambda: controller.show_frame("StartPage"))
+        homeButton.grid(row=15, column=0, ipadx=25,
+                        ipady=3, pady=25, sticky="w")
 
-        self.f = Figure(figsize=(9, 5), dpi=100)
+        self.f = Figure(figsize=(10, 5), dpi=100)
         plot_setup(self, self.f, "SENSOR", "Time", "Simulated GDGT Data")
 
     """
@@ -1028,15 +1053,18 @@ class PageGDGT(tk.Frame):
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], overlay=True)
 
 
-    def download_csv_data(self):
+    def download_csv(self):
         df = pd.DataFrame({"Time": self.days, "Pseudoproxy": self.gdgt_proxy})
-        export_file_path = fd.asksaveasfilename(defaultextension='.csv')
-        df.to_csv(export_file_path, index=None)
+        file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
+        if file:
+            df.to_csv(file, index=False)
+            tk.messagebox.showinfo("Success", "Saved Data")
 
-    def download_png_data(self):
-        df = pd.DataFrame({"Time": self.days, "Pseudoproxy": self.gdgt_proxy})
-        export_file_path = fd.asksaveasfilename(defaultextension='.png')
-        df.to_csv(export_file_path, index=None)
+    def download_png(self):
+        file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
+        if file:
+            self.f.savefig(file)
+            tk.messagebox.showinfo("Sucess", "Saved graph")
 
 
 
@@ -1048,22 +1076,20 @@ Page to run leafwax sensor model and plot data
 class PageLeafwax(tk.Frame):
     def __init__(self, parent, controller):
         rowIdx = 1
-        tk.Frame.__init__(self, parent)
+        tk.Frame.__init__(self, parent, bg="white", bd=50)
         self.controller = controller
+
+        #Title
         label = tk.Label(
             self, text="Run Leafwax Model", font=LARGE_FONT)
-        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
+        label.grid(sticky="W", columnspan=3, pady=(1, 20))
 
         rowIdx += 3
 
         # Instructions for uploading file
         tk.Label(self,
-                 text=
-                 """
-                 1) Upload a .txt file or choose the provided example .txt file
-                 2) Enter error stuff? [IDK]
-                 3) If parameters are left empty, [INSERT INSTRUCTIONS]
-                 """, font=f, justify="left"
+                 text="1) Upload a text file to provide input data for the lake model\n2) Enter lake-specific and simulation-specific parameters\n3) If parameters are left empty, default parameters for Lake Tanganyika will be used",
+                font=f, justify="left"
                  ).grid(row=rowIdx, columnspan=3, rowspan=3, pady=15)
         rowIdx += 3
 
@@ -1106,11 +1132,11 @@ class PageLeafwax(tk.Frame):
 
         # Save as PNG and CSV
         rowIdx += 1
-        tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv_data).grid(
+        tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv).grid(
             row=rowIdx, column=0, pady=1,
             ipadx=20, ipady=5, sticky="W")
         rowIdx += 1
-        tk.Button(self, text="Download graph as .png", font=MED_FONT, command=self.download_png_data).grid(
+        tk.Button(self, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
             row=rowIdx, column=0, pady=1,
             ipadx=20, ipady=5, sticky="W")
         rowIdx += 1
@@ -1185,18 +1211,18 @@ class PageLeafwax(tk.Frame):
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], error_lines=self.leafwax_proxy[1:])
         """
 
-    def download_csv_data(self):
+    def download_csv(self):
         df = pd.DataFrame({"Time": self.days, "Pseudoproxy": self.leafwax_proxy, "95% CI Lower Bound": self.Q1,
                            "95% CI Upper Bound": self.Q2})
-        export_file_path = fd.asksaveasfilename(defaultextension='.csv')
-        df.to_csv(export_file_path, index=None)
-
-    def download_png_data(self):
-        df = pd.DataFrame({"Time": self.days, "Pseudoproxy": self.leafwax_proxy, "95% CI Lower Bound": self.Q1,
-                           "95% CI Upper Bound": self.Q2})
-        export_file_path = fd.asksaveasfilename(defaultextension='.png')
-        df.to_csv(export_file_path, index=None)
-
+        file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
+        if file:
+            df.to_csv(file, index=False)
+            tk.messagebox.showinfo("Success", "Saved Data")
+    def download_png(self):
+        file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
+        if file:
+            self.f.savefig(file)
+            tk.messagebox.showinfo("Sucess", "Saved graph")
 
 """
 Page to run bioturbation archive model and plot data
@@ -1204,19 +1230,19 @@ Page to run bioturbation archive model and plot data
 class PageBioturbation(tk.Frame):
     def __init__(self, parent, controller):
         rowIdx = 1
-        tk.Frame.__init__(self, parent)
+        tk.Frame.__init__(self, parent, bg="white", bd=50)
         self.controller = controller
+
+        #Title
         label = tk.Label(
             self, text="Run Bioturbation Model", font=LARGE_FONT)
-        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
+        label.grid(sticky="W", columnspan=3, pady=(1, 20))
         rowIdx += 3
+
         # Instructions for uploading .txt and .inc files
         tk.Label(self,
                  text=
-                 """
-                 1) Upload a .csv file with a column "Pseudoproxy" containing pseudoproxy timeseries data. \n
-                 2) Enter parameters for bioturbation\n
-                 3) You cannot leave parameters empty
+                 """1) Upload a .csv file with a column "Pseudoproxy" containing pseudoproxy timeseries data. \n2) Enter parameters for bioturbation\n3) You cannot leave parameters empty
                  """, font=f, justify="left"
                  ).grid(row=rowIdx, columnspan=3, rowspan=3, pady=15)
         rowIdx += 3
@@ -1245,11 +1271,11 @@ class PageBioturbation(tk.Frame):
        
         # Save as PNG and CSV
         rowIdx += 1
-        tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv_data).grid(
+        tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv).grid(
             row=rowIdx, column=0, pady=1,
             ipadx=20, ipady=5, sticky="W")
         rowIdx += 1
-        tk.Button(self, text="Download graph as .png", font=MED_FONT, command=self.download_png_data).grid(
+        tk.Button(self, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
             row=rowIdx, column=0, pady=1,
             ipadx=20, ipady=5, sticky="W")
         rowIdx += 1
@@ -1330,16 +1356,18 @@ class PageBioturbation(tk.Frame):
         plot_draw(self, self.f, "ARCHIVE", "Year", "Bioturbated Sensor Data", self.days, [self.bio1, self.bio2, self.ori],
                   "normal", ["#00FFFF", "#00FFFF", "#000000"], [2,2,2], ["Bioturbated 1", "Bioturbated 2", "Original"])
 
-    def download_csv_data(self):
+    def download_csv(self):
         df = pd.DataFrame({"Time": self.days, "Pseudoproxy": self.ori,
                            "Bioturbated Carrier 1": self.bio1, "Bioturbated Carrier 2": self.bio2})
-        export_file_path = fd.asksaveasfilename(defaultextension='.csv')
-        df.to_csv(export_file_path, index=None)
-    def download_png_data(self):
-        df = pd.DataFrame({"Time": self.days, "Pseudoproxy": self.ori,
-                           "Bioturbated Carrier 1": self.bio1, "Bioturbated Carrier 2": self.bio2})
-        export_file_path = fd.asksaveasfilename(defaultextension='.png')
-        df.to_csv(export_file_path, index=None)
+        file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
+        if file:
+            df.to_csv(file, index=False)
+            tk.messagebox.showinfo("Success", "Saved Data")
+    def download_png(self):
+        file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
+        if file:
+            self.f.savefig(file)
+            tk.messagebox.showinfo("Sucess", "Saved graph")
 
 if __name__ == "__main__":
     app = SampleApp()
