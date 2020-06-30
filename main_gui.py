@@ -226,6 +226,7 @@ class SampleApp(tk.Tk):
         self.title_font = TITLE_FONT
         # title of window
         self.title("Lake Model GUI")
+        #self.geometry("2500x1600")
         #self.minsize(600, 300)
         # self.wm_iconbitmap('icon.ico')
         self.columnconfigure(0, weight=1)
@@ -244,7 +245,7 @@ class SampleApp(tk.Tk):
             self.frames[page_name] = frame
 
         self.show_frame(["StartPage", "PageEnvModel", "PageEnvTimeSeries", "PageEnvSeasonalCycle",
-                         "PageCarbonate","PageGDGT","PageLeafwax","PageBioturbation"], "StartPage")
+                         "PageCarbonate","PageGDGT","PageLeafwax", "PageObservation", "PageBioturbation"], "StartPage")
 
 
     def show_frame(self, old_pages, new_page):
@@ -1404,18 +1405,41 @@ Page to run observation model and plot data
 """
 
 class PageObservation(tk.Frame):
-    def __init__(self, parent, controller):
+    def __init__(self, parent, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
+        self.parent = parent
+        canvas = tk.Canvas(self, bg="white")
+        scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        s = ttk.Style()
+        s.configure('new.TFrame', background='#FFFFFF')
+        self.scrollable_frame = ttk.Frame(canvas, style='new.TFrame')
+
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+
+        canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        self.populate()
+        self.pack(fill="both", expand=True)
+
+
+    def populate(self):
         rowIdx = 1
-        tk.Frame.__init__(self, parent)
-        self.controller = controller
+
         label = tk.Label(
-            self, text="Run Observation Model", font=LARGE_FONT)
+            self.scrollable_frame, text="Run Observation Model", font=LARGE_FONT)
         label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
 
         rowIdx += 3
 
         # Instructions for uploading file
-        tk.Label(self,
+        tk.Label(self.scrollable_frame,
                  text=
                  """
                  WARNING: Long running time
@@ -1427,50 +1451,50 @@ class PageObservation(tk.Frame):
         rowIdx += 4
 
         # Upload example file
-        tk.Label(self, text="Click to load data", font=f).grid(
+        tk.Label(self.scrollable_frame, text="Click to load data", font=f).grid(
             row=rowIdx, column=0, pady=10, sticky="W")
-        exampleButton = tk.Button(self, text="Upload example file", font=f,
+        exampleButton = tk.Button(self.scrollable_frame, text="Upload example file", font=f,
                                 command=lambda: self.uploadObsCsv("sample"))
         exampleButton.grid(row=rowIdx, column=1, pady=10,
                          ipadx=30, ipady=3, sticky="W")
         # Upload own csv file
-        uploadButton = tk.Button(self, text="Upload own .csv File", font=f,
+        uploadButton = tk.Button(self.scrollable_frame, text="Upload own .csv File", font=f,
                                 command=lambda: self.uploadObsCsv("user_file"))
         uploadButton.grid(row=rowIdx, column=2, pady=10,
                          ipadx=30, ipady=3, sticky="W")
         rowIdx += 1
 
         # Shows the name of the current uploaded file, if any.
-        tk.Label(self, text="Current File Uploaded:", font=f).grid(
+        tk.Label(self.scrollable_frame, text="Current File Uploaded:", font=f).grid(
             row=rowIdx, column=0, sticky="W")
-        self.currentFileLabel = tk.Label(self, text="No file", font=f)
+        self.currentFileLabel = tk.Label(self.scrollable_frame, text="No file", font=f)
         self.currentFileLabel.grid(
             row=rowIdx, column=1, columnspan=2, pady=10, sticky="W")
 
         rowIdx += 3
 
-        self.f = Figure(figsize=(9, 5), dpi=100)
-        plot_setup(self, self.f, "Depth in Core (cm)", "Age (cal years BP)", "Observation Model")
+        self.f, self.axis = plt.subplots(1,1, figsize=(10, 5), dpi=100)
+        plot_setup(self.scrollable_frame, self.axis, self.f, "Depth in Core (cm)", "Age (cal years BP)", "Observation Model")
 
 
-        tk.Button(self, text="Graph Observation Model", font=MED_FONT, command=lambda: self.generate_graph()).grid(
+        tk.Button(self.scrollable_frame, text="Graph Observation Model", font=MED_FONT, command=lambda: self.generate_graph()).grid(
             row=rowIdx, column=0, pady=1,
             ipadx=20, ipady=5, sticky="W")
 
         rowIdx += 1
-        tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_obs_data).grid(
+        tk.Button(self.scrollable_frame, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_obs_data).grid(
             row=rowIdx, column=0, pady=1,
             ipadx=20, ipady=5, sticky="W")
         rowIdx += 1
-        tk.Button(self, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
+        tk.Button(self.scrollable_frame, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
             row=rowIdx, column=0, pady=1,
             ipadx=20, ipady=5, sticky="W")
         rowIdx += 1
         # Return to Start Page
-        tk.Button(self, text="Back to start", font=f,
-                  command=lambda: controller.show_frame("StartPage")).grid(
+        tk.Button(self.scrollable_frame, text="Back to start", font=f,
+                  command=lambda: self.parent.show_frame(["PageObservation"], "StartPage")).grid(
             row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="W")
+            ipadx=20, ipady=5,  sticky="W")
 
     """
       Upload .csv file from user
@@ -1646,7 +1670,8 @@ class PageBioturbation(tk.Frame):
         # Return to Start Page
         tk.Button(self.scrollable_frame, text="Back to start", font=f,
                   command=lambda: self.parent.show_frame(["PageBioturbation"], "StartPage")).grid(
-            row=rowIdx, column=0, sticky="W")
+            row=rowIdx, column=0, pady=1,
+            ipadx=20, ipady=5,  sticky="W")
 
     def upload_csv(self):
         # Open the file choosen by the user
