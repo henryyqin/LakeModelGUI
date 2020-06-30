@@ -91,28 +91,29 @@ def get_output_data(time, data, column):
         data.insert(0, float(cur_row[column]))
         time.insert(0, int(float(cur_row[0])))
 
-def plot_setup(frame, figure, title, x_axis, y_axis):
+def plot_setup(frame, axes, figure, title, x_axis, y_axis):
     """
     Creates a blank plot on which a graph can be displayed
     Inputs
     - frame: the page in the GUI where the plot is located
+    - axes: the axes which allow plotting capabilities
     - figure: the figure on which the plot is located
     - title: the title displayed on the plot
     - x_axis: the x-axis label
     - y_axis: the y-axis label
     """
-    plt = figure.add_subplot(111)
     canvas = FigureCanvasTkAgg(figure, frame)
     canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
-    plt.set_title(title, fontsize=12)
-    plt.set_xlabel(x_axis)
-    plt.set_ylabel(y_axis)
+    axes.set_title(title, fontsize=12)
+    axes.set_xlabel(x_axis)
+    axes.set_ylabel(y_axis)
 
-def plot_draw(frame, figure, title, x_axis, y_axis, x_data, y_data, plot_type, colors, widths, labels, error_lines=None, overlay=False):
+def plot_draw(frame, axes, figure, title, x_axis, y_axis, x_data, y_data, plot_type, colors, widths, labels, error_lines=None, overlay=False):
     """
     Creates plot(s) based on input parameters
     Inputs
     - frame: the page in the GUI where the plot is located
+    - axes: the axes which allow plotting capabilities
     - figure: the figure on which the plot is located
     - title: the title displayed on the plot
     - x_axis: the x-axis label
@@ -126,36 +127,34 @@ def plot_draw(frame, figure, title, x_axis, y_axis, x_data, y_data, plot_type, c
     - error_lines: an array with 2 values that demarcates the CI, None if no CI is necessary for plot
     - overlay: indicates whether this plot should be overlaid on pre-existing plots, False by default
     """
+    canvas = FigureCanvasTkAgg(figure, frame)
+    canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
     if not overlay:
-        figure.clf()
-    plt = figure.add_subplot(111)
-    plt.set_title(title)
-    plt.set_xlabel(x_axis)
-    plt.set_ylabel(y_axis)
+        plt.cla()
+    axes.set_title(title)
+    axes.set_xlabel(x_axis)
+    axes.set_ylabel(y_axis)
     i = 0
     for line in y_data:
         if "normal" in plot_type:
             if "monthly" in plot_type:
                 date_format = mdates.DateFormatter('%b,%Y')
-                plt.xaxis.set_major_formatter(date_format)
-                plt.plot_date(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i], marker=None)
+                axes.xaxis.set_major_formatter(date_format)
+                axes.plot_date(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i],
+                              marker=None)
             elif "month-only" in plot_type:
                 date_format = mdates.DateFormatter('%b')
-                plt.xaxis.set_major_formatter(date_format)
-                plt.plot_date(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i])
+                axes.xaxis.set_major_formatter(date_format)
+                axes.plot_date(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i])
             else:
-                plt.plot_date(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i])
-
+                axes.plot_date(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i])
         if "scatter" in plot_type:
-            plt.scatter(x_data, line, color=colors[i])
+            axes.scatter(x_data, line, color=colors[i])
             pass
-        i+=1
+        i += 1
     if error_lines != None:
-        plt.fill_between(x_data, error_lines[0], error_lines[1], facecolor='grey', edgecolor='none', alpha=0.20)
-    plt.legend()
-    canvas = FigureCanvasTkAgg(figure, frame)
-    canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
-    canvas.draw()
+        axes.fill_between(x_data, error_lines[0], error_lines[1], facecolor='grey', edgecolor='none', alpha=0.20)
+    axes.legend()
 
 
 def convert_to_monthly(time):
@@ -235,6 +234,7 @@ class SampleApp(tk.Tk):
 
         self.show_frame(["StartPage", "PageEnvModel", "PageEnvTimeSeries", "PageEnvSeasonalCycle",
                          "PageCarbonate","PageGDGT","PageLeafwax","PageBioturbation"], "StartPage")
+
 
     def show_frame(self, old_pages, new_page):
         '''Show a frame for the given page name'''
@@ -759,8 +759,8 @@ class PageEnvTimeSeries(tk.Frame):
         rowIdx += 3
 
         # Empty graph, default
-        self.f = Figure(figsize=(10, 5), dpi=100)
-        plot_setup(self.scrollable_frame, self.f, "Time Series", "Time", "Lake Surface Temperature")
+        self.f, self.axis = plt.subplots(1,1, figsize=(10, 5), dpi=100)
+        plot_setup(self.scrollable_frame, self.axis, self.f, "Time Series", "Time", "Lake Surface Temperature")
 
         button_text = ["Graph Surface Temperature", "Graph Mixing Depth", "Graph Evaporation",
                        "Graph Latent Heat (QEW)",
@@ -805,18 +805,17 @@ class PageEnvTimeSeries(tk.Frame):
         get_output_data(self.days, self.yaxis, column)
 
         self.months = convert_to_monthly(self.days)
-        plot_draw(self.scrollable_frame, self.f, varstring + " over Time", "Month", varstring, self.months, [self.yaxis],
-                  "normal monthly", ["b22222 "], [1], ["Monthly Data"])
+        plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " over Time", "Month", varstring, self.months, [self.yaxis],
+                  "normal monthly", ["#b22222"], [1], ["Monthly Data"])
 
         self.years, self.yaxis = convert_to_annual([self.yaxis])
-        plot_draw(self.scrollable_frame, self.f, varstring + " over Time", "Year", varstring, self.years, self.yaxis,
+        plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " over Time", "Year", varstring, self.years, self.yaxis,
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], overlay=True)
 
 
 """
 Page to plot seasonal cycle
 """
-
 
 class PageEnvSeasonalCycle(tk.Frame):
 
@@ -851,8 +850,8 @@ class PageEnvSeasonalCycle(tk.Frame):
         rowIdx += 3
 
         # Empty graph, default
-        self.f = Figure(figsize=(10, 5), dpi=100)
-        plot_setup(self.scrollable_frame, self.f, "Seasonal Cycle", "Day of the Year", "")
+        self.f, self.axis = plt.subplots(1,1, figsize=(10, 5), dpi=100)
+        plot_setup(self.scrollable_frame, self.axis, self.f, "Seasonal Cycle", "Day of the Year", "Lake Surface Temperature")
 
         # Graph button for each variable
 
@@ -917,7 +916,7 @@ class PageEnvSeasonalCycle(tk.Frame):
             self.seasonal_days.append(date)
             self.seasonal_yaxis.append(mean(self.ydict[i]))
 
-        plot_draw(self.scrollable_frame, self.f, varstring + " Seasonal Cycle", "Day of the Year", "Average", self.seasonal_days,
+        plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " Seasonal Cycle", "Day of the Year", "Average", self.seasonal_days,
                   [self.seasonal_yaxis], "normal month-only", ["#000000"], [3], ["Monthly Averaged Data"])
 
 
@@ -983,8 +982,8 @@ class PageCarbonate(tk.Frame):
                   command=lambda: self.parent.show_frame(["PageCarbonate"], "StartPage")).grid(
             row=rowIdx, column=0, sticky="W")
 
-        self.f = Figure(figsize=(10, 5), dpi=100)
-        plot_setup(self.scrollable_frame, self.f, "SENSOR", "Time", "Simulated Carbonate Data")
+        self.f, self.axis = plt.subplots(1,1, figsize=(10, 5), dpi=100)
+        plot_setup(self.scrollable_frame, self.axis, self.f, "SENSOR", "Time", "Simulated Carbonate Data")
 
     """
     Create time series data for carbonate sensor
@@ -999,11 +998,11 @@ class PageCarbonate(tk.Frame):
         self.carb_proxy = carb.carb_sensor(self.LST, self.d180w, model=self.model.get())
 
         self.months = convert_to_monthly(self.days)
-        plot_draw(self.scrollable_frame, self.f, "SENSOR", "Month", "Simulated Carbonate Data", self.months, [self.carb_proxy],
-                  "normal monthly", ["b22222 "], [1], ["Monthly Data"])
+        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Month", "Simulated Carbonate Data", self.months, [self.carb_proxy],
+                  "normal monthly", ["#b22222"], [1], ["Monthly Data"])
 
         self.years, self.yaxis = convert_to_annual([self.carb_proxy])
-        plot_draw(self.scrollable_frame, self.f, "SENSOR", "Year", "Simulated Carbonate Data", self.years, self.yaxis,
+        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year", "Simulated Carbonate Data", self.years, self.yaxis,
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], overlay=True)
 
     def download_carb_data(self):
@@ -1069,8 +1068,8 @@ class PageGDGT(tk.Frame):
                   command=lambda: self.parent.show_frame(["PageGDGT"], "StartPage")).grid(
             row=rowIdx, column=0, sticky="W")
 
-        self.f = Figure(figsize=(9, 5), dpi=100)
-        plot_setup(self.scrollable_frame, self.f, "SENSOR", "Time", "Simulated GDGT Data")
+        self.f, self.axis = plt.subplots(1,1, figsize=(10, 5), dpi=100)
+        plot_setup(self.scrollable_frame, self.axis, self.f, "SENSOR", "Time", "Simulated GDGT Data")
 
     """
     Create time series data for GDGT sensor
@@ -1099,11 +1098,11 @@ class PageGDGT(tk.Frame):
         self.gdgt_proxy = gdgt.gdgt_sensor(self.LST, self.MAAT, self.beta, model=self.model.get())
 
         self.months = convert_to_monthly(self.days)
-        plot_draw(self.scrollable_frame, self.f, "SENSOR", "Month", "Simulated GDGT Data", self.months, [self.gdgt_proxy],
-                  "normal monthly", ["b22222 "], [1], ["Monthly Data"])
+        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Month", "Simulated GDGT Data", self.months, [self.gdgt_proxy],
+                  "normal monthly", ["#b22222"], [1], ["Monthly Data"])
 
         self.years, self.yaxis = convert_to_annual([self.gdgt_proxy])
-        plot_draw(self.scrollable_frame, self.f, "SENSOR", "Year", "Simulated GDGT Data", self.years, self.yaxis,
+        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year", "Simulated GDGT Data", self.years, self.yaxis,
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], overlay=True)
 
 
@@ -1180,8 +1179,8 @@ class PageLeafwax(tk.Frame):
 
         rowIdx += 3
 
-        self.f = Figure(figsize=(9, 5), dpi=100)
-        plot_setup(self.scrollable_frame, self.f, "SENSOR", "Time", "Simulated Leafwax Data")
+        self.f, self.axis = plt.subplots(1,1, figsize=(10, 5), dpi=100)
+        plot_setup(self.scrollable_frame, self.axis, self.f, "SENSOR", "Time", "Simulated Leafwax Data")
 
         tk.Button(self.scrollable_frame, text="Graph Leafwax Proxy Data", font=f, command=self.generate_graph).grid(
             row=rowIdx, column=0, sticky="W")
@@ -1238,11 +1237,11 @@ class PageLeafwax(tk.Frame):
             for i in range(len(input.readlines())):
                 self.days.append(30 * i + 15)
         self.months = convert_to_monthly(self.days)
-        plot_draw(self.scrollable_frame, self.f, "SENSOR", "Month", "Simulated Leaf Wax Data", self.months, [self.leafwax_proxy],
-                  "normal monthly", ["b22222 "], [1], ["Monthly Data"])
+        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Month", "Simulated Leaf Wax Data", self.months, [self.leafwax_proxy],
+                  "normal monthly", ["#b22222"], [1], ["Monthly Data"])
 
         self.years, self.leafwax_array = convert_to_annual([self.leafwax_proxy, self.Q1, self.Q2])
-        plot_draw(self.scrollable_frame, self.f, "SENSOR", "Year", "Simulated Leaf Wax Data", self.years, [self.leafwax_array[0]],
+        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year", "Simulated Leaf Wax Data", self.years, [self.leafwax_array[0]],
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], error_lines=self.leafwax_array[1:], overlay=True)
 
     def download_leafwax_data(self):
@@ -1323,8 +1322,8 @@ class PageBioturbation(tk.Frame):
             row=rowIdx, column=0, sticky="W")
         rowIdx += 1
 
-        self.f = Figure(figsize=(9, 5), dpi=100)
-        plot_setup(self.scrollable_frame, self.f, "ARCHIVE", "Year", "Bioturbated Sensor Data")
+        self.f, self.axis = plt.subplots(1,1, figsize=(10, 5), dpi=100)
+        plot_setup(self.scrollable_frame, self.axis, self.f, "ARCHIVE", "Year", "Bioturbated Sensor Data")
 
         # Return to Start Page
         tk.Button(self.scrollable_frame, text="Back to start", font=f,
@@ -1396,14 +1395,15 @@ class PageBioturbation(tk.Frame):
         self.bio1 = self.bioiso[:, 0]
         self.bio2 = self.bioiso[:, 1]
         self.ori = self.oriiso[:, 0]
-        plot_draw(self.scrollable_frame, self.f, "ARCHIVE", "Year", "Bioturbated Sensor Data", self.days, [self.bio1, self.bio2, self.ori],
-                  "normal", ["b22222 ", "b22222 ", "#000000"], [2,2,2], ["Bioturbated 1", "Bioturbated 2", "Original"])
+        plot_draw(self.scrollable_frame, self.axis, self.f, "ARCHIVE", "Year", "Bioturbated Sensor Data", self.days, [self.bio1, self.bio2, self.ori],
+                  "normal", ["#b22222", "#b22222", "#000000"], [2,2,2], ["Bioturbated 1", "Bioturbated 2", "Original"])
 
     def download_bioturb_data(self):
         df = pd.DataFrame({"Time": self.days, "Pseudoproxy": self.ori,
                            "Bioturbated Carrier 1": self.bio1, "Bioturbated Carrier 2": self.bio2})
         export_file_path = fd.asksaveasfilename(defaultextension='.csv')
         df.to_csv(export_file_path, index=None)
+
 
 
 
