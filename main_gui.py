@@ -1257,12 +1257,13 @@ class PageObservation(tk.Frame):
         tk.Label(self,
                  text=
                  """
+                 WARNING: Long running time
                  Instructions for input file:
                  1) The first row must be 'DP, AGE, SD'
                  2) Ages must be in BP
                  """, font=f, justify="left"
-                 ).grid(row=rowIdx, columnspan=3, rowspan=3, pady=15)
-        rowIdx += 3
+                 ).grid(row=rowIdx, columnspan=3, rowspan=4, pady=15)
+        rowIdx += 4
 
         # Upload example file
         tk.Label(self, text="Click to load data", font=f).grid(
