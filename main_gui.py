@@ -106,7 +106,7 @@ def plot_setup(frame, figure, title, x_axis, y_axis):
     """
     plt = figure.add_subplot(111)
     canvas = FigureCanvasTkAgg(figure, frame)
-    canvas.get_tk_widget().grid(row=0, column=3, rowspan=16, columnspan=10, sticky="nw")
+    canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=9, sticky="nw")
     plt.set_title(title, fontsize=12)
     plt.set_xlabel(x_axis)
     plt.set_ylabel(y_axis)
@@ -150,7 +150,7 @@ def plot_draw(frame, figure, title, x_axis, y_axis, x_data, y_data, plot_type, c
         plt.fill_between(x_data, error_lines[0], error_lines[1], facecolor='grey', edgecolor='none', alpha=0.20)
     plt.legend()
     canvas = FigureCanvasTkAgg(figure, frame)
-    canvas.get_tk_widget().grid(row=0, column=3, rowspan=16, columnspan=15, sticky="nw")
+    canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=9, sticky="nw")
     canvas.draw()
 
 
@@ -219,8 +219,8 @@ class SampleApp(tk.Tk):
         # will be raised above the others
         container = tk.Frame(self)
         container.pack(side="top", fill="none", expand=True)
-        container.grid_rowconfigure(0, weight=1, minsize=100)
-        container.grid_columnconfigure(0, weight=1, minsize=100)
+        container.grid_rowconfigure(0, weight=1)
+        container.grid_columnconfigure(0, weight=1)
 
         self.frames = {}
         for F in (StartPage, PageEnvModel, PageEnvTimeSeries, PageEnvSeasonalCycle, PageCarbonate, PageLeafwax, PageGDGT,
@@ -353,31 +353,39 @@ Page to run the environment model
 class PageEnvModel(tk.Frame):
 
     def __init__(self, parent, controller):
-        rowIdx = 1
-        tk.Frame.__init__(self, parent, bg="white", bd=50, relief="flat")
+        
+        tk.Frame.__init__(self, parent, bg="white", bd=50)
         self.controller = controller
-
+        
+        
         # Title
         label = tk.Label(
             self, text="Run Lake Environment Model", font=LARGE_FONT)
-        label.grid(sticky="W", columnspan=3)
+        label.grid(sticky="W", row=0, column=0)
 
-        rowIdx += 3
+        rowIdx = 1
 
         # Instructions for uploading .txt and .inc files
         tk.Label(self,
                 text="1) Upload a text file to provide input data for the lake model\n2) Enter lake-specific and simulation-specific parameters\n3) If parameters are left empty, default parameters for Lake Tanganyika will be used",
                 font=f, justify="left"
-                 ).grid(row=rowIdx,  columnspan=1, rowspan=1, pady=15, ipady=0, sticky="W")
-        rowIdx += 3
+                 ).grid(row=rowIdx, column=0, rowspan=1, pady=15, ipady=0, sticky="W")
+        rowIdx += 1
 
         # Allows user to upload .txt data.
-        tk.Label(self, text="Click to upload your .txt file:", font=f).grid(
-            row=rowIdx, column=0, pady=10, sticky="W")
+        # tk.Label(self, text="Click to upload your .txt file:", font=f).grid(
+        #     row=rowIdx, column=0, pady=10, sticky="W")
         graphButton = tk.Button(self, text="Upload .txt File", font=f,
                                 command=self.uploadTxt)
         graphButton.grid(row=rowIdx, column=0, padx=340,
                          ipadx=10, ipady=3, sticky="W")
+
+        # graphButton = tk.Button(self, text="Upload .txt File", font=f,
+        #                         command=self.uploadTxt)
+        # graphButton.grid(row=rowIdx, column=0,
+        #                  ipadx=10, ipady=3, sticky="W")
+
+
         rowIdx += 1
 
         # Shows the name of the current uploaded file, if any.
@@ -463,9 +471,6 @@ class PageEnvModel(tk.Frame):
         # Button to download CSV
         csvButton = tk.Button(self, text='Download CSV', font=f, command=lambda: self.download_csv())
         csvButton.grid(row=rowIdx, column=0, padx=1300, ipadx=30, ipady=3, sticky="W")
-
-
-        # Button to download graphs as PNGs
 
 
         # Return to Start Page
@@ -693,7 +698,7 @@ class PageEnvTimeSeries(tk.Frame):
         #Title
         label = tk.Label(
             self, text="Environment Model Time Series", font=LARGE_FONT)
-        label.grid(sticky="W", columnspan=3, pady=(1, 20))
+        label.grid(sticky="W", columnspan=3, pady=(0, 20))
         rowIdx += 3
 
         # Empty graph, default
@@ -721,21 +726,19 @@ class PageEnvTimeSeries(tk.Frame):
 
 
         # Save as PNG and CSV
-        rowIdx += 8
+        
         tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv).grid(
-            row=rowIdx, column=0, pady=(5,5), #135
-            ipadx=20, ipady=5, sticky="SW")
-        rowIdx += 1
+            row=0, column=6, ipadx=10, ipady=3, sticky="NE")
+        
         tk.Button(self, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="SW")
-        rowIdx += 1
+            row=0, column=7, ipadx=10, ipady=3, sticky="NE")
+            
+        
 
         # Return to Start Page
         homeButton = tk.Button(self, text="Back to start page", font=f,
                                command=lambda: controller.show_frame("StartPage"))
-        homeButton.grid(row=rowIdx, column=0, ipadx=25,
-                        ipady=3, pady=25, sticky="sw")
+        homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
 
     """
     Plots the multiple values of a specific variable for each day of the year as a scatterplot
@@ -791,7 +794,7 @@ class PageEnvSeasonalCycle(tk.Frame):
         # Title
         label = tk.Label(
             self, text="Environment Model Seasonal Cycle", font=LARGE_FONT)
-        label.grid(sticky="W", columnspan=3, pady=(1, 20))
+        label.grid(sticky="W", columnspan=3, pady=(0,20))
         rowIdx += 3
 
         # Empty graph, default
@@ -819,22 +822,19 @@ class PageEnvSeasonalCycle(tk.Frame):
             rowIdx+=1
 
         # Save as PNG and CSV
-        rowIdx += 1
+        
         tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv).grid(
-            row=rowIdx, column=0, pady=(135,5),
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
+            row=0, column=6, ipadx=10, ipady=3, sticky="NE")
+        
         tk.Button(self, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
+            row=0, column=7, ipadx=10, ipady=3, sticky="NE")
+            
+        
 
         # Return to Start Page
         homeButton = tk.Button(self, text="Back to start page", font=f,
                                command=lambda: controller.show_frame("StartPage"))
-        homeButton.grid(row=15, column=0, ipadx=25,
-                        ipady=3, pady=25, sticky="w")
-
+        homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
     """
     Plots the average of a specific variable for each day of the year as a scatterplot
 
@@ -898,7 +898,7 @@ class PageCarbonate(tk.Frame):
         #Title
         label = tk.Label(
             self, text="Carbonate Sensor Model", font=LARGE_FONT)
-        label.grid(sticky="W", columnspan=3, pady=(1, 20))
+        label.grid(sticky="W", columnspan=3, pady=(0,20))
 
         rowIdx += 8
 
@@ -916,21 +916,19 @@ class PageCarbonate(tk.Frame):
             ipadx=20, ipady=5, sticky="W")
 
         # Save as PNG and CSV
-        rowIdx += 10
+        
         tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv).grid(
-            row=rowIdx, column=0, pady=(200,5),
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
+            row=0, column=6, ipadx=10, ipady=3, sticky="NE")
+        
         tk.Button(self, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
+            row=0, column=7, ipadx=10, ipady=3, sticky="NE")
+            
+        
 
         # Return to Start Page
         homeButton = tk.Button(self, text="Back to start page", font=f,
                                command=lambda: controller.show_frame("StartPage"))
-        homeButton.grid(row=rowIdx, column=0, ipadx=25,
-                        ipady=3, pady=25, sticky="w")
+        homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
 
         self.f = Figure(figsize=(10, 5), dpi=100)
         plot_setup(self, self.f, "SENSOR", "Time", "Simulated Carbonate Data")
@@ -981,7 +979,7 @@ class PageGDGT(tk.Frame):
         #Title
         label = tk.Label(
             self, text="Run GDGT Sensor Model", font=LARGE_FONT)
-        label.grid(sticky="W", columnspan=3, pady=(1, 20))
+        label.grid(sticky="W", columnspan=3, pady=(0,20))
 
         rowIdx += 3
 
@@ -999,22 +997,19 @@ class PageGDGT(tk.Frame):
             row=rowIdx, column=0, pady=20, ipadx=20, ipady=5, sticky="W")
 
         # Save as PNG and CSV
-        rowIdx += 1
+        
         tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv).grid(
-            row=rowIdx, column=0, pady=(135,5),
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
+            row=0, column=6, ipadx=10, ipady=3, sticky="NE")
+        
         tk.Button(self, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
+            row=0, column=7, ipadx=10, ipady=3, sticky="NE")
+            
+        
 
         # Return to Start Page
         homeButton = tk.Button(self, text="Back to start page", font=f,
                                command=lambda: controller.show_frame("StartPage"))
-        homeButton.grid(row=15, column=0, ipadx=25,
-                        ipady=3, pady=25, sticky="w")
-
+        homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
         self.f = Figure(figsize=(10, 5), dpi=100)
         plot_setup(self, self.f, "SENSOR", "Time", "Simulated GDGT Data")
 
@@ -1082,16 +1077,16 @@ class PageLeafwax(tk.Frame):
         #Title
         label = tk.Label(
             self, text="Run Leafwax Model", font=LARGE_FONT)
-        label.grid(sticky="W", columnspan=3, pady=(1, 20))
+        label.grid(sticky="W", columnspan=3, pady=(0, 5))
 
-        rowIdx += 3
+        rowIdx += 1
 
-        # Instructions for uploading file
-        tk.Label(self,
-                 text="1) Upload a text file to provide input data for the lake model\n2) Enter lake-specific and simulation-specific parameters\n3) If parameters are left empty, default parameters for Lake Tanganyika will be used",
-                font=f, justify="left"
-                 ).grid(row=rowIdx, columnspan=3, rowspan=3, pady=15)
-        rowIdx += 3
+        # # Instructions for uploading file
+        # tk.Label(self,
+        #          text="1) Upload a text file to provide input data for the lake model\n2) Enter lake-specific and simulation-specific parameters\n3) If parameters are left empty, default parameters for Lake Tanganyika will be used",
+        #         font=f, justify="left"
+        #          ).grid(row=rowIdx, columnspan=3, rowspan=5, pady=3, sticky="NW")
+        # rowIdx += 3
 
         # Example file
         sample_input = 'IsoGSM_dDP_1953_2012.txt'
@@ -1131,21 +1126,19 @@ class PageLeafwax(tk.Frame):
             row=rowIdx, column=1, sticky="W")
 
         # Save as PNG and CSV
-        rowIdx += 1
+        
         tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
+            row=0, column=6, ipadx=10, ipady=3, sticky="NE")
+        
         tk.Button(self, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
+            row=0, column=7, ipadx=10, ipady=3, sticky="NE")
+            
+        
 
         # Return to Start Page
-        tk.Button(self, text="Back to start", font=f,
-                  command=lambda: controller.show_frame("StartPage")).grid(
-            row=rowIdx, column=0, sticky="W")
-
+        homeButton = tk.Button(self, text="Back to start page", font=f,
+                               command=lambda: controller.show_frame("StartPage"))
+        homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
     """
       Upload .txt file from user
       """
@@ -1236,25 +1229,27 @@ class PageBioturbation(tk.Frame):
         #Title
         label = tk.Label(
             self, text="Run Bioturbation Model", font=LARGE_FONT)
-        label.grid(sticky="W", columnspan=3, pady=(1, 20))
-        rowIdx += 3
+        label.grid(sticky="W", columnspan=3, pady=(0,5))
+        rowIdx += 1
 
-        # Instructions for uploading .txt and .inc files
+        # Instructions for uploading file
         tk.Label(self,
                  text=
-                 """1) Upload a .csv file with a column "Pseudoproxy" containing pseudoproxy timeseries data. \n2) Enter parameters for bioturbation\n3) You cannot leave parameters empty
-                 """, font=f, justify="left"
-                 ).grid(row=rowIdx, columnspan=3, rowspan=3, pady=15)
+                """1) Upload a .csv file with a column "Pseudoproxy",\n containing pseudoproxy timeseries data. \n2) Enter parameters for bioturbation\n3) You cannot leave parameters empty
+                """, font=f, justify="left"
+                 ).grid(row=rowIdx, columnspan=1, rowspan=1, pady=10, ipady=0, sticky="W")
         rowIdx += 3
+
+        tk.Button(self, text="Upload Data", command=self.upload_csv, font=f).grid(
+            row=rowIdx, column=0, pady=10, sticky="W")
+        rowIdx += 1
         tk.Label(self, text="Current File Uploaded:", font=f).grid(
-            row=rowIdx, column=0, sticky="W")
+            row=rowIdx, column=0, pady=10, sticky="W")
         self.currentTxtFileLabel = tk.Label(self, text="No file", font=f)
         self.currentTxtFileLabel.grid(
             row=rowIdx, column=1, columnspan=2, pady=10, sticky="W")
         rowIdx += 1
-        tk.Button(self, text="Upload Data", command=self.upload_csv, font=f).grid(
-            row=rowIdx, column=0, sticky="W")
-        rowIdx += 1
+
         parameters = ["Start Year:", "End Year:", "Mixed Layer Thickness Coefficient:", "Abundance:",
                       "Number of Carriers:"]
         param_values = []
@@ -1267,26 +1262,27 @@ class PageBioturbation(tk.Frame):
         rowIdx += 5
         tk.Button(self, text="Generate Graph", font=f,
                   command=lambda: self.run_bioturb_model([p.get() for p in param_values])).grid(
-            row=rowIdx, column=0, sticky="W")
+            row=rowIdx, column=0, pady=10, sticky="W")
        
         # Save as PNG and CSV
-        rowIdx += 1
+        
         tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
+            row=0, column=6, ipadx=10, ipady=3, sticky="NE")
+        
         tk.Button(self, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
+            row=0, column=7, ipadx=10, ipady=3, sticky="NE")
+            
+        
+
+        # Return to Start Page
+        homeButton = tk.Button(self, text="Back to start page", font=f,
+                               command=lambda: controller.show_frame("StartPage"))
+        homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
+
 
         self.f = Figure(figsize=(9, 5), dpi=100)
         plot_setup(self, self.f, "ARCHIVE", "Year", "Bioturbated Sensor Data")
 
-        # Return to Start Page
-        tk.Button(self, text="Back to start", font=f,
-                  command=lambda: controller.show_frame("StartPage")).grid(
-            row=rowIdx, column=0, sticky="W")
 
     def upload_csv(self):
         # Open the file choosen by the user
