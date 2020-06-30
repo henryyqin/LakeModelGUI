@@ -1155,7 +1155,8 @@ class PageLeafwax(tk.Frame):
         # Return to Start Page
         tk.Button(self, text="Back to start", font=f,
                   command=lambda: controller.show_frame("StartPage")).grid(
-            row=rowIdx, column=0, sticky="W")
+            row=rowIdx, column=0, pady=1,
+            ipadx=20, ipady=5, sticky="W")
 
     """
       Upload .txt file from user
@@ -1229,6 +1230,12 @@ class PageLeafwax(tk.Frame):
         export_file_path = fd.asksaveasfilename(defaultextension='.csv')
         df.to_csv(export_file_path, index=None)
 
+    def download_png(self):
+        file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
+        if file:
+            self.f.savefig(file)
+            tk.messagebox.showinfo("Sucess", "Saved graph")
+
 
 
 """
@@ -1284,17 +1291,24 @@ class PageObservation(tk.Frame):
         plot_setup(self, self.f, "Depth in Core (cm)", "Age (cal years BP)", "Observation Model")
 
 
-        tk.Button(self, text="Graph Observation Model", font=f, command=lambda: self.generate_graph()).grid(
-            row=rowIdx, column=0, sticky="W")
+        tk.Button(self, text="Graph Observation Model", font=MED_FONT, command=lambda: self.generate_graph()).grid(
+            row=rowIdx, column=0, pady=1,
+            ipadx=20, ipady=5, sticky="W")
 
         rowIdx += 1
-        tk.Button(self, text="Save Graph Data as .csv", font=f, command=self.download_obs_data).grid(
-            row=rowIdx, column=0, sticky="W")
+        tk.Button(self, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_obs_data).grid(
+            row=rowIdx, column=0, pady=1,
+            ipadx=20, ipady=5, sticky="W")
+        rowIdx += 1
+        tk.Button(self, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
+            row=rowIdx, column=0, pady=1,
+            ipadx=20, ipady=5, sticky="W")
         rowIdx += 1
         # Return to Start Page
         tk.Button(self, text="Back to start", font=f,
                   command=lambda: controller.show_frame("StartPage")).grid(
-            row=rowIdx, column=0, sticky="W")
+            row=rowIdx, column=0, pady=1,
+            ipadx=20, ipady=5, sticky="W")
 
     """
       Upload .csv file from user
@@ -1379,6 +1393,7 @@ class PageObservation(tk.Frame):
         if file:
             df.to_csv(file, index=False)
             tk.messagebox.showinfo("Success", "Saved Data")
+
     def download_png(self):
         file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
         if file:
