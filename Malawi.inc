@@ -53,8 +53,8 @@
       parameter (max_dep = 292)   ! depth of lake at sill in meters
       parameter (basedep = 468.)   ! Elevation of Basin Bottom in Meters
       parameter (b_area = 2960000.)   ! Area of Catchment+Lake in Hectares
-      character(38) :: datafile='ERA_INTERIM_1979_2016_Malawi.txt' ! the data file to open in FILE_OPEN subroutine
-      character(38) :: datafile='ERA_INTERIM_1979_2016_Malawi.txt'
+      character(38) :: datafile='ERA_INTERIM_1979_2016_Tanganyika_BIASCORRECT.txt' ! the data file to open in FILE_OPEN subroutine
+      character(38) :: datafile='ERA_INTERIM_1979_2016_Tanganyika_BIASCORRECT.txt'
       parameter (tempinit = -4.8)   ! Temperature To Initialize Lake At In INIT_LAKE Subroutine
       parameter (deutinit = -96.1)   ! Dd To Initialize Lake At In INIT_LAKE Subroutine
       parameter (o18init = -11.3)   ! D18o To Initialize Lake At In INIT_LAKE Subroutine
