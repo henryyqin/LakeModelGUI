@@ -17,7 +17,7 @@
       call file_open ! open input and output files
       call init_lake ! initialize lake variables
       !data_input_filename = 'C:/Users/xueya/Downloads/LakeModelGUI/Tanganyika.txt'
-
+      !data_input_filename = 'ERA_INTERIM_1979_2016_Tanganyika_BIASCORRECT.txt'
 !	  Begin Ashling
       !Read in data based on 
       if (wb_flag) then
