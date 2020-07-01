@@ -61,14 +61,14 @@
 ! Simulation specific parameters **************************************
 
       parameter (nspin = 10)   ! Number Of Years For Spinup
-      parameter (bndry_flag = .false.)   ! true For Explict Boundary Layer Computations;
-Presently Only For Sigma Coord Climate Models
-Presently Only For Sigma Coord Climate Models
+      parameter (bndry_flag = .false.)   ! true For Explict Boundary Layer Computations;Presently Only For Sigma Coord Climate Models
+      parameter (sigma = 0.9925561)   ! Sigma Level For Boundary Flag
       parameter (wb_flag = .false.)   ! true For Variable Lake Depth
       parameter (iceflag = .false.)   ! true For Variable Ice Cover
       parameter (s_flag = .false.)   ! true For Variable Salinity
       parameter (o18flag = .false.)   ! true For Variable D18o
       parameter (deutflag = .false.)   ! true For Variable Dd
+      parameter (z_screen = 5.0)   ! Height Of Met Inputs
       parameter (deutflag = .false.)   ! true For Variable Dd
       parameter (z_screen = 5.0)   ! Height Of Met Inputs
       parameter (z_screen = 5.0)   ! Height Of Met Inputs
