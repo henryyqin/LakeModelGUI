@@ -226,7 +226,7 @@ class SampleApp(tk.Tk):
         self.title_font = TITLE_FONT
         # title of window
         self.title("Lake Model GUI")
-        #self.geometry("2500x1600")
+        self.geometry("2500x1600")
         #self.minsize(600, 300)
         # self.wm_iconbitmap('icon.ico')
         self.columnconfigure(0, weight=1)
@@ -510,15 +510,15 @@ class PageEnvModel(tk.Frame):
         # List entries for simulation-specific parameters
         for i in range(rowIdx + 19, rowIdx + 29):
             tk.Label(self.scrollable_frame, text=parameters[i - rowIdx], font=f).grid(
-                row=i - 19, column=0, padx=750, sticky="W")
+                row=i - 19, column=0, padx=720, sticky="W")
             if i in [rowIdx + 19, rowIdx + 21, rowIdx + 27, rowIdx + 28]:
                 p = tk.Entry(self.scrollable_frame)
-                p.grid(row=i - 19, column=0, padx=1300, sticky="W")
+                p.grid(row=i - 19, column=0, padx=1120, sticky="W")
                 param_containers.append(p)
             else:
                 p = tk.IntVar()
                 c = tk.Checkbutton(self.scrollable_frame, variable=p)
-                c.grid(row=i - 19, column=0, padx=1300, sticky="W")
+                c.grid(row=i - 19, column=0, padx=1120, sticky="W")
                 param_containers.append(c)
             param_values.append(p)
 
@@ -527,20 +527,20 @@ class PageEnvModel(tk.Frame):
         # Submit entries for .inc file
         submitButton = tk.Button(self.scrollable_frame, text="Save Parameters", font=f,
                                  command=lambda: self.editInc([p.get() for p in param_values], parameters))
-        submitButton.grid(row=rowIdx, column=0, padx=1300, ipadx=3, ipady=3, sticky="W")
+        submitButton.grid(row=rowIdx, column=0, padx=1120, ipadx=30, ipady=3, sticky="W")
         rowIdx += 1
 
         # Button to run the model (Mac/Linux only)
         runButton = tk.Button(
             self.scrollable_frame, text="Run Model", font=f, command=lambda: self.runModel(runButton))
-        runButton.grid(row=rowIdx, column=0, padx=1300, ipadx=30, ipady=3, sticky="W")
+        runButton.grid(row=rowIdx, column=0, padx=1120, ipadx=30, ipady=3, sticky="W")
         rowIdx += 1
 
         csvButton = tk.Button(self.scrollable_frame, text='Download CSV', font=f, command=self.download_csv)
-        csvButton.grid(row=rowIdx, column=0, padx=1300, ipadx=30, ipady=3, sticky="W")
+        csvButton.grid(row=rowIdx, column=0, padx=1120, ipadx=30, ipady=3, sticky="W")
 
         pngButton = tk.Button(self.scrollable_frame, text='Download PNG', font=f, command=self.download_png)
-        pngButton.grid(row=rowIdx, column=1, padx=1300, ipadx=30, ipady=3, sticky="W")
+        pngButton.grid(row=rowIdx, column=1, padx=1120, ipadx=30, ipady=3, sticky="W")
 
         # Return to Start Page
         homeButton = tk.Button(self.scrollable_frame, text="Back to start page", font=f,
@@ -1559,6 +1559,7 @@ class PageObservation(tk.Frame):
                           facecolor='Silver', edgecolor='Silver', lw=0.0) # horizontal fill between 2.5% - 97.5% of data
         ax.plot(self.chronsQ[1], self.depth_horizons, color="black", lw=0.75) # median line
         ax.scatter(data['AGE'], data['DP'], marker="s") # squares
+        ax.legend(['95% CI', 'Dated Positions'])
         ax.set_xlim(46000, 0)
         ax.set_ylim(650, -50)
         ax.set_xlabel('Age (cal years BP)')
@@ -1569,8 +1570,8 @@ class PageObservation(tk.Frame):
         canvas.draw()
 
     def download_obs_data(self):
-        df = pd.DataFrame({"Depth": self.depth_horizons, "Age (95% CI Lower Bound)": self.chronsQ[0],
-                        "Age (95% CI Median)": self.chronsQ[0], "Age (95% CI Upper Bound)": self.chronsQ[2]})
+        df = pd.DataFrame({"Depth in Core (cm)": self.depth_horizons, "Age, 95% CI Lower Bound (cal years BP)": self.chronsQ[0],
+                        "Age, 95% CI Median (cal years BP)": self.chronsQ[0], "Age, 95% CI Upper Bound (cal years BP)": self.chronsQ[2]})
         export_file_path = fd.asksaveasfilename(defaultextension='.csv')
         df.to_csv(export_file_path, index=None)
 
