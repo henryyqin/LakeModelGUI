@@ -226,7 +226,7 @@ class SampleApp(tk.Tk):
         self.title_font = TITLE_FONT
         # title of window
         self.title("Lake Model GUI")
-        #self.geometry("2500x1600")
+        self.geometry("2500x1600")
         #self.minsize(600, 300)
         # self.wm_iconbitmap('icon.ico')
         self.columnconfigure(0, weight=1)
@@ -495,7 +495,7 @@ class PageEnvModel(tk.Frame):
         tk.Label(self.scrollable_frame, text="Lake-Specific Parameters", font=LARGE_FONT).grid(
             row=rowIdx, column=0, pady=10, sticky="W")
         tk.Label(self.scrollable_frame, text="Simulation-Specific Parameters", font=LARGE_FONT).grid(
-            row=rowIdx, column=0, pady=10, padx=750, sticky="W")
+            row=rowIdx, column=0, pady=10, padx=720, sticky="W")
         rowIdx += 1
 
         # List entries for lake-specific parameters
@@ -503,7 +503,7 @@ class PageEnvModel(tk.Frame):
             tk.Label(self.scrollable_frame, text=parameters[i - rowIdx], font=f).grid(
                 row=i, column=0, sticky="W")
             p = tk.Entry(self.scrollable_frame)
-            p.grid(row=i, column=0, padx=550, sticky="W")
+            p.grid(row=i, column=0, padx=390, sticky="W")
             param_values.append(p)
             param_containers.append(p)
 
