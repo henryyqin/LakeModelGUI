@@ -226,7 +226,7 @@ class SampleApp(tk.Tk):
         self.title_font = TITLE_FONT
         # title of window
         self.title("Lake Model GUI")
-        self.geometry("2500x1600")
+        #self.geometry("2500x1600")
         #self.minsize(600, 300)
         # self.wm_iconbitmap('icon.ico')
         self.columnconfigure(0, weight=1)
