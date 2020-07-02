@@ -357,7 +357,6 @@ class PageEnvModel(tk.Frame):
         tk.Frame.__init__(self, parent, bg="white", bd=50)
         self.controller = controller
         
-        
         # Title
         label = tk.Label(
             self, text="Run Lake Environment Model", font=LARGE_FONT)
@@ -1093,6 +1092,9 @@ class PageLeafwax(tk.Frame):
         dDp = np.loadtxt(sample_input)
         self.dDp = dDp
 
+
+
+
         # Upload example file
         tk.Label(self, text="Click to load data", font=f).grid(
             row=rowIdx, column=0, pady=10, sticky="W")
@@ -1113,6 +1115,12 @@ class PageLeafwax(tk.Frame):
         self.currentFileLabel = tk.Label(self, text="No file", font=f)
         self.currentFileLabel.grid(
             row=rowIdx, column=1, columnspan=2, pady=10, sticky="W")
+
+
+
+
+
+
 
         rowIdx += 3
 
@@ -1240,6 +1248,7 @@ class PageBioturbation(tk.Frame):
                  ).grid(row=rowIdx, columnspan=1, rowspan=1, pady=10, ipady=0, sticky="W")
         rowIdx += 3
 
+        # Upload Data
         tk.Button(self, text="Upload Data", command=self.upload_csv, font=f).grid(
             row=rowIdx, column=0, pady=10, sticky="W")
         rowIdx += 1
