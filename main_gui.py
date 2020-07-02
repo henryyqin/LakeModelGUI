@@ -1559,9 +1559,9 @@ class PageObservation(tk.Frame):
                           facecolor='Silver', edgecolor='Silver', lw=0.0) # horizontal fill between 2.5% - 97.5% of data
         self.axis.plot(self.chronsQ[1], self.depth_horizons, color="black", lw=0.75) # median line
         self.axis.scatter(data['AGE'], data['DP'], marker="s") # squares
-        self.axis.legend(['95% CI', 'Dated Positions'])
-        self.axis.set_xlim(46000, 0)
-        self.axis.set_ylim(650, -50)
+        self.axis.legend(['Median', '95% CI', 'Dated Positions'])
+        self.axis.invert_xaxis()
+        self.axis.invert_yaxis()
         self.axis.set_xlabel('Age (cal years BP)')
         self.axis.set_ylabel('Depth (mm)')
 
