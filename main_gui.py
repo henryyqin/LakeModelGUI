@@ -11,6 +11,7 @@ import sensor_leafwax as leafwax
 
 #Archive Model Scripts
 import lake_archive_bioturb as bio
+import lake_archive_compact as comp
 
 # Data Analytics
 import pandas as pd
@@ -57,6 +58,18 @@ def callback(url):
 #         export_file_path = fd.asksaveasfilename(defaultextension=filetype) #ex: .csv or .png
 #         df.to_csv(export_file_path, index=None)
 
+def check_float(str):
+    """
+    Returns True if the input string represents a floating point number
+    Input:
+    - str: a string that should represent a floating-point number
+    """
+    try:
+        float(str)
+        return True
+    except:
+        return False
+
 def initialize_global_variables():
     """
     Reads global_vars.txt to initialize global variables with pre-existing values
@@ -81,15 +94,16 @@ def write_to_file(file, data):
     file.writelines(data)
     file.close()
 
-def get_output_data(time, data, column):
+def get_output_data(time, data, column, filename):
     """
     Retrieves data from surf.dat from years where lake is at equilibrium
     Inputs
     - time: an empty array which is populated with day #'s
     - data: an empty array which is populated with a certain column of data from surf.dat
     - column: the specific column of data in surf.dat which should populate "data"
+    - filename: the file which contains the desired data
     """
-    with open("ERA-HIST-Tlake_surf.dat") as file:
+    with open(filename) as file:
         lines = file.readlines()
         cur_row = lines[len(lines) - 1].split()
         next_row = lines[len(lines) - 2].split()
@@ -102,6 +116,26 @@ def get_output_data(time, data, column):
             next_row = lines[len(lines) - i].split()
         data.insert(0, float(cur_row[column]))
         time.insert(0, int(float(cur_row[0])))
+
+def uploadTxt(type, frame, file_label, sample=None, file_types=None):
+    """
+    Allows the user to upload sample data or data of their own choice
+    Inputs:
+    - type: indicates where the file is sample data or user-uploaded
+    - frame: the frame in which the upload text feature is located
+    - file_label: an object within the frame which indicates the filename
+    - sample: the name of the sample file
+    - file_types: the type of the file to be uploaded
+    """
+    if type == "sample":
+        # Upload example file
+        file_label.configure(text=basename(sample))
+        frame.txtfilename = sample
+    else:
+        # Open the file choosen by the user
+        frame.txtfilename = fd.askopenfilename(
+            filetypes=file_types)
+        file_label.configure(text=basename(frame.txtfilename))
 
 def plot_setup(frame, axes, figure, title, x_axis, y_axis):
     """
@@ -120,7 +154,8 @@ def plot_setup(frame, axes, figure, title, x_axis, y_axis):
     axes.set_xlabel(x_axis)
     axes.set_ylabel(y_axis)
 
-def plot_draw(frame, axes, figure, title, x_axis, y_axis, x_data, y_data, plot_type, colors, widths, labels, error_lines=None, overlay=False):
+def plot_draw(frame, axes, figure, title, x_axis, y_axis, x_data, y_data, plot_type, colors, widths, labels,
+              error_lines=None, overlay=False):
     """
     Creates plot(s) based on input parameters
     Inputs
@@ -140,7 +175,7 @@ def plot_draw(frame, axes, figure, title, x_axis, y_axis, x_data, y_data, plot_t
     - overlay: indicates whether this plot should be overlaid on pre-existing plots, False by default
     """
     canvas = FigureCanvasTkAgg(figure, frame)
-    canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=9, sticky="nw")
+    canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
     if not overlay:
         plt.cla()
     axes.set_title(title)
@@ -153,11 +188,13 @@ def plot_draw(frame, axes, figure, title, x_axis, y_axis, x_data, y_data, plot_t
                 date_format = mdates.DateFormatter('%b,%Y')
                 axes.xaxis.set_major_formatter(date_format)
                 axes.plot_date(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i],
-                              marker=None)
+                               marker=None)
             elif "month-only" in plot_type:
                 date_format = mdates.DateFormatter('%b')
                 axes.xaxis.set_major_formatter(date_format)
                 axes.plot_date(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i])
+            elif "non-month" in plot_type:
+                axes.plot(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i])
             else:
                 axes.plot_date(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i])
         if "scatter" in plot_type:
@@ -169,28 +206,36 @@ def plot_draw(frame, axes, figure, title, x_axis, y_axis, x_data, y_data, plot_t
     axes.legend()
 
 
-def convert_to_monthly(time):
+def convert_to_monthly(time, start=None):
     """
     Converts timeseries x-axis into monthly units with proper labels
     Input:
     - time: an array of day numbers (15, 45, 75, etc.)
     """
-    global START_YEAR
-    start_date = dt.date(START_YEAR, 1, 1)
+    start_date = None
+    if start==None:
+        global START_YEAR
+        start_date = dt.date(START_YEAR, 1, 1)
+    else:
+        start_date = dt.date(start, 1, 1)
     dates = []
     for day in time:
         new_date = start_date + dt.timedelta(days=day-1)
         dates.append(new_date)
     return dates
 
-def convert_to_annual(data):
+def convert_to_annual(data, start=None):
     """
     Converts timeseries data into annually averaged data with proper axis labels
     Input:
     - data: the y-axis of the timeseries data
     """
-    global START_YEAR
-    start_date = dt.date(START_YEAR-1, 7, 2)
+    start_date = None
+    if start==None:
+        global START_YEAR
+        start_date = dt.date(START_YEAR-1, 7, 2)
+    else:
+        start_date = dt.date(start - 1, 7, 2)
     all_year_avgs = []
     for column in data:
         years = []
@@ -238,14 +283,16 @@ class SampleApp(tk.Tk):
 
         self.frames = {}
         self.pages = [StartPage, PageEnvModel, PageEnvTimeSeries, PageEnvSeasonalCycle,
-                      PageCarbonate, PageGDGT, PageLeafwax, PageObservation, PageBioturbation]
+                      PageCarbonate, PageGDGT, PageLeafwax, PageObservation, PageBioturbation,
+                      PageCompaction]
         for F in self.pages:
             page_name = F.__name__
             frame = F(parent=self)
             self.frames[page_name] = frame
 
         self.show_frame(["StartPage", "PageEnvModel", "PageEnvTimeSeries", "PageEnvSeasonalCycle",
-                         "PageCarbonate","PageGDGT","PageLeafwax", "PageObservation", "PageBioturbation"], "StartPage")
+                         "PageCarbonate","PageGDGT","PageLeafwax", "PageObservation", "PageBioturbation",
+                         "PageCompaction"], "StartPage")
 
 
     def show_frame(self, old_pages, new_page):
@@ -331,7 +378,7 @@ class StartPage(tk.Frame):
                             justify="center")
         website.pack(pady=1, padx=10)
         website.bind("<Button-1>", lambda e: callback(
-            "https://docs.google.com/document/d/1RHYEXm5AjXO3NppNxDLPmPnHPr8tQIaT_jH7F7pU2ic/edit?usp=sharing"))
+            "https://docs.google.com/document/d/1vMu0Oq28dl5XCFVTw6FQYwND3VMWl8S2lWzDw1RC5oY/edit?usp=sharing"))
 
 
         paper = tk.Label(self.scrollable_frame,
@@ -352,45 +399,19 @@ class StartPage(tk.Frame):
         github.pack(pady=1, padx=10)
         github.bind("<Button-1>", lambda e: callback("https://github.com/henryyqin/LakeModelGUI"))
 
-        # Leads to Run Lake Env Model
-        envModelButton = tk.Button(self.scrollable_frame, text="Run Lake Environment Model", font=f,
-                                   command=lambda: self.parent.show_frame(["StartPage"], "PageEnvModel"))
-        envModelButton.pack(ipadx=43, ipady=3, pady=(10, 5))
+        buttonText = ["Run Lake Environment Model", "Plot Environment Time Series", "Plot Environment Seasonal Cycle",
+                      "Run Carbonate Model", "Run GDGT Model", "Run Leafwax Model", "Run Observation Model",
+                      "Run Bioturbation Model", "Run Compaction Model"]
 
-        # Leads to PageEnvTimeSeries
-        envTimeSeriesButton = tk.Button(self.scrollable_frame, text="Plot Environment Time Series", font=f,
-                                        command=lambda: self.parent.show_frame(["StartPage"], "PageEnvTimeSeries"))
-        envTimeSeriesButton.pack(ipadx=30, ipady=3, pady=(2, 5))
+        pageNames = ["PageEnvModel", "PageEnvTimeSeries", "PageEnvSeasonalCycle",
+                     "PageCarbonate", "PageGDGT", "PageLeafwax", "PageObservation", "PageBioturbation",
+                     "PageCompaction"]
 
-        # Leads to PageEnvSeasonalCycle
-        envTimeSeriesButton = tk.Button(self.scrollable_frame, text="Plot Environment Seasonal Cycle", font=f,
-                                        command=lambda: self.parent.show_frame(["StartPage"], "PageEnvSeasonalCycle"))
-        envTimeSeriesButton.pack(ipadx=37, ipady=3, pady=(2, 5))
-
-        # Leads to PageCarbonate
-        carbButton = tk.Button(self.scrollable_frame, text="Run Carbonate Model", font=f,
-                               command=lambda: self.parent.show_frame(["StartPage"], "PageCarbonate"))
-        carbButton.pack(ipadx=37, ipady=3, pady=(2, 5))
-
-        # Leads to PageGDGT
-        gdgtButton = tk.Button(self.scrollable_frame, text="Run GDGT Model", font=f,
-                               command=lambda: self.parent.show_frame(["StartPage"], "PageGDGT"))
-        gdgtButton.pack(ipadx=37, ipady=3, pady=(2, 5))
-
-        # Leads to PageLeafwax
-        leafwaxButton = tk.Button(self.scrollable_frame, text="Run Leafwax Model", font=f,
-                                  command=lambda: self.parent.show_frame(["StartPage"], "PageLeafwax"))
-        leafwaxButton.pack(ipadx=37, ipady=3, pady=(2, 5))
-
-        # Leads to PageObservation
-        observationButton = tk.Button(self.scrollable_frame, text="Run Observation Model", font=f, 
-                                    command=lambda: self.parent.show_frame(["StartPage"], "PageObservation"))
-        observationButton.pack(ipadx=37, ipady=3, pady=(2,5))
-
-        # Leads to PageBioturbation
-        bioButton = tk.Button(self.scrollable_frame, text="Run Bioturbation Model", font=f,
-                              command=lambda: self.parent.show_frame(["StartPage"], "PageBioturbation"))
-        bioButton.pack(ipadx=37, ipady=3, pady=(2, 50))
+        for i in range(len(buttonText)):
+            page = pageNames[i]
+            button = tk.Button(self.scrollable_frame, text=buttonText[i], font=f,
+                               command=lambda page=page: self.parent.show_frame(["StartPage"], page))
+            button.pack(ipadx=37, ipady=3, pady=(2,5))
 
 """
 Page to run the environment model
@@ -598,22 +619,6 @@ class PageEnvModel(tk.Frame):
             write_to_file(f, new)
 
     """
-    Checks whether a string represents a valid signed/unsigned floating-point number
-
-    Inputs:
-    - str: a string that should represent a floating-point number
-    Returns: 
-    - True if str represents a float, False otherwise
-    """
-
-    def check_float(self, str):
-        try:
-            float(str)
-            return True
-        except:
-            return False
-
-    """
     Checks if any parameter value is invalid
 
     Inputs: 
@@ -626,7 +631,7 @@ class PageEnvModel(tk.Frame):
         for i in range(len(parameters)):
             # Checks whether numerical values are indeed numerical
             if (i <= 21 or i == 27) and (not parameters[i] == ""):
-                if not self.check_float(parameters[i]):
+                if not check_float(parameters[i]):
                     tk.messagebox.showerror(title="Run Lake Model", message="Non-numerical value was entered as a value"
                                                                             " for a numerical parameter.")
                     return False
@@ -804,6 +809,31 @@ class PageEnvTimeSeries(tk.Frame):
         label.grid(sticky="W", columnspan=3, pady=(0,5))
         rowIdx += 3
 
+        # Shows the name of the current uploaded file, if any.
+        self.txtfilename = ""
+        tk.Label(self.scrollable_frame, text="Current File Uploaded:", font=f).grid(
+            row=rowIdx + 2, column=0, sticky="W")
+        self.currentFileLabel = tk.Label(self.scrollable_frame, text="No file", font=f)
+        self.currentFileLabel.grid(
+            row=rowIdx + 2, column=1, columnspan=2, pady=10, sticky="W")
+
+        # Upload example file
+        tk.Label(self.scrollable_frame, text="Click to load data", font=f).grid(
+            row=rowIdx, column=0, pady=10, sticky="W")
+        graphButton = tk.Button(self.scrollable_frame, text="Upload example file", font=f,
+                                command=lambda: uploadTxt("sample", self, self.currentFileLabel,
+                                                          sample="samples/ERA-HIST-Tlake_surf.dat"))
+        rowIdx += 1
+        graphButton.grid(row=rowIdx, column=0, pady=10,
+                         ipadx=30, ipady=3, sticky="W")
+        # Upload own text file
+        graphButton = tk.Button(self.scrollable_frame, text="Upload own .dat File", font=f,
+                                command=lambda: uploadTxt("user_file", self, self.currentFileLabel,
+                                                          file_types=(("dat files", "dat"),)))
+        graphButton.grid(row=rowIdx, column=1, pady=10,
+                         ipadx=30, ipady=3, sticky="W")
+        rowIdx += 4
+
         # Empty graph, default
         self.f, self.axis = plt.subplots(1,1, figsize=(9, 5), dpi=100)
         plot_setup(self.scrollable_frame, self.axis, self.f, "Time Series", "Time", "Lake Surface Temperature")
@@ -854,7 +884,7 @@ class PageEnvTimeSeries(tk.Frame):
         self.days = []  # x-axis
         self.yaxis = []  # y-axis
 
-        get_output_data(self.days, self.yaxis, column)
+        get_output_data(self.days, self.yaxis, column, self.txtfilename)
 
         self.months = convert_to_monthly(self.days)
         plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " over Time", "Month", varstring, self.months, [self.yaxis],
@@ -915,6 +945,31 @@ class PageEnvSeasonalCycle(tk.Frame):
         label.grid(sticky="W", columnspan=3, pady=(0,5))
         rowIdx += 3
 
+        # Shows the name of the current uploaded file, if any.
+        self.txtfilename = ""
+        tk.Label(self.scrollable_frame, text="Current File Uploaded:", font=f).grid(
+            row=rowIdx + 2, column=0, sticky="W")
+        self.currentFileLabel = tk.Label(self.scrollable_frame, text="No file", font=f)
+        self.currentFileLabel.grid(
+            row=rowIdx + 2, column=1, columnspan=2, pady=10, sticky="W")
+
+        # Upload example file
+        tk.Label(self.scrollable_frame, text="Click to load data", font=f).grid(
+            row=rowIdx, column=0, pady=10, sticky="W")
+        graphButton = tk.Button(self.scrollable_frame, text="Upload example file", font=f,
+                                command=lambda: uploadTxt("sample", self, self.currentFileLabel,
+                                                          sample="samples/ERA-HIST-Tlake_surf.dat"))
+        rowIdx += 1
+        graphButton.grid(row=rowIdx, column=0, pady=10,
+                         ipadx=30, ipady=3, sticky="W")
+        # Upload own text file
+        graphButton = tk.Button(self.scrollable_frame, text="Upload own .dat File", font=f,
+                                command=lambda: uploadTxt("user_file", self, self.currentFileLabel,
+                                                          file_types=(("dat files", "dat"),)))
+        graphButton.grid(row=rowIdx, column=1, pady=10,
+                         ipadx=30, ipady=3, sticky="W")
+        rowIdx += 4
+
         # Empty graph, default
         self.f, self.axis = plt.subplots(1, 1, figsize=(9, 5), dpi=100)
         plot_setup(self.scrollable_frame, self.axis, self.f, "Seasonal Cycle", "Day of the Year",
@@ -967,7 +1022,7 @@ class PageEnvSeasonalCycle(tk.Frame):
         self.days = []  # x-axis
         self.yaxis = []  # y-axis
 
-        get_output_data(self.days, self.yaxis, column)
+        get_output_data(self.days, self.yaxis, column, self.txtfilename)
 
         # At this point, self.days and self.yaxis are identical to the ones in envtimeseries
 
@@ -1041,7 +1096,32 @@ class PageCarbonate(tk.Frame):
             self.scrollable_frame, text="Carbonate Sensor Model", font=LARGE_FONT)
         label.grid(sticky="W", columnspan=3, pady=(0,5))
 
-        rowIdx += 8
+        rowIdx += 3
+
+        # Shows the name of the current uploaded file, if any.
+        self.txtfilename = ""
+        tk.Label(self.scrollable_frame, text="Current File Uploaded:", font=f).grid(
+            row=rowIdx + 2, column=0, sticky="W")
+        self.currentFileLabel = tk.Label(self.scrollable_frame, text="No file", font=f)
+        self.currentFileLabel.grid(
+            row=rowIdx + 2, column=1, columnspan=2, pady=10, sticky="W")
+
+        # Upload example file
+        tk.Label(self.scrollable_frame, text="Click to load data", font=f).grid(
+            row=rowIdx, column=0, pady=10, sticky="W")
+        graphButton = tk.Button(self.scrollable_frame, text="Upload example file", font=f,
+                                command=lambda: uploadTxt("sample", self, self.currentFileLabel,
+                                                          sample="samples/ERA-HIST-Tlake_surf.dat"))
+        rowIdx += 1
+        graphButton.grid(row=rowIdx, column=0, pady=10,
+                         ipadx=30, ipady=3, sticky="W")
+        # Upload own text file
+        graphButton = tk.Button(self.scrollable_frame, text="Upload own .dat File", font=f,
+                                command=lambda: uploadTxt("user_file", self, self.currentFileLabel,
+                                                          file_types=(("dat files", "dat"),)))
+        graphButton.grid(row=rowIdx, column=1, pady=10,
+                         ipadx=30, ipady=3, sticky="W")
+        rowIdx += 4
 
         self.model = tk.StringVar()
         self.model.set("ONeil")
@@ -1080,7 +1160,7 @@ class PageCarbonate(tk.Frame):
     def generate_graph(self):
         surf_tempr = []
         self.days = []
-        get_output_data(self.days, surf_tempr, 1)
+        get_output_data(self.days, surf_tempr, 1, self.txtfilename)
         self.LST = np.array(surf_tempr, dtype=float)
         self.d180w = -2
         self.carb_proxy = carb.carb_sensor(self.LST, self.d180w, model=self.model.get())
@@ -1145,6 +1225,31 @@ class PageGDGT(tk.Frame):
 
         rowIdx += 3
 
+        # Shows the name of the current uploaded file, if any.
+        self.txtfilename = ""
+        tk.Label(self.scrollable_frame, text="Current File Uploaded:", font=f).grid(
+            row=rowIdx + 2, column=0, sticky="W")
+        self.currentFileLabel = tk.Label(self.scrollable_frame, text="No file", font=f)
+        self.currentFileLabel.grid(
+            row=rowIdx + 2, column=1, columnspan=2, pady=10, sticky="W")
+
+        # Upload example file
+        tk.Label(self.scrollable_frame, text="Click to load data", font=f).grid(
+            row=rowIdx, column=0, pady=10, sticky="W")
+        graphButton = tk.Button(self.scrollable_frame, text="Upload example file\n(for Non-MBT Models)", font=f,
+                                command=lambda: uploadTxt("sample", self, self.currentFileLabel,
+                                                          sample="samples/ERA-HIST-Tlake_surf.dat"))
+        rowIdx += 1
+        graphButton.grid(row=rowIdx, column=0, pady=10,
+                         ipadx=30, ipady=3, sticky="W")
+        # Upload own text file
+        graphButton = tk.Button(self.scrollable_frame, text="Upload own .dat File", font=f,
+                                command=lambda: uploadTxt("user_file", self, self.currentFileLabel,
+                                                          file_types=(("dat files", "dat"),)))
+        graphButton.grid(row=rowIdx, column=1, pady=10,
+                         ipadx=30, ipady=3, sticky="W")
+        rowIdx += 4
+
         self.model = tk.StringVar()
         self.model.set("TEX86-tierney")
         model_names = ["TEX86-tierney", "TEX86-powers", "TEX86-loomis", "MBT-R", "MBT-J"]
@@ -1181,7 +1286,7 @@ class PageGDGT(tk.Frame):
     def generate_graph(self):
         surf_tempr = []
         self.days = []
-        get_output_data(self.days, surf_tempr, 1)
+        get_output_data(self.days, surf_tempr, 1, self.txtfilename)
         self.LST = np.array(surf_tempr, dtype=float)
 
         # unchanged
@@ -1274,36 +1379,40 @@ class PageLeafwax(tk.Frame):
         #          ).grid(row=rowIdx, columnspan=3, rowspan=3, pady=15)
         # rowIdx += 3
 
-        # Example file
-        sample_input = 'IsoGSM_dDP_1953_2012.txt'
-        dDp = np.loadtxt(sample_input)
-        self.dDp = dDp
+        # Shows the name of the current uploaded file, if any.
+        self.txtfilename = ""
+        tk.Label(self.scrollable_frame, text="Current File Uploaded:", font=f).grid(
+            row=rowIdx + 2, column=0, sticky="W")
+        self.currentFileLabel = tk.Label(self.scrollable_frame, text="No file", font=f)
+        self.currentFileLabel.grid(
+            row=rowIdx + 2, column=1, columnspan=2, pady=10, sticky="W")
 
         # Upload example file
+        tk.Label(self.scrollable_frame, text="Click to load data", font=f).grid(
+            row=rowIdx, column=0, pady=10, sticky="W")
         graphButton = tk.Button(self.scrollable_frame, text="Upload example file", font=f,
-                                command=lambda: self.uploadLeafwaxTxt("sample"))
+                                command=lambda: uploadTxt("sample", self, self.currentFileLabel,
+                                                          sample="samples/IsoGSM_dDP_1953_2012.txt"))
+        rowIdx += 1
         graphButton.grid(row=rowIdx, column=0, pady=10,
                          ipadx=30, ipady=3, sticky="W")
         # Upload own text file
         graphButton = tk.Button(self.scrollable_frame, text="Upload own .txt File", font=f,
-                                command=lambda: self.uploadLeafwaxTxt("user_file"))
+                                command=lambda: uploadTxt("user_file", self, self.currentFileLabel,
+                                                          file_types=(("text files", "txt"),)))
         graphButton.grid(row=rowIdx, column=1, pady=10,
                          ipadx=30, ipady=3, sticky="W")
-        rowIdx += 1
-
-        # Shows the name of the current uploaded file, if any.
-        tk.Label(self.scrollable_frame, text="Current File Uploaded:", font=f).grid(
+        rowIdx += 2
+        tk.Label(self.scrollable_frame, text="Start Year:", font=f).grid(
             row=rowIdx, column=0, sticky="W")
-        self.currentFileLabel = tk.Label(self.scrollable_frame, text="No file", font=f)
-        self.currentFileLabel.grid(
-            row=rowIdx, column=1, columnspan=2, pady=10, sticky="W")
+        start = tk.Entry(self.scrollable_frame)
+        start.grid(row=rowIdx, column=1, sticky="W")
 
-        rowIdx += 3
-
+        rowIdx+=2
         self.f, self.axis = plt.subplots(1,1, figsize=(9, 5), dpi=100)
         plot_setup(self.scrollable_frame, self.axis, self.f, "SENSOR", "Time", "Simulated Leafwax Data")
 
-        tk.Button(self.scrollable_frame, text="Graph Leafwax Proxy Data", font=f, command=self.generate_graph).grid(
+        tk.Button(self.scrollable_frame, text="Graph Leafwax Proxy Data", font=f, command=lambda: self.generate_graph(start.get())).grid(
             row=rowIdx, column=0, sticky="W")
 
         # Save as PNG and CSV
@@ -1320,28 +1429,20 @@ class PageLeafwax(tk.Frame):
         homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
 
     """
-    Upload .txt file from user
-    """
-
-    def uploadLeafwaxTxt(self, type):
-        if type == "sample":
-            # Upload example file
-            sample_input = 'IsoGSM_dDP_1953_2012.txt'
-            self.currentFileLabel.configure(text=sample_input)
-            self.txtfilename = sample_input
-            self.dDp = np.loadtxt(sample_input)
-        else:
-            # Open the file choosen by the user
-            self.txtfilename = fd.askopenfilename(
-                filetypes=(('text files', 'txt'),))
-            self.currentFileLabel.configure(text=basename(self.txtfilename))
-            self.dDp = np.loadtxt(self.txtfilename)
-
-    """
     Create time series data for leafwax sensor
     """
 
-    def generate_graph(self):
+    def generate_graph(self, start_year):
+        try:
+            int(start_year)
+        except:
+            tk.messagebox.showerror(title="Run Leafwax Model", message="Year must be a positive integer value")
+            return
+        if int(start_year) < 0:
+            tk.messagebox.showerror(title="Run Leafwax Model", message="Year must be a positive integer value")
+            return
+        start_year = int(start_year)
+        self.dDp = np.loadtxt(self.txtfilename)
         self.fC_3 = 0.7  # fraction of C3 plants
         self.fC_4 = 0.3  # fraction of C4 plants
         self.eps_c3 = -112.8  # pm 34.7
@@ -1361,11 +1462,11 @@ class PageLeafwax(tk.Frame):
         with open(self.txtfilename) as input:
             for i in range(len(input.readlines())):
                 self.days.append(30 * i + 15)
-        self.months = convert_to_monthly(self.days)
+        self.months = convert_to_monthly(self.days, start=start_year)
         plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Month", "Simulated Leaf Wax Data", self.months, [self.leafwax_proxy],
                   "normal monthly", ["#b22222"], [1], ["Monthly Data"])
 
-        self.years, self.leafwax_array = convert_to_annual([self.leafwax_proxy, self.Q1, self.Q2])
+        self.years, self.leafwax_array = convert_to_annual([self.leafwax_proxy, self.Q1, self.Q2], start=start_year)
         plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year", "Simulated Leaf Wax Data", self.years, [self.leafwax_array[0]],
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], error_lines=self.leafwax_array[1:], overlay=True)
 
@@ -1430,29 +1531,30 @@ class PageObservation(tk.Frame):
                  ).grid(row=rowIdx, column=0, columnspan=1, rowspan=1, pady=10, ipady=0, sticky="W")
         rowIdx += 3
 
+        # Shows the name of the current uploaded file, if any.
+        self.txtfilename = ""
+        tk.Label(self.scrollable_frame, text="Current File Uploaded:", font=f).grid(
+            row=rowIdx + 2, column=0, sticky="W")
+        self.currentFileLabel = tk.Label(self.scrollable_frame, text="No file", font=f)
+        self.currentFileLabel.grid(
+            row=rowIdx + 2, column=1, columnspan=2, pady=10, sticky="W")
+
         # Upload example file
         tk.Label(self.scrollable_frame, text="Click to load data", font=f).grid(
             row=rowIdx, column=0, pady=10, sticky="W")
-
-        exampleButton = tk.Button(self.scrollable_frame, text="Upload example file", font=f,
-                                command=lambda: self.uploadObsCsv("sample"))
-        exampleButton.grid(row=rowIdx, column=0, pady=10,
-                         ipadx=30, ipady=3, sticky="W")
-        # Upload own csv file
-        uploadButton = tk.Button(self.scrollable_frame, text="Upload own .csv File", font=f,
-                                command=lambda: self.uploadObsCsv("user_file"))
-        uploadButton.grid(row=rowIdx, column=1, pady=10,
-                         ipadx=30, ipady=3, sticky="W")
+        graphButton = tk.Button(self.scrollable_frame, text="Upload example file", font=f,
+                                command=lambda: uploadTxt("sample", self, self.currentFileLabel,
+                                                          sample="samples/TEX86_cal.csv"))
         rowIdx += 1
-
-        # Shows the name of the current uploaded file, if any.
-        tk.Label(self.scrollable_frame, text="Current File Uploaded:", font=f).grid(
-            row=rowIdx, column=0, sticky="W")
-        self.currentFileLabel = tk.Label(self.scrollable_frame, text="No file", font=f)
-        self.currentFileLabel.grid(
-            row=rowIdx, column=1, columnspan=2, pady=10, sticky="W")
-
-        rowIdx += 3
+        graphButton.grid(row=rowIdx, column=0, pady=10,
+                         ipadx=30, ipady=3, sticky="W")
+        # Upload own text file
+        graphButton = tk.Button(self.scrollable_frame, text="Upload own .csv File", font=f,
+                                command=lambda: uploadTxt("user_file", self, self.currentFileLabel,
+                                                          file_types=(("csv files", "csv"),)))
+        graphButton.grid(row=rowIdx, column=1, pady=10,
+                         ipadx=30, ipady=3, sticky="W")
+        rowIdx += 4
 
 
         self.f, self.axis = plt.subplots(1,1, figsize=(10, 5), dpi=100)
@@ -1476,22 +1578,6 @@ class PageObservation(tk.Frame):
             command=lambda: self.parent.show_frame(["PageObservation"], "StartPage"))        
         homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
 
-    """
-      Upload .csv file from user
-      """
-
-    def uploadObsCsv(self, type):
-        if type == "sample":
-            # Upload example file
-            sample_input = 'TEX86_cal.csv'
-            self.currentFileLabel.configure(text=sample_input)
-            self.csvfilename = sample_input
-        else:
-            # Open the file choosen by the user
-            self.csvfilename = fd.askopenfilename(
-                filetypes=(('csv files', 'csv'),))
-            self.currentFileLabel.configure(text=basename(self.csvfilename))
-
 
     """
     Plot observation model
@@ -1507,7 +1593,7 @@ class PageObservation(tk.Frame):
         r = robjects.r
 
         # Read in the data (csv file must be in the same directory as executable)
-        data = np.genfromtxt(self.csvfilename, delimiter=',', names=True, dtype=None)
+        data = np.genfromtxt(self.txtfilename, delimiter=',', names=True, dtype=None)
         year = data['AGE']
         depth = data['DP']
         sds = data['SD']
@@ -1610,19 +1696,33 @@ class PageBioturbation(tk.Frame):
                  text=
                 """1) Upload a .csv file with a column "Pseudoproxy",\n containing pseudoproxy timeseries data. \n2) Enter parameters for bioturbation\n3) You cannot leave parameters empty
                 """, font=f, justify="left"
-                 ).grid(row=rowIdx, columnspan=1, rowspan=1, pady=10, ipady=0, sticky="W")
+                 ).grid(row=rowIdx, columnspan=3, rowspan=1, pady=10, ipady=0, sticky="W")
         rowIdx += 3
 
-        # Upload data
-        tk.Button(self.scrollable_frame, text="Upload Data", command=self.upload_csv, font=f).grid(
-            row=rowIdx, column=0, sticky="W")
-        rowIdx += 1
+        # Shows the name of the current uploaded file, if any.
+        self.txtfilename = ""
         tk.Label(self.scrollable_frame, text="Current File Uploaded:", font=f).grid(
-            row=rowIdx, column=0, sticky="W")
-        self.currentTxtFileLabel = tk.Label(self.scrollable_frame, text="No file", font=f)
-        self.currentTxtFileLabel.grid(
-            row=rowIdx, column=1, columnspan=2, pady=10, sticky="W")
+            row=rowIdx + 2, column=0, sticky="W")
+        self.currentFileLabel = tk.Label(self.scrollable_frame, text="No file", font=f)
+        self.currentFileLabel.grid(
+            row=rowIdx + 2, column=1, columnspan=2, pady=10, sticky="W")
+
+        # Upload example file
+        tk.Label(self.scrollable_frame, text="Click to load data", font=f).grid(
+            row=rowIdx, column=0, pady=10, sticky="W")
+        graphButton = tk.Button(self.scrollable_frame, text="Upload example file", font=f,
+                                command=lambda: uploadTxt("sample", self, self.currentFileLabel,
+                                                          sample="samples/leafwax_timeseries.csv"))
         rowIdx += 1
+        graphButton.grid(row=rowIdx, column=0, pady=10,
+                         ipadx=30, ipady=3, sticky="W")
+        # Upload own text file
+        graphButton = tk.Button(self.scrollable_frame, text="Upload own .csv File", font=f,
+                                command=lambda: uploadTxt("user_file", self, self.currentFileLabel,
+                                                          file_types=(("csv files", "csv"),)))
+        graphButton.grid(row=rowIdx, column=1, pady=10,
+                         ipadx=30, ipady=3, sticky="W")
+        rowIdx += 4
 
 
         
@@ -1657,22 +1757,6 @@ class PageBioturbation(tk.Frame):
         self.f, self.axis = plt.subplots(1, 1, figsize=(9, 5), dpi=100)
         plot_setup(self.scrollable_frame, self.axis, self.f, "ARCHIVE", "Year", "Bioturbated Sensor Data")
 
-    def upload_csv(self):
-        # Open the file choosen by the user
-        self.txtfilename = fd.askopenfilename(filetypes=(('csv files', 'csv'),))
-        self.currentTxtFileLabel.configure(text=basename(self.txtfilename))
-
-    """
-     Checks whether a string represents a valid signed/unsigned floating-point number
-     """
-
-    def check_float(self, str):
-        try:
-            float(str)
-            return True
-        except:
-            return False
-
     """
     Returns false is any parameter value is invalid
     """
@@ -1686,10 +1770,18 @@ class PageBioturbation(tk.Frame):
             tk.messagebox.showerror(title="Run Bioturbation Model",
                                     message="Years must be positive integers")
             return False
+        if int(params[0]) < 0 or int(params[1]) < 0:
+            tk.messagebox.showerror(title="Run Bioturbation Model",
+                                    message="Years must be positive integers")
+            return False
         for i in range(2, 5):
-            if not self.check_float(params[i]):
+            if not check_float(params[i]):
                 tk.messagebox.showerror(title="Run Bioturbation Model",
-                                        message=str(params[i]) + " is not a proper value")
+                                        message=str(params[i]) + " should be a numeric value")
+                return False
+            if i == 5 and not params[i].isdigit():
+                tk.messagebox.showerror(title="Run Bioturbation Model",
+                                        message=str(params[i]) + " should be an integer")
                 return False
         # convert parameters to integers for further validation
         params_copy = copy.deepcopy(params)
@@ -1738,6 +1830,114 @@ class PageBioturbation(tk.Frame):
         if file:
             self.f.savefig(file)
             tk.messagebox.showinfo("Sucess", "Saved graph")
+
+class PageCompaction(tk.Frame):
+
+    def __init__(self, parent, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
+        self.parent = parent
+        canvas = tk.Canvas(self, bg="white", bd=50)
+        scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        s = ttk.Style()
+        s.configure('new.TFrame', background='#FFFFFF')
+        self.scrollable_frame = ttk.Frame(canvas, style='new.TFrame')
+
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+
+        canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        self.populate()
+        self.pack(fill="both", expand=True)
+
+    def populate(self):
+        rowIdx = 1
+        # Title
+        label = tk.Label(
+            self.scrollable_frame, text="Run Compaction Model", font=LARGE_FONT)
+        label.grid(sticky="W", columnspan=3, pady=(1, 20))
+        rowIdx += 3
+
+        parameters = ["Sedimentation Rate (cm/kyr):","# of Years", "Porosity (\u03d5)"]
+        param_values = []
+        for i in range(rowIdx, rowIdx + 3):
+            tk.Label(self.scrollable_frame, text=parameters[i - rowIdx], font=f).grid(
+                row=i, column=0, sticky="W")
+            p = tk.Entry(self.scrollable_frame)
+            p.grid(row=i, column=1, sticky="W")
+            param_values.append(p)
+        rowIdx += 3
+        tk.Button(self.scrollable_frame, text="Generate Graph", font=f,
+                  command=lambda: self.run_compaction_model([p.get() for p in param_values])).grid(
+            row=rowIdx, column=0, sticky="W")
+
+        # Save as PNG and CSV
+
+        tk.Button(self.scrollable_frame, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv).grid(
+            row=0, column=6, ipadx=10, ipady=3, sticky="NE")
+
+        tk.Button(self.scrollable_frame, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
+            row=0, column=7, ipadx=10, ipady=3, sticky="NE")
+
+        # Return to Start Page
+        homeButton = tk.Button(self.scrollable_frame, text="Back to start page", font=f, bg="azure",
+                               command=lambda: self.parent.show_frame(["PageCompaction"], "StartPage"))
+        homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
+
+        self.f, self.axis = plt.subplots(1, 2, figsize=(10, 5), dpi=100)
+        plot_setup(self.scrollable_frame, self.axis[0], self.f, "ARCHIVE", "Year", "Compaction Data")
+        plot_setup(self.scrollable_frame, self.axis[1], self.f, "ARCHIVE", "Year", "Compaction Data")
+
+    def validate_params(self, params):
+        if not check_float(params[0]):
+            tk.messagebox.showerror(title="Run Compaction Model", message="Floating point value was not entered for sedimentation rate")
+            return False
+        if not params[1].isdigit():
+            tk.messagebox.showerror(title="Run Compaction Model", message="Integer value was not entered for year")
+            return False
+        if int(params[1]) < 0:
+            tk.messagebox.showerror(title="Run Compaction Model",
+                                    message="Positive integer value was not entered for year")
+            return False
+        if not check_float(params[2]):
+            tk.messagebox.showerror(title="Run Compaction Model", message="Floating point value was not entered for porosity")
+            return False
+        return True
+
+    def run_compaction_model(self, params):
+        if not self.validate_params(params):
+            return
+        sbar = float(params[0])
+        year = int(params[1])
+        phi_0 = float(params[2])
+        self.z, self.phi, self.h, self.h_prime = comp.compaction(sbar, year, phi_0)
+        plot_draw(self.scrollable_frame, self.axis[0], self.f, "Porosity ($\phi$) Profile in Sediment Core", "Depth (m)",
+                  r'Porosity Profile ($\phi$) (unitless)', self.z, [self.phi],
+                  "normal non-month", ["#000000"], [3], ["Porosity Profile"])
+        plot_draw(self.scrollable_frame, self.axis[1], self.f, "Depth Scale w/Compaction in Sediment Core", "Depth (m)", "Sediment Height (m)",
+                  self.z, [self.h_prime, self.h], "normal non-month", ["#000000", "#b22222"], [3, 3],
+                  ["Compcated Layer", "Non-Compacted Original Layer"])
+
+    def download_csv(self):
+        df = pd.DataFrame({"Depth (m)": self.z, r'Porosity Profile ($\phi$) (unitless)':self.phi,
+                           "Compacted Layer": self.h.prime,"Non-Compacted Original Layer": self.h})
+        file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
+        if file:
+            df.to_csv(file, index=False)
+            tk.messagebox.showinfo("Success", "Saved Data")
+
+    def download_png(self):
+        file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
+        if file:
+            self.f.savefig(file)
+            tk.messagebox.showinfo("Sucess", "Saved graph")
+
 
 if __name__ == "__main__":
     app = SampleApp()
