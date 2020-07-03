@@ -40,7 +40,6 @@ def bioturbation(abu, iso, mxl, numb):
     '''
 
     import numpy as np
-    # DELETED UNNECESSARY IMPORT STATEMENTS!
 
     nrows = int(np.max(mxl) + 0)
     ncols = int(np.max(abu) + 50)
@@ -63,7 +62,6 @@ def bioturbation(abu, iso, mxl, numb):
         # sedabu[sedabu.shape[0]+1,0:ncols] = 2*np.ones((1,ncols))
         sedabu = np.append(sedabu, np.ones((1, ncols)) * 2, axis=0)
         # sedabu(size(sedabu,1),1:abu(i)) = ones(1,abu(i));
-        # ADDED INT() ON THE LAST ABU[I]
         sedabu[len(sedabu[:, 0]) - 1, 0:int(abu[i])] = np.ones((1, int(abu[i])))
         # sedabu(size(sedabu,1),:) = sedabu(size(sedabu,1),rncols);
         sedabu[len(sedabu[:, 0]) - 1, :] = sedabu[len(sedabu[:, 0]) - 1, rncols]
@@ -94,8 +92,7 @@ def bioturbation(abu, iso, mxl, numb):
     sediso = sediso[nrows::, :]
 
     oriabu[:, 0] = abu
-    # CHANGED RIGHT-HAND SIDE TO BE AN ARRAY INSTEAD OF THE SINGLE VALUE: NCOLS-ABU
-    oriabu[:, 1] = np.ones(len(abu)) * (ncols - abu)
+    oriabu[:, 1] = ncols - abu
 
     x1 = np.where(sedabu == 1.)
     x2 = np.where(sedabu == 2.)

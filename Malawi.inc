@@ -38,12 +38,25 @@
       parameter (f = 0.1)   ! Fraction Of Advected Air Over Lake
       parameter (alb_slush = 0.4)   ! Albedo Of Melting Snow
       parameter (alb_snow = 0.7)   ! Albedo Of Non-Melting Snow
-      parameter (alb_snow = 0.7)        ! albedo of non-melting snow
+
       parameter (depth_begin = 292)   ! Prescribed Depth In Meters
       parameter (salty_begin = 0.0)   ! Prescribed Salinity In Ppt
-      parameter (salty_begin = 0.0)     ! prescribed salinity in ppt
+
       parameter (o18air = -28.)   ! D18o Of Air Above Lake
       parameter (deutair = -190.)   ! Dd Of Air Above Lake
+<<<<<<< HEAD
+      co18prec(xt) = 0.3562*xt-21.079   ! function to calc o18prec
+      co18run(xt) = 0.3562*xt-21.079    ! function to calc o18run
+      cdeutprec(xt) = 2.5915*xt-161.35  ! function to calc deutprec
+      cdeutrun(xt) = 2.5915*xt-161.35   ! function to calc deutrun
+
+      real area(max_dep)
+      data area/292*2960000./ ! lake area in hectares by depth 
+
+      ! Removed from the model, for easier access
+      character(38) :: datafile='ERA_INTERIM_1979_2016_Malawi.txt' ! the data file to open in FILE_OPEN subroutine
+      character(38) :: datafile='ERA_INTERIM_1979_2016_Malawi.txt'
+=======
       parameter (deutair = -190.)       ! dD of air above lake
 =======
       parameter (oblq = 23.4)   ! obliquity
@@ -55,60 +68,21 @@
       parameter (b_area = 2960000.)   ! Area of Catchment+Lake in Hectares
       character(38) :: datafile='ERA_INTERIM_1979_2016_Tanganyika_BIASCORRECT.txt' ! the data file to open in FILE_OPEN subroutine
       character(38) :: datafile='ERA_INTERIM_1979_2016_Tanganyika_BIASCORRECT.txt'
+>>>>>>> a9a067371d27190e1ffd4e82de4a42539625a20a
       parameter (tempinit = -4.8)   ! Temperature To Initialize Lake At In INIT_LAKE Subroutine
       parameter (deutinit = -96.1)   ! Dd To Initialize Lake At In INIT_LAKE Subroutine
       parameter (o18init = -11.3)   ! D18o To Initialize Lake At In INIT_LAKE Subroutine
+! Simulation specific parameters **************************************
 
-      parameter (depth_begin = 292)   ! prescribed depth in meters
       parameter (nspin = 10)   ! Number Of Years For Spinup
-      parameter (bndry_flag = .false.)   ! True For Explict Boundry Layer Computations; Presently Only For Sigma Coord Climate Models
+      parameter (bndry_flag = .false.)   ! true For Explict Boundary Layer Computations;Presently Only For Sigma Coord Climate Models
       parameter (sigma = 0.96)   ! Sigma Level For Boundary Flag
-      parameter (wb_flag = .false.)   ! True For Variable Lake Depth
-      parameter (iceflag = .true.)   ! True For Variable Ice Cover
-      parameter (s_flag = .false.)   ! True For Variable Salinity
-      parameter (o18flag = .false.)   ! True For Variable D18o
-      parameter (deutflag = .false.)   ! True For Variable Dd
+      parameter (wb_flag = .false.)   ! true For Variable Lake Depth
+      parameter (iceflag = .true.)   ! true For Variable Ice Cover
+      parameter (s_flag = .false.)   ! true For Variable Salinity
+      parameter (o18flag = .false.)   ! true For Variable D18o
+      parameter (deutflag = .false.)   ! true For Variable Dd
       parameter (z_screen = 5.0)   ! Height Of Met Inputs
-
-      real area(max_dep)
-      data area/292*2960000./ ! lake area in hectares by depth 
-
-      ! Removed from the model, for easier access
-<<<<<<< HEAD
-!     character(38) :: datafile='ERA_INTERIM_climatology_Malawi_2yr.txt' ! the data file to open in FILE_OPEN subroutine
-      character(38) :: datafile='ERA_INTERIM_climatology_Tanganyika.txt'
-      parameter (tempinit= -4.8) ! temperature to initialize lake at in INIT_LAKE subroutine
-      parameter (deutinit= -96.1)! dD to initialize lake at in INIT_LAKE subroutine
-      parameter (o18init= -11.3)  ! d18O to initialize lake at in INIT_LAKE subroutine
-! Simulation specific parameters **************************************
-
-      parameter (nspin = 10)              ! number of years for spinup
-      parameter (bndry_flag = .false.)    ! true for explict boundry layer computations; presently only for sigma coord climate models
-      parameter (sigma = 0.96)            ! sigma level for boundary flag
-      parameter (wb_flag = .false.)       ! true for variable lake depth
-      parameter (iceflag = .true.)        ! true for variable ice cover
-      parameter (s_flag = .false.)        ! true for variable salinity
-      parameter (o18flag = .false.)       ! true for variable d18O 
-      parameter (deutflag = .false.)      ! true for variable dD
-      parameter (z_screen = 5.0)          ! height of met inputs
-=======
-!     character(38) :: datafile='ERA_INTERIM_1979_2016_Tanganyika.txt' ! the data file to open in FILE_OPEN subroutine
-      character(38) :: datafile='ERA_INTERIM_1979_2016_Tanganyika.txt'
-      parameter (tempinit = -4.8)   ! temperature to initialize lake at in INIT_LAKE subroutine
-      parameter (deutinit = -96.1)   ! dD to initialize lake at in INIT_LAKE subroutine
-      parameter (o18init = -11.3)   ! d18O to initialize lake at in INIT_LAKE subroutine
-! Simulation specific parameters **************************************
-
-      parameter (nspin = 10)   ! number of years for spinup
-      parameter (bndry_flag = .false.)   ! true for explict boundry layer computations; presently only for sigma coord climate models
-      parameter (sigma = 0.96)   ! sigma level for boundary flag
-      parameter (wb_flag = .false.)   ! true for variable lake depth
-      parameter (iceflag = .true.)   ! true for variable ice cover
-      parameter (s_flag = .false.)   ! true for variable salinity
-      parameter (o18flag = .false.)   ! true for variable d18O
-      parameter (deutflag = .false.)   ! true for variable dD
-      parameter (z_screen = 5.0)   ! height of met inputs
->>>>>>> d37cbc7e5b7919532a0b875933d95d3f52932d54
 
 !**********************************************************************
 ! Other parameters DO NOT CHANGE without good reason for doing so******
