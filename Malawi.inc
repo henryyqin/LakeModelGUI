@@ -44,6 +44,7 @@
 
       parameter (o18air = -28.)   ! D18o Of Air Above Lake
       parameter (deutair = -190.)   ! Dd Of Air Above Lake
+<<<<<<< HEAD
       co18prec(xt) = 0.3562*xt-21.079   ! function to calc o18prec
       co18run(xt) = 0.3562*xt-21.079    ! function to calc o18run
       cdeutprec(xt) = 2.5915*xt-161.35  ! function to calc deutprec
@@ -55,6 +56,19 @@
       ! Removed from the model, for easier access
       character(38) :: datafile='ERA_INTERIM_1979_2016_Malawi.txt' ! the data file to open in FILE_OPEN subroutine
       character(38) :: datafile='ERA_INTERIM_1979_2016_Malawi.txt'
+=======
+      parameter (deutair = -190.)       ! dD of air above lake
+=======
+      parameter (oblq = 23.4)   ! obliquity
+      parameter (xlat = -12.11)   ! latitude (negative for South)
+      parameter (xlon = 34.22)   ! longitude (negative for West)
+      parameter (gmt = +3)   ! local time relative to gmt in hours
+      parameter (max_dep = 292)   ! depth of lake at sill in meters
+      parameter (basedep = 468.)   ! Elevation of Basin Bottom in Meters
+      parameter (b_area = 2960000.)   ! Area of Catchment+Lake in Hectares
+      character(38) :: datafile='ERA_INTERIM_1979_2016_Tanganyika_BIASCORRECT.txt' ! the data file to open in FILE_OPEN subroutine
+      character(38) :: datafile='ERA_INTERIM_1979_2016_Tanganyika_BIASCORRECT.txt'
+>>>>>>> a9a067371d27190e1ffd4e82de4a42539625a20a
       parameter (tempinit = -4.8)   ! Temperature To Initialize Lake At In INIT_LAKE Subroutine
       parameter (deutinit = -96.1)   ! Dd To Initialize Lake At In INIT_LAKE Subroutine
       parameter (o18init = -11.3)   ! D18o To Initialize Lake At In INIT_LAKE Subroutine
