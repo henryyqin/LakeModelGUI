@@ -1153,7 +1153,7 @@ class PageGDGT(tk.Frame):
                                                                                                  pady=5,
                                                                                                  ipadx=20, ipady=5,
                                                                                                  sticky="W")
-            rowIdx += 1
+        rowIdx += 1
 
         tk.Button(self.scrollable_frame, text="Generate Graph of GDGT Proxy Data", font=MED_FONT, command=self.generate_graph).grid(
             row=rowIdx, column=0, pady=20, ipadx=20, ipady=5, sticky="W")
@@ -1553,8 +1553,8 @@ class PageObservation(tk.Frame):
     def download_csv(self):
         df = pd.DataFrame({"Depth": self.depth_horizons, "Age (95% CI Lower Bound)": self.chronsQ[0],
                         "Age (95% CI Median)": self.chronsQ[0], "Age (95% CI Upper Bound)": self.chronsQ[2]})
-        export_file_path = fd.asksaveasfilename(defaultextension='.csv')
-        df.to_csv(export_file_path, index=None)
+        #export_file_path = fd.asksaveasfilename(defaultextension='.csv')
+        #df.to_csv(export_file_path, index=None)
 
 
         file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
