@@ -115,7 +115,7 @@ def plot_setup(frame, axes, figure, title, x_axis, y_axis):
     - y_axis: the y-axis label
     """
     canvas = FigureCanvasTkAgg(figure, frame)
-    canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+    canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=9, sticky="nw")
     axes.set_title(title, fontsize=12)
     axes.set_xlabel(x_axis)
     axes.set_ylabel(y_axis)
@@ -140,7 +140,7 @@ def plot_draw(frame, axes, figure, title, x_axis, y_axis, x_data, y_data, plot_t
     - overlay: indicates whether this plot should be overlaid on pre-existing plots, False by default
     """
     canvas = FigureCanvasTkAgg(figure, frame)
-    canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
+    canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=9, sticky="nw")
     if not overlay:
         plt.cla()
     axes.set_title(title)
@@ -400,7 +400,7 @@ class PageEnvModel(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
-        canvas = tk.Canvas(self, bg="white")
+        canvas = tk.Canvas(self, bg="white", bd=50)
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
         s = ttk.Style()
         s.configure('new.TFrame', background='#FFFFFF')
@@ -427,9 +427,9 @@ class PageEnvModel(tk.Frame):
 
         # Title
         label = tk.Label(self.scrollable_frame, text="Run Lake Environment Model", font=LARGE_FONT)
-        label.grid(sticky="W", columnspan=3)
+        label.grid(sticky="W")
 
-        rowIdx += 3
+        rowIdx += 1
 
         # Instructions for uploading .txt and .inc files
         tk.Label(self.scrollable_frame,
@@ -440,37 +440,38 @@ class PageEnvModel(tk.Frame):
 
         # Allows user to upload .txt data.
         tk.Label(self.scrollable_frame, text="Click to upload your .txt file:", font=f).grid(
-            row=rowIdx, column=0, pady=10, sticky="W")
+            row=rowIdx, pady=10, sticky="W")
         graphButton = tk.Button(self.scrollable_frame, text="Upload .txt File", font=f,
                                 command=self.uploadTxt)
-        graphButton.grid(row=rowIdx, column=0, padx=340,
+        graphButton.grid(row=rowIdx, padx=340,
                          ipadx=10, ipady=3, sticky="W")
         rowIdx += 1
 
         # Shows the name of the current uploaded file, if any.
         tk.Label(self.scrollable_frame, text="Current File Uploaded:", font=f).grid(
-            row=rowIdx, column=0, sticky="W")
+            row=rowIdx, sticky="W")
         self.currentTxtFileLabel = tk.Label(self.scrollable_frame, text="No file", font=f)
         self.currentTxtFileLabel.grid(
-            row=rowIdx, column=0, columnspan=2, ipady=3, padx=340, pady=(2, 10), sticky="W")
+            row=rowIdx,columnspan=2, ipady=3, padx=340, pady=(2, 10), sticky="W")
         rowIdx += 1
 
         # Autofill buttons
         malawiButton = tk.Button(self.scrollable_frame, text="Autofill Malawi Parameters", font=f,
                                  command=lambda: self.fill("Malawi", param_containers))
-        malawiButton.grid(row=rowIdx, column=0, ipadx=30, ipady=3, sticky="W")
+        malawiButton.grid(row=rowIdx, ipadx=30, ipady=3, sticky="W")
 
         tanganyikaButton = tk.Button(self.scrollable_frame, text="Autofill Tanganyika Parameters", font=f,
                                      command=lambda: self.fill("Tanganyika", param_containers))
-        tanganyikaButton.grid(row=rowIdx, column=0, padx=340, ipadx=30, ipady=3, sticky="W")
+        tanganyikaButton.grid(row=rowIdx,  padx=340, ipadx=30, ipady=3, sticky="W")
 
         refillButton = tk.Button(self.scrollable_frame, text="Autofill Previously Saved Parameters", font=f,
                                  command=lambda: self.fill("Refill", param_containers))
-        refillButton.grid(row=rowIdx, column=0, padx=720, ipadx=30, ipady=3, sticky="W")
+        refillButton.grid(row=rowIdx,  padx=720, ipadx=30, ipady=3, sticky="W")
 
         clearButton = tk.Button(self.scrollable_frame, text="Clear Parameters", font=f,
                                 command=lambda: self.fill("Clear", param_containers))
-        clearButton.grid(row=rowIdx, column=0, padx=1150, ipadx=30, ipady=3, sticky="W")
+        clearButton.grid(row=rowIdx,  padx=1150, ipadx=30, ipady=3, sticky="W")
+
 
         rowIdx += 3
 
@@ -493,9 +494,9 @@ class PageEnvModel(tk.Frame):
         param_values = []
         param_containers = []
         tk.Label(self.scrollable_frame, text="Lake-Specific Parameters", font=LARGE_FONT).grid(
-            row=rowIdx, column=0, pady=10, sticky="W")
+            row=rowIdx, pady=10, sticky="W")
         tk.Label(self.scrollable_frame, text="Simulation-Specific Parameters", font=LARGE_FONT).grid(
-            row=rowIdx, column=0, pady=10, padx=720, sticky="W")
+            row=rowIdx, pady=10, padx=750, sticky="W")
         rowIdx += 1
 
         # List entries for lake-specific parameters
@@ -503,22 +504,22 @@ class PageEnvModel(tk.Frame):
             tk.Label(self.scrollable_frame, text=parameters[i - rowIdx], font=f).grid(
                 row=i, column=0, sticky="W")
             p = tk.Entry(self.scrollable_frame)
-            p.grid(row=i, column=0, padx=390, sticky="W")
+            p.grid(row=i, column=0, padx=550, sticky="W")
             param_values.append(p)
             param_containers.append(p)
 
         # List entries for simulation-specific parameters
         for i in range(rowIdx + 19, rowIdx + 29):
             tk.Label(self.scrollable_frame, text=parameters[i - rowIdx], font=f).grid(
-                row=i - 19, column=0, padx=720, sticky="W")
+                row=i - 19, column=0, padx=750, sticky="W")
             if i in [rowIdx + 19, rowIdx + 21, rowIdx + 27, rowIdx + 28]:
                 p = tk.Entry(self.scrollable_frame)
-                p.grid(row=i - 19, column=0, padx=1120, sticky="W")
+                p.grid(row=i - 19, column=0, padx=1300, sticky="W")
                 param_containers.append(p)
             else:
                 p = tk.IntVar()
                 c = tk.Checkbutton(self.scrollable_frame, variable=p)
-                c.grid(row=i - 19, column=0, padx=1120, sticky="W")
+                c.grid(row=i - 19, column=0, padx=1300, sticky="W")
                 param_containers.append(c)
             param_values.append(p)
 
@@ -527,23 +528,26 @@ class PageEnvModel(tk.Frame):
         # Submit entries for .inc file
         submitButton = tk.Button(self.scrollable_frame, text="Save Parameters", font=f,
                                  command=lambda: self.editInc([p.get() for p in param_values], parameters))
-        submitButton.grid(row=rowIdx, column=0, padx=1120, ipadx=30, ipady=3, sticky="W")
+        submitButton.grid(row=rowIdx, column=0, padx=1300, ipadx=3, ipady=3, sticky="W")
         rowIdx += 1
 
         # Button to run the model (Mac/Linux only)
         runButton = tk.Button(
             self.scrollable_frame, text="Run Model", font=f, command=lambda: self.runModel(runButton))
-        runButton.grid(row=rowIdx, column=0, padx=1120, ipadx=30, ipady=3, sticky="W")
+        runButton.grid(row=rowIdx, column=0, padx=1300, ipadx=30, ipady=3, sticky="W")
         rowIdx += 1
 
-        csvButton = tk.Button(self.scrollable_frame, text='Download CSV', font=f, command=self.download_csv)
-        csvButton.grid(row=rowIdx, column=0, padx=1120, ipadx=30, ipady=3, sticky="W")
 
+        csvButton = tk.Button(self.scrollable_frame, text='Download CSV', font=f, command=self.download_csv)
+        csvButton.grid(row=rowIdx, column=0, padx=1300, ipadx=30, ipady=3, sticky="W")
+
+
+        #maybe column=0
         pngButton = tk.Button(self.scrollable_frame, text='Download PNG', font=f, command=self.download_png)
-        pngButton.grid(row=rowIdx, column=1, padx=1120, ipadx=30, ipady=3, sticky="W")
+        pngButton.grid(row=rowIdx, column=0, padx=1300, ipadx=30, ipady=3, sticky="W")
 
         # Return to Start Page
-        homeButton = tk.Button(self.scrollable_frame, text="Back to start page", font=f,
+        homeButton = tk.Button(self.scrollable_frame, text="Back to start page", font=f, bg="azure", 
                                command=lambda: self.parent.show_frame(["PageEnvModel"], "StartPage"))
         # previousPageB.pack(anchor = "w", side = "bottom")
         homeButton.grid(row=rowIdx, column=0, ipadx=25,
@@ -772,7 +776,7 @@ class PageEnvTimeSeries(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
-        canvas = tk.Canvas(self, bg="white")
+        canvas = tk.Canvas(self, bg="white", bd=50)
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
         s = ttk.Style()
         s.configure('new.TFrame', background='#FFFFFF')
@@ -797,11 +801,11 @@ class PageEnvTimeSeries(tk.Frame):
         #Title
         label = tk.Label(
             self.scrollable_frame, text="Environment Model Time Series", font=LARGE_FONT)
-        label.grid(sticky="W", columnspan=3, pady=(1, 20))
+        label.grid(sticky="W", columnspan=3, pady=(0,5))
         rowIdx += 3
 
         # Empty graph, default
-        self.f, self.axis = plt.subplots(1,1, figsize=(10, 5), dpi=100)
+        self.f, self.axis = plt.subplots(1,1, figsize=(9, 5), dpi=100)
         plot_setup(self.scrollable_frame, self.axis, self.f, "Time Series", "Time", "Lake Surface Temperature")
 
         button_text = ["Graph Surface Temperature", "Graph Mixing Depth", "Graph Evaporation",
@@ -823,20 +827,17 @@ class PageEnvTimeSeries(tk.Frame):
             rowIdx += 1
 
         # Save as PNG and CSV
-        rowIdx += 8
+        
         tk.Button(self.scrollable_frame, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv).grid(
-            row=rowIdx, column=0, pady=(5,5), #135
-            ipadx=20, ipady=5, sticky="SW")
-        rowIdx += 1
+            row=0, column=6, ipadx=10, ipady=3, sticky="NE")
+        
         tk.Button(self.scrollable_frame, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="SW")
-        rowIdx += 1
+            row=0, column=7, ipadx=10, ipady=3, sticky="NE")
+
         # Return to Start Page
-        homeButton = tk.Button(self.scrollable_frame, text="Back to start page", font=f,
-                               command=lambda: self.parent.show_frame(["PageEnvTimeSeries"], "StartPage"))
-        homeButton.grid(row=rowIdx, column=0, ipadx=25,
-                        ipady=3, pady=25, sticky="w")
+        homeButton = tk.Button(self.scrollable_frame, text="Back to start page", font=f, bg="azure",
+            command=lambda: self.parent.show_frame(["PageEnvTimeSeries"], "StartPage"))        
+        homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
 
 
     """
@@ -886,7 +887,7 @@ class PageEnvSeasonalCycle(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
-        canvas = tk.Canvas(self, bg="white")
+        canvas = tk.Canvas(self, bg="white", bd=50)
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
         s = ttk.Style()
         s.configure('new.TFrame', background='#FFFFFF')
@@ -911,11 +912,11 @@ class PageEnvSeasonalCycle(tk.Frame):
         # Title
         label = tk.Label(
             self.scrollable_frame, text="Environment Model Seasonal Cycle", font=LARGE_FONT)
-        label.grid(sticky="W", columnspan=3, pady=(1, 20))
+        label.grid(sticky="W", columnspan=3, pady=(0,5))
         rowIdx += 3
 
         # Empty graph, default
-        self.f, self.axis = plt.subplots(1, 1, figsize=(10, 5), dpi=100)
+        self.f, self.axis = plt.subplots(1, 1, figsize=(9, 5), dpi=100)
         plot_setup(self.scrollable_frame, self.axis, self.f, "Seasonal Cycle", "Day of the Year",
                    "Lake Surface Temperature")
 
@@ -940,21 +941,17 @@ class PageEnvSeasonalCycle(tk.Frame):
             rowIdx += 1
 
         # Save as PNG and CSV
-        rowIdx += 1
+        
         tk.Button(self.scrollable_frame, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv).grid(
-            row=rowIdx, column=0, pady=(135,5),
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
+            row=0, column=6, ipadx=10, ipady=3, sticky="NE")
+        
         tk.Button(self.scrollable_frame, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
+            row=0, column=7, ipadx=10, ipady=3, sticky="NE")
 
         # Return to Start Page
-        homeButton = tk.Button(self.scrollable_frame, text="Back to start page", font=f,
-                               command=lambda: self.parent.show_frame(["PageEnvSeasonalCycle"], "StartPage"))
-        homeButton.grid(row=15, column=0, ipadx=25,
-                        ipady=3, pady=25, sticky="w")
+        homeButton = tk.Button(self.scrollable_frame, text="Back to start page", font=f, bg="azure",
+            command=lambda: self.parent.show_frame(["PageEnvSeasonalCycle"], "StartPage"))        
+        homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
 
     """
     Plots the average of a specific variable for each day of the year as a scatterplot
@@ -1016,7 +1013,7 @@ class PageCarbonate(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
-        canvas = tk.Canvas(self, bg="white")
+        canvas = tk.Canvas(self, bg="white", bd=50)
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
         s = ttk.Style()
         s.configure('new.TFrame', background='#FFFFFF')
@@ -1042,7 +1039,7 @@ class PageCarbonate(tk.Frame):
         #Title
         label = tk.Label(
             self.scrollable_frame, text="Carbonate Sensor Model", font=LARGE_FONT)
-        label.grid(sticky="W", columnspan=3, pady=(1, 20))
+        label.grid(sticky="W", columnspan=3, pady=(0,5))
 
         rowIdx += 8
 
@@ -1061,23 +1058,19 @@ class PageCarbonate(tk.Frame):
             ipadx=20, ipady=5, sticky="W")
 
         # Save as PNG and CSV
-        rowIdx += 10
+        
         tk.Button(self.scrollable_frame, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv).grid(
-            row=rowIdx, column=0, pady=(200,5),
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
+            row=0, column=6, ipadx=10, ipady=3, sticky="NE")
+        
         tk.Button(self.scrollable_frame, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
+            row=0, column=7, ipadx=10, ipady=3, sticky="NE")
 
         # Return to Start Page
-        homeButton = tk.Button(self.scrollable_frame, text="Back to start page", font=f,
-                               command=lambda: self.parent.show_frame(["PageCarbonate"], "StartPage"))
-        homeButton.grid(row=rowIdx, column=0, ipadx=25,
-                        ipady=3, pady=25, sticky="w")
+        homeButton = tk.Button(self.scrollable_frame, text="Back to start page", font=f, bg="azure",
+            command=lambda: self.parent.show_frame(["PageCarbonate"], "StartPage"))        
+        homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
 
-        self.f, self.axis = plt.subplots(1,1, figsize=(10, 5), dpi=100)
+        self.f, self.axis = plt.subplots(1,1, figsize=(9, 5), dpi=100)
         plot_setup(self.scrollable_frame, self.axis, self.f, "SENSOR", "Time", "Simulated Carbonate Data")
 
     """
@@ -1123,7 +1116,7 @@ class PageGDGT(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
-        canvas = tk.Canvas(self, bg="white")
+        canvas = tk.Canvas(self, bg="white", bd=50)
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
         s = ttk.Style()
         s.configure('new.TFrame', background='#FFFFFF')
@@ -1148,7 +1141,7 @@ class PageGDGT(tk.Frame):
         #Title
         label = tk.Label(
             self.scrollable_frame, text="Run GDGT Sensor Model", font=LARGE_FONT)
-        label.grid(sticky="W", columnspan=3, pady=(1, 20))
+        label.grid(sticky="W", columnspan=3, pady=(0,5))
 
         rowIdx += 3
 
@@ -1166,23 +1159,19 @@ class PageGDGT(tk.Frame):
             row=rowIdx, column=0, pady=20, ipadx=20, ipady=5, sticky="W")
 
         # Save as PNG and CSV
-        rowIdx += 1
+        
         tk.Button(self.scrollable_frame, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv).grid(
-            row=rowIdx, column=0, pady=(135,5),
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
+            row=0, column=6, ipadx=10, ipady=3, sticky="NE")
+        
         tk.Button(self.scrollable_frame, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
+            row=0, column=7, ipadx=10, ipady=3, sticky="NE")
 
         # Return to Start Page
-        homeButton = tk.Button(self.scrollable_frame, text="Back to start page", font=f,
-                               command=lambda: self.parent.show_frame(["PageGDGT"], "StartPage"))
-        homeButton.grid(row=15, column=0, ipadx=25,
-                        ipady=3, pady=25, sticky="w")
+        homeButton = tk.Button(self.scrollable_frame, text="Back to start page", font=f, bg="azure",
+            command=lambda: self.parent.show_frame(["PageGDGT"], "StartPage"))        
+        homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
 
-        self.f, self.axis = plt.subplots(1, 1, figsize=(10, 5), dpi=100)
+        self.f, self.axis = plt.subplots(1, 1, figsize=(9, 5), dpi=100)
         plot_setup(self.scrollable_frame, self.axis, self.f, "SENSOR", "Time", "Simulated GDGT Data")
 
     """
@@ -1249,7 +1238,7 @@ class PageLeafwax(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
-        canvas = tk.Canvas(self, bg="white")
+        canvas = tk.Canvas(self, bg="white", bd=50)
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
         s = ttk.Style()
         s.configure('new.TFrame', background='#FFFFFF')
@@ -1274,16 +1263,16 @@ class PageLeafwax(tk.Frame):
         #Title
         label = tk.Label(
             self.scrollable_frame, text="Run Leafwax Model", font=LARGE_FONT)
-        label.grid(sticky="W", columnspan=3, pady=(1, 20))
+        label.grid(sticky="W", columnspan=3, pady=(0, 5))
 
-        rowIdx += 3
+        rowIdx += 1
 
-        # Instructions for uploading file
-        tk.Label(self.scrollable_frame,
-                 text="1) Upload a text file to provide input data for the lake model\n2) Enter lake-specific and simulation-specific parameters\n3) If parameters are left empty, default parameters for Lake Tanganyika will be used",
-                font=f, justify="left"
-                 ).grid(row=rowIdx, columnspan=3, rowspan=3, pady=15)
-        rowIdx += 3
+        # # (UNNECESSARY?-XM) Instructions for uploading file
+        # tk.Label(self.scrollable_frame,
+        #          text="1) Upload a text file to provide input data for the lake model\n2) Enter lake-specific and simulation-specific parameters\n3) If parameters are left empty, default parameters for Lake Tanganyika will be used",
+        #         font=f, justify="left"
+        #          ).grid(row=rowIdx, columnspan=3, rowspan=3, pady=15)
+        # rowIdx += 3
 
         # Example file
         sample_input = 'IsoGSM_dDP_1953_2012.txt'
@@ -1291,16 +1280,14 @@ class PageLeafwax(tk.Frame):
         self.dDp = dDp
 
         # Upload example file
-        tk.Label(self.scrollable_frame, text="Click to load data", font=f).grid(
-            row=rowIdx, column=0, pady=10, sticky="W")
         graphButton = tk.Button(self.scrollable_frame, text="Upload example file", font=f,
                                 command=lambda: self.uploadLeafwaxTxt("sample"))
-        graphButton.grid(row=rowIdx, column=1, pady=10,
+        graphButton.grid(row=rowIdx, column=0, pady=10,
                          ipadx=30, ipady=3, sticky="W")
         # Upload own text file
         graphButton = tk.Button(self.scrollable_frame, text="Upload own .txt File", font=f,
                                 command=lambda: self.uploadLeafwaxTxt("user_file"))
-        graphButton.grid(row=rowIdx, column=2, pady=10,
+        graphButton.grid(row=rowIdx, column=1, pady=10,
                          ipadx=30, ipady=3, sticky="W")
         rowIdx += 1
 
@@ -1313,27 +1300,24 @@ class PageLeafwax(tk.Frame):
 
         rowIdx += 3
 
-        self.f, self.axis = plt.subplots(1,1, figsize=(10, 5), dpi=100)
+        self.f, self.axis = plt.subplots(1,1, figsize=(9, 5), dpi=100)
         plot_setup(self.scrollable_frame, self.axis, self.f, "SENSOR", "Time", "Simulated Leafwax Data")
 
         tk.Button(self.scrollable_frame, text="Graph Leafwax Proxy Data", font=f, command=self.generate_graph).grid(
             row=rowIdx, column=0, sticky="W")
 
         # Save as PNG and CSV
-        rowIdx += 1
+        
         tk.Button(self.scrollable_frame, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
+            row=0, column=6, ipadx=10, ipady=3, sticky="NE")
+        
         tk.Button(self.scrollable_frame, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
+            row=0, column=7, ipadx=10, ipady=3, sticky="NE")
 
         # Return to Start Page
-        tk.Button(self.scrollable_frame, text="Back to start", font=f,
-                  command=lambda: self.parent.show_frame(["PageLeafwax"], "StartPage")).grid(
-            row=rowIdx, column=0, sticky="W")
+        homeButton = tk.Button(self.scrollable_frame, text="Back to start page", font=f, bg="azure",
+            command=lambda: self.parent.show_frame(["PageLeafwax"], "StartPage"))        
+        homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
 
     """
     Upload .txt file from user
@@ -1408,7 +1392,7 @@ class PageObservation(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
-        canvas = tk.Canvas(self, bg="white")
+        canvas = tk.Canvas(self, bg="white", bd=50)
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
         s = ttk.Style()
         s.configure('new.TFrame', background='#FFFFFF')
@@ -1432,35 +1416,32 @@ class PageObservation(tk.Frame):
     def populate(self):
         rowIdx = 1
 
+        # Title
         label = tk.Label(
             self.scrollable_frame, text="Run Observation Model", font=LARGE_FONT)
-        label.grid(row=rowIdx, columnspan=3, rowspan=3, pady=5)
-
+        label.grid(sticky="W", columnspan=3, pady=(0,5))
         rowIdx += 3
 
         # Instructions for uploading file
         tk.Label(self.scrollable_frame,
                  text=
-                 """
-                 WARNING: Long running time
-                 Instructions for input file:
-                 1) The first row must be 'DP, AGE, SD'
-                 2) Ages must be in BP
+                 """WARNING: Long running time\nInstructions for input file:\n1) The first row must be 'DP, AGE, SD'\n2) Ages must be in BP
                  """, font=f, justify="left"
-                 ).grid(row=rowIdx, columnspan=3, rowspan=4, pady=15)
-        rowIdx += 4
+                 ).grid(row=rowIdx, column=0, columnspan=1, rowspan=1, pady=10, ipady=0, sticky="W")
+        rowIdx += 3
 
         # Upload example file
         tk.Label(self.scrollable_frame, text="Click to load data", font=f).grid(
             row=rowIdx, column=0, pady=10, sticky="W")
+
         exampleButton = tk.Button(self.scrollable_frame, text="Upload example file", font=f,
                                 command=lambda: self.uploadObsCsv("sample"))
-        exampleButton.grid(row=rowIdx, column=1, pady=10,
+        exampleButton.grid(row=rowIdx, column=0, pady=10,
                          ipadx=30, ipady=3, sticky="W")
         # Upload own csv file
         uploadButton = tk.Button(self.scrollable_frame, text="Upload own .csv File", font=f,
                                 command=lambda: self.uploadObsCsv("user_file"))
-        uploadButton.grid(row=rowIdx, column=2, pady=10,
+        uploadButton.grid(row=rowIdx, column=1, pady=10,
                          ipadx=30, ipady=3, sticky="W")
         rowIdx += 1
 
@@ -1473,7 +1454,7 @@ class PageObservation(tk.Frame):
 
         rowIdx += 3
 
-        self.f, self.axis = plt.subplots(1,1, figsize=(10, 5), dpi=100)
+        self.f, self.axis = plt.subplots(1,1, figsize=(9, 5), dpi=100)
         plot_setup(self.scrollable_frame, self.axis, self.f, "Depth in Core (cm)", "Age (cal years BP)", "Observation Model")
 
 
@@ -1481,20 +1462,18 @@ class PageObservation(tk.Frame):
             row=rowIdx, column=0, pady=1,
             ipadx=20, ipady=5, sticky="W")
 
-        rowIdx += 1
-        tk.Button(self.scrollable_frame, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_obs_data).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
+        # Save as PNG and CSV
+        
+        tk.Button(self.scrollable_frame, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv).grid(
+            row=0, column=6, ipadx=10, ipady=3, sticky="NE")
+        
         tk.Button(self.scrollable_frame, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
+            row=0, column=7, ipadx=10, ipady=3, sticky="NE")
+
         # Return to Start Page
-        tk.Button(self.scrollable_frame, text="Back to start", font=f,
-                  command=lambda: self.parent.show_frame(["PageObservation"], "StartPage")).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5,  sticky="W")
+        homeButton = tk.Button(self.scrollable_frame, text="Back to start page", font=f, bg="azure",
+            command=lambda: self.parent.show_frame(["PageObservation"], "StartPage"))        
+        homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
 
     """
       Upload .csv file from user
@@ -1559,7 +1538,6 @@ class PageObservation(tk.Frame):
                           facecolor='Silver', edgecolor='Silver', lw=0.0) # horizontal fill between 2.5% - 97.5% of data
         ax.plot(self.chronsQ[1], self.depth_horizons, color="black", lw=0.75) # median line
         ax.scatter(data['AGE'], data['DP'], marker="s") # squares
-        ax.legend(['95% CI', 'Dated Positions'])
         ax.set_xlim(46000, 0)
         ax.set_ylim(650, -50)
         ax.set_xlabel('Age (cal years BP)')
@@ -1569,9 +1547,9 @@ class PageObservation(tk.Frame):
         canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
         canvas.draw()
 
-    def download_obs_data(self):
-        df = pd.DataFrame({"Depth in Core (cm)": self.depth_horizons, "Age, 95% CI Lower Bound (cal years BP)": self.chronsQ[0],
-                        "Age, 95% CI Median (cal years BP)": self.chronsQ[0], "Age, 95% CI Upper Bound (cal years BP)": self.chronsQ[2]})
+    def download_csv(self):
+        df = pd.DataFrame({"Depth": self.depth_horizons, "Age (95% CI Lower Bound)": self.chronsQ[0],
+                        "Age (95% CI Median)": self.chronsQ[0], "Age (95% CI Upper Bound)": self.chronsQ[2]})
         export_file_path = fd.asksaveasfilename(defaultextension='.csv')
         df.to_csv(export_file_path, index=None)
 
@@ -1596,7 +1574,7 @@ class PageBioturbation(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
-        canvas = tk.Canvas(self, bg="white")
+        canvas = tk.Canvas(self, bg="white", bd=50)
         scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
         s = ttk.Style()
         s.configure('new.TFrame', background='#FFFFFF')
@@ -1621,25 +1599,30 @@ class PageBioturbation(tk.Frame):
         #Title
         label = tk.Label(
             self.scrollable_frame, text="Run Bioturbation Model", font=LARGE_FONT)
-        label.grid(sticky="W", columnspan=3, pady=(1, 20))
+        label.grid(sticky="W", columnspan=3, pady=(0,5))
         rowIdx += 3
 
         # Instructions for uploading .txt and .inc files
         tk.Label(self.scrollable_frame,
                  text=
-                 """1) Upload a .csv file with a column "Pseudoproxy" containing pseudoproxy timeseries data. \n2) Enter parameters for bioturbation\n3) You cannot leave parameters empty
-                 """, font=f, justify="left"
-                 ).grid(row=rowIdx, columnspan=3, rowspan=3, pady=15)
+                """1) Upload a .csv file with a column "Pseudoproxy",\n containing pseudoproxy timeseries data. \n2) Enter parameters for bioturbation\n3) You cannot leave parameters empty
+                """, font=f, justify="left"
+                 ).grid(row=rowIdx, columnspan=1, rowspan=1, pady=10, ipady=0, sticky="W")
         rowIdx += 3
+
+        # Upload data
+        tk.Button(self.scrollable_frame, text="Upload Data", command=self.upload_csv, font=f).grid(
+            row=rowIdx, column=0, sticky="W")
+        rowIdx += 1
         tk.Label(self.scrollable_frame, text="Current File Uploaded:", font=f).grid(
             row=rowIdx, column=0, sticky="W")
         self.currentTxtFileLabel = tk.Label(self.scrollable_frame, text="No file", font=f)
         self.currentTxtFileLabel.grid(
             row=rowIdx, column=1, columnspan=2, pady=10, sticky="W")
         rowIdx += 1
-        tk.Button(self.scrollable_frame, text="Upload Data", command=self.upload_csv, font=f).grid(
-            row=rowIdx, column=0, sticky="W")
-        rowIdx += 1
+
+
+        
         parameters = ["Start Year:", "End Year:", "Mixed Layer Thickness Coefficient:", "Abundance:",
                       "Number of Carriers:"]
         param_values = []
@@ -1655,24 +1638,21 @@ class PageBioturbation(tk.Frame):
             row=rowIdx, column=0, sticky="W")
        
         # Save as PNG and CSV
-        rowIdx += 1
+        
         tk.Button(self.scrollable_frame, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
+            row=0, column=6, ipadx=10, ipady=3, sticky="NE")
+        
         tk.Button(self.scrollable_frame, text="Download graph as .png", font=MED_FONT, command=self.download_png).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5, sticky="W")
-        rowIdx += 1
-
-        self.f, self.axis = plt.subplots(1, 1, figsize=(10, 5), dpi=100)
-        plot_setup(self.scrollable_frame, self.axis, self.f, "ARCHIVE", "Year", "Bioturbated Sensor Data")
+            row=0, column=7, ipadx=10, ipady=3, sticky="NE")
 
         # Return to Start Page
-        tk.Button(self.scrollable_frame, text="Back to start", font=f,
-                  command=lambda: self.parent.show_frame(["PageBioturbation"], "StartPage")).grid(
-            row=rowIdx, column=0, pady=1,
-            ipadx=20, ipady=5,  sticky="W")
+        homeButton = tk.Button(self.scrollable_frame, text="Back to start page", font=f, bg="azure",
+            command=lambda: self.parent.show_frame(["PageBioturbation"], "StartPage"))        
+        homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
+
+        
+        self.f, self.axis = plt.subplots(1, 1, figsize=(9, 5), dpi=100)
+        plot_setup(self.scrollable_frame, self.axis, self.f, "ARCHIVE", "Year", "Bioturbated Sensor Data")
 
     def upload_csv(self):
         # Open the file choosen by the user
