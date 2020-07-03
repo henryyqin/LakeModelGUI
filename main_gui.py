@@ -1454,8 +1454,9 @@ class PageObservation(tk.Frame):
 
         rowIdx += 3
 
-        self.f, self.axis = plt.subplots(1,1, figsize=(9, 5), dpi=100)
-        plot_setup(self.scrollable_frame, self.axis, self.f, "Depth in Core (cm)", "Age (cal years BP)", "Observation Model")
+
+        self.f, self.axis = plt.subplots(1,1, figsize=(10, 5), dpi=100)
+        plot_setup(self.scrollable_frame, self.axis, self.f, "Observation Model", "Age (cal years BP)", "Depth in Core (cm)")
 
 
         tk.Button(self.scrollable_frame, text="Graph Observation Model", font=MED_FONT, command=lambda: self.generate_graph()).grid(
@@ -1520,6 +1521,7 @@ class PageObservation(tk.Frame):
         predictPositions = r.seq(0, d, by=d / nyears)
         extractDate = year[0]
 
+
         # Runs the actual model (takes several minutes)
         self.ages = Bchron.Bchronology(ages=ages, ageSds=sd, positions=positions,
                           calCurves=calCurves, predictPositions=predictPositions, extractDate=extractDate)
@@ -1533,17 +1535,18 @@ class PageObservation(tk.Frame):
         self.chronsQ = np.quantile(chrons.transpose(), [0.025, 0.5, 0.975], axis=1)
 
         # Actual Plotting
-        ax = self.f.add_subplot()
-        ax.fill_betweenx(self.depth_horizons, self.chronsQ[0], self.chronsQ[2],
+        self.axis.fill_betweenx(self.depth_horizons, self.chronsQ[0], self.chronsQ[2],
                           facecolor='Silver', edgecolor='Silver', lw=0.0) # horizontal fill between 2.5% - 97.5% of data
-        ax.plot(self.chronsQ[1], self.depth_horizons, color="black", lw=0.75) # median line
-        ax.scatter(data['AGE'], data['DP'], marker="s") # squares
-        ax.set_xlim(46000, 0)
-        ax.set_ylim(650, -50)
-        ax.set_xlabel('Age (cal years BP)')
-        ax.set_ylabel('Depth (mm)')
 
-        canvas = FigureCanvasTkAgg(self.f, self)
+        self.axis.plot(self.chronsQ[1], self.depth_horizons, color="black", lw=0.75) # median line
+        self.axis.scatter(data['AGE'], data['DP'], marker="s") # squares
+        self.axis.legend(['Median', '95% CI', 'Dated Positions'])
+        self.axis.invert_xaxis()
+        self.axis.invert_yaxis()
+        self.axis.set_xlabel('Age (cal years BP)')
+        self.axis.set_ylabel('Depth (mm)')
+
+        canvas = FigureCanvasTkAgg(self.f, self.scrollable_frame)
         canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
         canvas.draw()
 
