@@ -53,22 +53,22 @@
       real area(max_dep)
       data area/292*2960000./ ! lake area in hectares by depth 
 
-      ! Removed from the model, for easier access
-      character(38) :: datafile='ERA_INTERIM_1979_2016_Malawi.txt' ! the data file to open in FILE_OPEN subroutine
-      character(38) :: datafile='ERA_INTERIM_1979_2016_Malawi.txt'
-=======
-      parameter (deutair = -190.)       ! dD of air above lake
+      character(38) :: datafile='CCSM-HIST-Mlake.txt' ! the data file to open in FILE_OPEN subroutine
+      character(38) :: datafile='CCSM-HIST-Mlake.txt'
+      parameter (tempinit = -4.8)   ! Temperature To Initialize Lake At In INIT_LAKE Subroutine
+      parameter (deutinit = -96.1)   ! Dd To Initialize Lake At In INIT_LAKE Subroutine
+      parameter (o18init = -11.3)   ! D18o To Initialize Lake At In INIT_LAKE Subroutine
 =======
       parameter (oblq = 23.4)   ! obliquity
-      parameter (xlat = -12.11)   ! latitude (negative for South)
-      parameter (xlon = 34.22)   ! longitude (negative for West)
-      parameter (gmt = +3)   ! local time relative to gmt in hours
-      parameter (max_dep = 292)   ! depth of lake at sill in meters
-      parameter (basedep = 468.)   ! Elevation of Basin Bottom in Meters
-      parameter (b_area = 2960000.)   ! Area of Catchment+Lake in Hectares
-      character(38) :: datafile='ERA_INTERIM_1979_2016_Tanganyika_BIASCORRECT.txt' ! the data file to open in FILE_OPEN subroutine
-      character(38) :: datafile='ERA_INTERIM_1979_2016_Tanganyika_BIASCORRECT.txt'
->>>>>>> a9a067371d27190e1ffd4e82de4a42539625a20a
+      parameter (nspin = 10)   ! Number Of Years For Spinup
+      parameter (bndry_flag = .false.)   ! true For Explict Boundary Layer Computations;Presently Only For Sigma Coord Climate Models
+      parameter (sigma = 0.96)   ! Sigma Level For Boundary Flag
+      parameter (wb_flag = .false.)   ! true For Variable Lake Depth
+      parameter (iceflag = .true.)   ! true For Variable Ice Cover
+      parameter (s_flag = .false.)   ! true For Variable Salinity
+      parameter (o18flag = .false.)   ! true For Variable D18o
+      parameter (deutflag = .false.)   ! true For Variable Dd
+      parameter (z_screen = 5.0)   ! Height Of Met Inputs
       parameter (tempinit = -4.8)   ! Temperature To Initialize Lake At In INIT_LAKE Subroutine
       parameter (deutinit = -96.1)   ! Dd To Initialize Lake At In INIT_LAKE Subroutine
       parameter (o18init = -11.3)   ! D18o To Initialize Lake At In INIT_LAKE Subroutine
