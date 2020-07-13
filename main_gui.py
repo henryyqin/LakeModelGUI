@@ -294,6 +294,8 @@ class SampleApp(tk.Tk):
                          "PageCarbonate","PageGDGT","PageLeafwax", "PageObservation", "PageBioturbation",
                          "PageCompaction"], "StartPage")
 
+        self.protocol('WM_DELETE_WINDOW', self.close_app)
+
 
     def show_frame(self, old_pages, new_page):
         '''Show a frame for the given page name'''
@@ -306,6 +308,9 @@ class SampleApp(tk.Tk):
             if F.__name__ == new_page:
                 new = F(parent=self)
                 self.frames[new_page] = new
+
+    def close_app(self):
+        exit()
 
 """
 Home/Title Page
