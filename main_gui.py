@@ -1258,6 +1258,7 @@ class PageGDGT(tk.Frame):
                                                                                                  pady=5,
                                                                                                  ipadx=20, ipady=5,
                                                                                                  sticky="W")
+            rowIdx += 1
         rowIdx += 1
 
         tk.Button(self.scrollable_frame, text="Generate Graph of GDGT Proxy Data", font=MED_FONT, command=self.generate_graph).grid(
