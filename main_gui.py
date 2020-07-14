@@ -40,6 +40,7 @@ rpy2.robjects.numpy2ri.activate()
 
 # Miscellaneous imports
 import os
+import sys
 from os.path import basename
 import webbrowser
 import copy
@@ -322,7 +323,7 @@ class SampleApp(tk.Tk):
                 self.frames[new_page] = new
 
     def close_app(self):
-        exit()
+        sys.exit()
 
 
 """
@@ -752,10 +753,7 @@ class PageEnvModel(tk.Frame):
             cygwin1 = Popen(['bash'], stdin=PIPE, stdout=PIPE)
             result1 = cygwin1.communicate(input=b"gfortran -o 'TEST1' env_heatflux.f90")
             print(result1)
-            self.runModel()
-            tk.messagebox.showinfo(title="Run Model", message="Model has completed running. You will find "
-                                                              "surface_output.dat located in your "
-                                                              "current working directory.")
+            self.after(20000, self.runModel())
         #user does not agree to run the model
         else:
             pass
@@ -767,6 +765,9 @@ class PageEnvModel(tk.Frame):
         cygwin2 = Popen(['bash'], stdin=PIPE, stdout=PIPE)
         result2 = cygwin2.communicate(input=b"./TEST1.exe")
         print(result2)
+        tk.messagebox.showinfo(title="Run Model", message="Model has completed running. You will find "
+                                                          "surface_output.dat located in your "
+                                                          "current working directory.")
 
     """
     Downloads 'surface_output.dat' as a CSV to the user's desired location

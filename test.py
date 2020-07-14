@@ -51,7 +51,6 @@ from tkinter.ttk import Label
 from PIL import Image, ImageTk
 from tkinter.filedialog import asksaveasfilename
 
-
 # ===========GENERAL FUNCTIONS========================================
 def callback(url):
     webbrowser.open_new(url)
