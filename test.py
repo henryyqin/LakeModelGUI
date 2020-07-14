@@ -40,6 +40,7 @@ rpy2.robjects.numpy2ri.activate()
 
 # Miscellaneous imports
 import os
+import sys
 from os.path import basename
 import webbrowser
 import copy
@@ -323,7 +324,7 @@ class SampleApp(tk.Tk):
                 self.frames[new_page] = new
 
     def close_app(self):
-        exit()
+        sys.exit()
 
 
 """
