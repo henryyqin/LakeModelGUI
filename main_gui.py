@@ -627,13 +627,9 @@ class PageEnvModel(tk.Frame):
             new = f.readlines()
             if self.txtfilename != "":
                 if nonbase == os.getcwd():
-                    new[
-                        55] = "      character(38) :: datafile='" + base + "' ! the data file to open in FILE_OPEN subroutine\n"
-                    new[56] = "      character(38) :: datafile='" + base + "'\n"
+                    new[55] = "      character(38) :: datafile='" + base + "' ! the data file to open in FILE_OPEN subroutine\n"
                 else:
-                    new[
-                        55] = "      character(38) :: datafile='" + self.txtfilename + "' ! the data file to open in FILE_OPEN subroutine\n"
-                    new[56] = "      character(38) :: datafile='" + self.txtfilename + "'\n"
+                    new[55] = "      character(38) :: datafile='" + self.txtfilename + "' ! the data file to open in FILE_OPEN subroutine\n"
             write_to_file(f, new)
 
     """
@@ -691,8 +687,8 @@ class PageEnvModel(tk.Frame):
                      "alb_snow", "depth_begin", "salty_begin", "o18air", "deutair", "tempinit", "deutinit", "o18init",
                      "nspin", "bndry_flag", "sigma", "wb_flag", "iceflag", "s_flag", "o18flag", "deutflag", "z_screen"]
             # line numbers in the .inc file that need to be modified
-            rows = [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 42, 44, 45, 57, 58, 59, 62, 63, 64, 65, 66, 67,
-                    68, 69, 70]
+            rows = [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 42, 44, 45, 56, 57, 58, 61, 62, 63, 64, 65, 66, 67,
+                    68, 69]
             global PARAMETERS
             PARAMETERS = copy.copy(parameters)
             for i in range(len(parameters) - 1):
@@ -753,7 +749,7 @@ class PageEnvModel(tk.Frame):
             cygwin1 = Popen(['bash'], stdin=PIPE, stdout=PIPE)
             result1 = cygwin1.communicate(input=b"gfortran -o 'TEST1' env_heatflux.f90")
             print(result1)
-            self.after(20000, self.runModel())
+            self.after(10000, self.runModel)
         #user does not agree to run the model
         else:
             pass
