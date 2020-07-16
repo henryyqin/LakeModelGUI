@@ -703,8 +703,7 @@ class PageEnvModel(tk.Frame):
                         else:
                             new[rows[i]] = "      parameter (" + names[i] + " = .false.)   ! " + comments[i] + "\n"
                     else:
-                        new[rows[i]] = "      parameter (" + names[i] + " = " + parameters[i] + ")   ! " + comments[
-                            i] + "\n"
+                        new[rows[i]] = "      parameter (" + names[i] + " = " + parameters[i] + ")   ! " + comments[i] + "\n"
             write_to_file(f, new)
 
     """
@@ -746,7 +745,7 @@ class PageEnvModel(tk.Frame):
                                                                      "once the model has finished. Do you wish to proceed?")
         #user agrees to run the model
         if response == 1:
-            cygwin1 = Popen(['bash'], stdin=PIPE, stdout=PIPE)
+            cygwin1 = Popen(['bash'], stdin=PIPE, stdout=PIPE, shell=True)
             result1 = cygwin1.communicate(input=b"gfortran -o 'TEST1' env_heatflux.f90")
             print(result1)
             self.after(10000, self.runModel)
@@ -758,7 +757,7 @@ class PageEnvModel(tk.Frame):
     Executes the file created by compiling the Fortran model in gfortran
     """
     def runModel(self):
-        cygwin2 = Popen(['bash'], stdin=PIPE, stdout=PIPE)
+        cygwin2 = Popen(['bash'], stdin=PIPE, stdout=PIPE, shell=True)
         result2 = cygwin2.communicate(input=b"./TEST1.exe")
         print(result2)
         tk.messagebox.showinfo(title="Run Model", message="Model has completed running. You will find "
