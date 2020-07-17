@@ -1037,21 +1037,20 @@ class PageEnvSeasonalCycle(tk.Frame):
 
         # At this point, self.days and self.yaxis are identical to the ones in envtimeseries
 
-        self.ydict = {}  # dictionary to store the y values for each day from 15 to 375
-        for day in self.days:  # 15, 45, ...
-            # if the day is not a key, then make an empty list
-            if day % 360 not in self.ydict:
-                self.ydict[day % 360] = []
-            self.ydict[day % 360].append(self.yaxis[int((day - 15) / 30)])  # (day - 15)/30 gets the correct index
+        self.ydict = {}
+        for idx in range(len(self.days)):
+            if idx % 12 not in self.ydict:
+                self.ydict[idx] = []
+            self.ydict[idx % 12].append(self.yaxis[idx])
 
         # After yval array is formed for each xval, generate the axtual yaxis data
         self.seasonal_yaxis = []  # actual plotting data for y
         self.seasonal_days = []
         global START_YEAR
-        start = dt.date(START_YEAR, 1, 1)
-        for i in range(15, 346, 30):
-            date = start + dt.timedelta(days=(i - 1))
-            self.seasonal_days.append(date)
+
+        for i in range(12):  # CHANGE (change how seasonal days are created) 15, 45, 75... 345
+            date = dt.timedelta(days=(i - 1))
+            self.seasonal_days.append(dt.date(START_YEAR, i + 1, 15))
             self.seasonal_yaxis.append(mean(self.ydict[i]))
 
         plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " Seasonal Cycle", "Day of the Year", "Average",
@@ -1819,7 +1818,7 @@ class PageBioturbation(tk.Frame):
             tk.messagebox.showerror(title="Run Bioturbation Model", message="Error with reading csv file")
 
         year = []
-        self.days, self.iso = convert_to_annual([pseudoproxy])
+        self.days, self.iso = convert_to_annual([pseudoproxy], start=int(params[0]))
         if not self.validate_params(params):
             return
         self.age = int(params[1]) - int(params[0])
@@ -1933,6 +1932,9 @@ class PageCompaction(tk.Frame):
             tk.messagebox.showerror(title="Run Compaction Model",
                                     message="Floating point value was not entered for porosity")
             return False
+        if not (params[2] > 0 and params[2] < 1):
+            tk.messagebox.showerror(title="Run Compaction Model",
+                                    message="Porosity must be a value between 0 and 1 (exclusive)")
         return True
 
     def run_compaction_model(self, params):
@@ -1942,6 +1944,8 @@ class PageCompaction(tk.Frame):
         year = int(params[1])
         phi_0 = float(params[2])
         self.z, self.phi, self.h, self.h_prime = comp.compaction(sbar, year, phi_0)
+        self.axis[0].clear()
+        self.axis[1].clear()
         plot_draw(self.scrollable_frame, self.axis[0], self.f, "Porosity ($\phi$) Profile in Sediment Core",
                   "Depth (m)",
                   r'Porosity Profile ($\phi$) (unitless)', self.z, [self.phi],
@@ -1953,7 +1957,7 @@ class PageCompaction(tk.Frame):
 
     def download_csv(self):
         df = pd.DataFrame({"Depth (m)": self.z, r'Porosity Profile ($\phi$) (unitless)': self.phi,
-                           "Compacted Layer": self.h.prime, "Non-Compacted Original Layer": self.h})
+                           "Compacted Layer": self.h_prime, "Non-Compacted Original Layer": self.h})
         file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
         if file:
             df.to_csv(file, index=False)
