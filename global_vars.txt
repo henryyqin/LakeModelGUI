@@ -1,2 +1,2 @@
-C:/Users/xueya/Downloads/LakeModelGUI/ERA_INTERIM_1979_2016_Tanganyika_BIASCORRECT.txt
+/Users/henryqin/Desktop/LakeModelGUI/CCSM-HIST-Mlake-10yrs.txt
 1979
