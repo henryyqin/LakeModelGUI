@@ -1932,7 +1932,7 @@ class PageCompaction(tk.Frame):
             tk.messagebox.showerror(title="Run Compaction Model",
                                     message="Floating point value was not entered for porosity")
             return False
-        if not (params[2] > 0 and params[2] < 1):
+        if not (float(params[2]) > 0 and float(params[2]) < 1):
             tk.messagebox.showerror(title="Run Compaction Model",
                                     message="Porosity must be a value between 0 and 1 (exclusive)")
         return True
