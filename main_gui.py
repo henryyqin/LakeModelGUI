@@ -1151,6 +1151,14 @@ class PageCarbonate(tk.Frame):
                   command=self.generate_graph).grid(
             row=rowIdx, column=0, pady=(10, 5),
             ipadx=20, ipady=5, sticky="W")
+        rowIdx+=3
+        citationLabel = tk.Label(self.scrollable_frame, text="Citations:\n"
+                                             "- O'Neil et al., 1969\n"
+                                             "- Kim and O'Neil, 1997\n"
+                                             "- Erez and Luz, 1983\n"
+                                             "- Bemis et al.,1983\n"
+                                             "- Jean Lynch (need citation)", font=MED_FONT, justify="left")
+        citationLabel.grid(row=rowIdx, column=0, pady=10, sticky="W")
 
         # Save as PNG and CSV
 
@@ -1283,6 +1291,14 @@ class PageGDGT(tk.Frame):
         tk.Button(self.scrollable_frame, text="Generate Graph of GDGT Proxy Data", font=MED_FONT,
                   command=self.generate_graph).grid(
             row=rowIdx, column=0, pady=20, ipadx=20, ipady=5, sticky="W")
+        rowIdx+=3
+        citationLabel = tk.Label(self.scrollable_frame, text="Citations:\n"
+                                             "- Tierney et al., 2008\n"
+                                             "- Powers et al., 2011\n"
+                                             "- Loomis et al., 2012\n"
+                                             "- Russell et al., 2018\n"
+                                             "- De Jonge et al., 2014", font=MED_FONT, justify="left")
+        citationLabel.grid(row=rowIdx, column=0, pady=10, sticky="W")
 
         # Save as PNG and CSV
 
