@@ -1,2 +1,2 @@
-C:/Users/Srivinay Tummarakota/Documents/Vinay's Docs/Rice Freshman/LakeModelGUI/CCSM-LGM-Mlake_2yr.txt
+C:/Users/Srivinay Tummarakota/Documents/Vinay's Docs/Rice Freshman/LakeModelGUI/trace_Malawi_10yr.txt
 1979

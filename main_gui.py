@@ -528,7 +528,7 @@ class PageEnvModel(tk.Frame):
                       "Check Mark For Variable Ice Cover",
                       "Check Mark For Variable Salinity", "Check Mark For Variable \u0394¹⁸o",
                       "Check Mark For Variable \u0394d",
-                      "Height Of Met Inputs", "Start Year"]
+                      "Height Of Met Inputs", "Check Mark for Relative Humidity", "Start Year"]
         param_values = []
         param_containers = []
         tk.Label(self.scrollable_frame, text="Lake-Specific Parameters", font=LARGE_FONT).grid(
@@ -547,10 +547,10 @@ class PageEnvModel(tk.Frame):
             param_containers.append(p)
 
         # List entries for simulation-specific parameters
-        for i in range(rowIdx + 19, rowIdx + 29):
+        for i in range(rowIdx + 19, rowIdx + 30):
             tk.Label(self.scrollable_frame, text=parameters[i - rowIdx], font=f).grid(
                 row=i - 19, column=0, padx=720, sticky="W")
-            if i in [rowIdx + 19, rowIdx + 21, rowIdx + 27, rowIdx + 28]:
+            if i in [rowIdx + 19, rowIdx + 21, rowIdx + 27, rowIdx + 29]:
                 p = tk.Entry(self.scrollable_frame)
                 p.grid(row=i - 19, column=0, padx=1120, sticky="W")
                 param_containers.append(p)
@@ -623,7 +623,7 @@ class PageEnvModel(tk.Frame):
             write_to_file(f, new)
 
         # Modify the include file to read the input text file
-        with open("Malawi.inc", "r+") as f:
+        with open("lake_environment.inc", "r+") as f:
             new = f.readlines()
             if self.txtfilename != "":
                 if nonbase == os.getcwd():
@@ -649,14 +649,14 @@ class PageEnvModel(tk.Frame):
                     tk.messagebox.showerror(title="Run Lake Model", message="Non-numerical value was entered as a value"
                                                                             " for a numerical parameter.")
                     return False
-            if (i == 28):
+            if (i == 29):
                 try:
                     int(parameters[i])
                 except:
                     tk.messagebox.showerror(title="Run Lake Model", message="Years must be integer values")
                     return False
         global START_YEAR
-        START_YEAR = int(parameters[28])
+        START_YEAR = int(parameters[29])
         with open("global_vars.txt", "r+") as vars:
             new = vars.readlines()
             if len(new) >= 2:
@@ -680,24 +680,25 @@ class PageEnvModel(tk.Frame):
     def editInc(self, parameters, comments):
         if not self.validate_params(parameters):
             return
-        with open("Malawi.inc", "r+") as f:
+        with open("lake_environment.inc", "r+") as f:
             new = f.readlines()
             # names of the parameters that need to be modified
             names = ["oblq", "xlat", "xlon", "gmt", "max_dep", "basedep", "b_area", "cdrn", "eta", "f", "alb_slush",
                      "alb_snow", "depth_begin", "salty_begin", "o18air", "deutair", "tempinit", "deutinit", "o18init",
-                     "nspin", "bndry_flag", "sigma", "wb_flag", "iceflag", "s_flag", "o18flag", "deutflag", "z_screen"]
+                     "nspin", "bndry_flag", "sigma", "wb_flag", "iceflag", "s_flag", "o18flag", "deutflag", "z_screen",
+                     "rhflag"]
             # line numbers in the .inc file that need to be modified
             rows = [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 42, 44, 45, 56, 57, 58, 61, 62, 63, 64, 65, 66, 67,
-                    68, 69]
+                    68, 69, 70]
             global PARAMETERS
             PARAMETERS = copy.copy(parameters)
-            for i in range(len(parameters) - 1):
+            for i in range(len(parameters)-1):
                 if len(str(parameters[i])) != 0:
                     comments[i] = comments[i].replace("\u0394", "D")
                     comments[i] = comments[i].replace("¹⁸", "18")
                     comments[i] = comments[i].replace("Check Mark", "true")
                     comments[i] = comments[i].replace("\n", "")
-                    if i == 20 or (i > 21 and i < 27):
+                    if i == 20 or (i > 21 and i < 27) or i==28:
                         if parameters[i] == 1:
                             new[rows[i]] = "      parameter (" + names[i] + " = .true.)   ! " + comments[i] + "\n"
                         else:
@@ -715,18 +716,18 @@ class PageEnvModel(tk.Frame):
             values = ["23.4", "-12.11", "34.22", "+3", "292", "468.", "2960000.",
                       "1.7e-3", "0.04", "0.1", "0.4", "0.7", "292", "0.0", "-28.",
                       "-190.", "-4.8", "-96.1", "-11.3", "10", 0, "0.96", 0, 1,
-                      0, 0, 0, "5.0", "1979"]
+                      0, 0, 0, "5.0", 1, "1979"]
         elif lake == "Tanganyika":
             values = ["23.4", "-6.30", "29.5", "+3", "999", "733.", "23100000.",
                       "2.0e-3", "0.065", "0.3", "0.4", "0.7", "570", "0.0", "-14.0", "-96.",
-                      "23.0", "24.0", "3.7", "10", 0, "0.9925561", 0, 0, 0, 0, 0, "5.0", "1979"]
+                      "23.0", "24.0", "3.7", "10", 0, "0.9925561", 0, 0, 0, 0, 0, "5.0", 1, "1979"]
         elif lake == "Refill":
             values = copy.copy(PARAMETERS)
         else:
             values = [""] * 20
-            values.extend([0, "", 0, 0, 0, 0, 0, ""])
+            values.extend([0, "", 0, 0, 0, 0, 0, "", 0, ""])
         for i in range(len(values)):
-            if i == 20 or (i > 21 and i < 27):
+            if i == 20 or (i > 21 and i < 27) or i==28:
                 containers[i].deselect()
                 if values[i] == 1:
                     containers[i].select()
