@@ -627,9 +627,9 @@ class PageEnvModel(tk.Frame):
             new = f.readlines()
             if self.txtfilename != "":
                 if nonbase == os.getcwd():
-                    new[55] = "      character(38) :: datafile='" + base + "' ! the data file to open in FILE_OPEN subroutine\n"
+                    new[55] = "      character("+str(len(base))+") :: datafile='" + base + "' ! the data file to open in FILE_OPEN subroutine\n"
                 else:
-                    new[55] = "      character(38) :: datafile='" + self.txtfilename + "' ! the data file to open in FILE_OPEN subroutine\n"
+                    new[55] = "      character("+str(len(self.txtfilename))+") :: datafile='" + self.txtfilename + "' ! the data file to open in FILE_OPEN subroutine\n"
             write_to_file(f, new)
 
     """
@@ -1152,13 +1152,38 @@ class PageCarbonate(tk.Frame):
             row=rowIdx, column=0, pady=(10, 5),
             ipadx=20, ipady=5, sticky="W")
         rowIdx+=3
-        citationLabel = tk.Label(self.scrollable_frame, text="Citations:\n"
-                                             "- O'Neil et al., 1969\n"
-                                             "- Kim and O'Neil, 1997\n"
-                                             "- Erez and Luz, 1983\n"
-                                             "- Bemis et al.,1983\n"
-                                             "- Jean Lynch (need citation)", font=MED_FONT, justify="left")
-        citationLabel.grid(row=rowIdx, column=0, pady=10, sticky="W")
+        tk.Label(self.scrollable_frame, text="Citations:", font=MED_FONT, justify="left").grid(row=rowIdx, column=0, sticky="W")
+
+        rowIdx+=1
+        citations = ["- O’Neil, J. R., Clayton, R. N., & Mayeda, T. K. (1969).\n"
+                     "Oxygen isotope fractionation in divalent metal carbonates.\n"
+                     "The Journal of Chemical Physics, 51(12), 5547–5558.",
+                     "- Kim, S.-T., & O’Neil, J. R. (1997).\n"
+                     "Equilibrium and nonequilibrium oxygen isotope effects in synthetic carbonates.\n"
+                     "Geochimica et Cosmochimica Acta, 61(16), 3461–3475.",
+                     "- Erez, J., & Luz, B. (1983).\n"
+                     "Experimental paleotemperature equation for planktonic foraminifera.\n"
+                     "Geochimica et Cosmochimica Acta, 47(6), 1025–1031.",
+                     "- Bemis, B. E., Spero, H. J., Bijma, J., & Lea, D. W. (1998).\n"
+                     "Reevaluation of the oxygen isotopic composition of planktonic foraminifera:\n"
+                     "Experimental results and revised paleotemperature equations. Paleoceanography, 13(2), 150–160.",
+                     "- Jean Lynch (No Citation)"]
+        citationLinks = ["https://aip.scitation.org/doi/abs/10.1063/1.1671982",
+                         "https://www.sciencedirect.com/science/article/pii/S0016703797001695",
+                         "https://www.sciencedirect.com/science/article/abs/pii/0016703783902326",
+                         "https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/98PA00070"]
+        for i in range(len(citations)):
+            citation = tk.Label(self.scrollable_frame,
+                               text=citations[i],
+                               fg="SlateBlue2",
+                               cursor="hand2",
+                               font=MED_FONT,
+                               justify="left")
+            citation.grid(row=rowIdx, column=0, columnspan=10, pady=5, sticky="W")
+            if i < 4:
+                link = citationLinks[i]
+                citation.bind("<Button-1>", lambda e, link=link: callback(link))
+            rowIdx+=1
 
         # Save as PNG and CSV
 
@@ -1291,15 +1316,42 @@ class PageGDGT(tk.Frame):
         tk.Button(self.scrollable_frame, text="Generate Graph of GDGT Proxy Data", font=MED_FONT,
                   command=self.generate_graph).grid(
             row=rowIdx, column=0, pady=20, ipadx=20, ipady=5, sticky="W")
-        rowIdx+=3
-        citationLabel = tk.Label(self.scrollable_frame, text="Citations:\n"
-                                             "- Tierney et al., 2008\n"
-                                             "- Powers et al., 2011\n"
-                                             "- Loomis et al., 2012\n"
-                                             "- Russell et al., 2018\n"
-                                             "- De Jonge et al., 2014", font=MED_FONT, justify="left")
-        citationLabel.grid(row=rowIdx, column=0, pady=10, sticky="W")
+        rowIdx += 3
+        tk.Label(self.scrollable_frame, text="Citations:", font=MED_FONT, justify="left").grid(row=rowIdx, column=0,
+                                                                                               sticky="W")
 
+        rowIdx += 1
+        citations = ["- Tierney, J. E., Russell, J. M., Huang, Y., Damsté, J. S. S., Hopmans, E. C., & Cohen, A. S. (2008).\n"
+                     "Northern Hemisphere controls on tropical southeast African climate during the past 60,000 years.\n"
+                     "Science, 322(5899), 252–255.",
+                     "- Powers, L. A., Johnson, T. C., Werne, J. P., Castañeda, I. S., Hopmans, E. C., Damsté, J. S. S., & Schouten, S. (2011).\n"
+                     "Organic geochemical records of environmental variability in Lake Malawi during the last 700 years,\n"
+                     "part I: The TEX86 temperature record. Palaeogeography, Palaeoclimatology, Palaeoecology, 303(1), 133–139.",
+                     "- Loomis, S. E., Russell, J. M., Ladd, B., Street-Perrott, F. A., & Damsté, J. S. S. (2012).\n"
+                     "Calibration and application of the branched GDGT temperature proxy on East African lake sediments.\n"
+                     "Earth and Planetary Science Letters, 357, 277–288.",
+                     "- Russell, J. M., Hopmans, E. C., Loomis, S. E., Liang, J., & Damsté, J. S. S. (2018).\n"
+                     "Distributions of 5-and 6-methyl branched glycerol dialkyl glycerol tetraethers (brGDGTs) in East African lake sediment:\n"
+                     "Effects of temperature, pH, and new lacustrine paleotemperature calibrations. Organic Geochemistry, 117, 56–69.",
+                     "- De Jonge, C., Hopmans, E. C., Zell, C. I., Kim, J.-H., Schouten, S., & Damsté, J. S. S. (2014).\n"
+                     "Occurrence and abundance of 6-methyl branched glycerol dialkyl glycerol tetraethers in soils:\n"
+                     "Implications for palaeoclimate reconstruction. Geochimica et Cosmochimica Acta, 141, 97–112."]
+        citationLinks = ["https://arizona.pure.elsevier.com/en/publications/northern-hemisphere-controls-on-tropical-southeast-african-climat",
+                         "http://www.pitt.edu/~jwerne/uploads/3/0/1/0/30101831/29.powersetal.p311.pdf",
+                         "http://www.jsg.utexas.edu/sloomis/files/Loomis_2012_GDGT-Calibration.pdf",
+                         "https://www.sciencedirect.com/science/article/pii/S0146638017304394",
+                         "https://www.sciencedirect.com/science/article/abs/pii/S0016703714004141"]
+        for i in range(len(citations)):
+            citation = tk.Label(self.scrollable_frame,
+                                text=citations[i],
+                                fg="SlateBlue2",
+                                cursor="hand2",
+                                font=MED_FONT,
+                                justify="left")
+            citation.grid(row=rowIdx, column=0, columnspan=10, pady=5, sticky="W")
+            link = citationLinks[i]
+            citation.bind("<Button-1>", lambda e, link=link: callback(link))
+            rowIdx += 1
         # Save as PNG and CSV
 
         tk.Button(self.scrollable_frame, text="Save Graph Data as .csv", font=MED_FONT, command=self.download_csv).grid(
