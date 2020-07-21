@@ -1,4 +1,5 @@
 import sys
+sys.settrace
 
 #tkinter imports
 import tkinter as tk
@@ -28,9 +29,8 @@ import datetime as dt
 from matplotlib import dates as mdates
 from statistics import mean
 plt.style.use('seaborn-whitegrid')
-matplotlib.use('TkAgg')  # Necessary for MacOS Mojave
+matplotlib.use('TkAgg')  # Necessary for Ma
 
-"""
 # Imports for Observation Model
 from rpy2.robjects import FloatVector
 from rpy2.robjects.vectors import StrVector
@@ -38,12 +38,10 @@ import rpy2.robjects as robjects
 from rpy2.robjects.packages import importr
 import rpy2.robjects.numpy2ri
 rpy2.robjects.numpy2ri.activate()
-"""
+
 
 #Miscellaneous imports
 import os
-#os.chdir("/Users/henryqin/Desktop/LakeModelGUI/dist/main_gui_mac") #pyinstaller test
-print(os.getcwd())
 from os.path import basename
 import webbrowser
 import copy
@@ -315,7 +313,7 @@ class SampleApp(tk.Tk):
                 self.frames[new_page] = new
 
     def close_app(self):
-        sys.exit()
+        exit()
 
 """
 Home/Title Page
@@ -573,6 +571,10 @@ class PageEnvModel(tk.Frame):
         csvButton.grid(row=rowIdx, column=0, padx=1120, ipadx=30, ipady=3, sticky="W")
 
 
+        #maybe column=0
+        pngButton = tk.Button(self.scrollable_frame, text='Download PNG', font=f, command=self.download_png)
+        pngButton.grid(row=rowIdx, column=0, padx=1120, ipadx=30, ipady=3, sticky="W")
+
         # Return to Start Page
         homeButton = tk.Button(self.scrollable_frame, text="Back to start page", font=f, bg="azure", 
                                command=lambda: self.parent.show_frame(["PageEnvModel"], "StartPage"))
@@ -597,7 +599,7 @@ class PageEnvModel(tk.Frame):
             write_to_file(vars, new)
 
         base = basename(self.txtfilename)
-        nonbase = (self.txtfilename.replace(base, ''))[:-1]
+        nonbase = (self.txtfilename.replace("/", "\\")).replace(base, '')[:-1]
         self.currentTxtFileLabel.configure(text=base)
 
         # Modify the Fortran code to read the input text file
@@ -605,9 +607,9 @@ class PageEnvModel(tk.Frame):
             new = f.readlines()
             if self.txtfilename != "":
                 if nonbase == os.getcwd():
-                    new[18] = "      !data_input_filename = '" + base + "'\n"
+                    new[19] = "      !data_input_filename = '" + base + "'\n"
                 else:
-                    new[18] = "      !data_input_filename = '" + self.txtfilename + "'\n"
+                    new[19] = "      !data_input_filename = '" + self.txtfilename + "'\n"
             write_to_file(f, new)
 
         # Modify the include file to read the input text file
@@ -617,9 +619,11 @@ class PageEnvModel(tk.Frame):
                 if nonbase == os.getcwd():
                     new[
                         55] = "      character(38) :: datafile='" + base + "' ! the data file to open in FILE_OPEN subroutine\n"
+                    new[56] = "      character(38) :: datafile='" + base + "'\n"
                 else:
                     new[
                         55] = "      character(38) :: datafile='" + self.txtfilename + "' ! the data file to open in FILE_OPEN subroutine\n"
+                    new[56] = "      character(38) :: datafile='" + self.txtfilename + "'\n"
             write_to_file(f, new)
 
     """
@@ -671,8 +675,8 @@ class PageEnvModel(tk.Frame):
                      "alb_snow", "depth_begin", "salty_begin", "o18air", "deutair", "tempinit", "deutinit", "o18init",
                      "nspin", "bndry_flag", "sigma", "wb_flag", "iceflag", "s_flag", "o18flag", "deutflag", "z_screen"]
             # line numbers in the .inc file that need to be modified
-            rows = [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 42, 44, 45, 56, 57, 58, 61, 62, 63, 64, 65, 66, 67,
-                    68, 69]
+            rows = [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 42, 44, 45, 57, 58, 59, 62, 63, 64, 65, 66, 67,
+                    68, 69, 70]
             global PARAMETERS
             PARAMETERS = copy.copy(parameters)
             for i in range(len(parameters) - 1):
@@ -680,7 +684,7 @@ class PageEnvModel(tk.Frame):
                     comments[i] = comments[i].replace("\u0394", "D")
                     comments[i] = comments[i].replace("¹⁸", "18")
                     comments[i] = comments[i].replace("Check Mark", "true")
-                    comments[i] = comments[i].replace("\n", "")
+                    comments[i] = comments[i].replace("\n","")
                     if i == 20 or (i > 21 and i < 27):
                         if parameters[i] == 1:
                             new[rows[i]] = "      parameter (" + names[i] + " = .true.)   ! " + comments[i] + "\n"
@@ -725,32 +729,32 @@ class PageEnvModel(tk.Frame):
     """
 
     def runModel(self, btn):
-        response = tk.messagebox.askyesno(title="Warning", message="Running the model will take several minutes, and the GUI may close "
-                                                                     "once the model finishes running. If this occurs, you will need to "
-                                                                     "re-open the GUI to download the output. Do you wish to proceed?")
-        if response == 1:
-            btn["state"]="disabled"
-            model_process = multiprocessing.Process(target=self.computeModel(btn))
-            model_process.start()
-        else:
-            pass
+        btn["state"]="disabled"
+        model_process = multiprocessing.Process(target=self.computeModel)
+        model_process.start()
+        """
+        pbar = ttk.Progressbar(self, orient="horizontal", length=100, mode="indeterminate")
+        pbar.grid(row=30,column=1, sticky="W")
+        pbar.start()
+        file_path = os.getcwd() + "/profile_output.dat"
+        self.after(30000, lambda: self.check_file(file_path, 0, pbar, btn))
+        """
 
 
     """
     Compiles a Fortran wrapper and runs the model
     """
 
-    def computeModel(self,btn):
+    def computeModel(self):
         # Runs f2py terminal command then (hopefully) terminates (takes a bit)
         subprocess.run(
             ['f2py', '-c', '-m', 'lakepsm', 'env_heatflux.f90'])
+
         # imports the wrapper
         import lakepsm
 
         # Run Environment Model (Crashes eventually)
         lakepsm.lakemodel()
-
-
 
     def check_file(self, file, past_size, progress, btn):
         current_size = os.path.getsize(file)
@@ -768,6 +772,12 @@ class PageEnvModel(tk.Frame):
         read_file = pd.read_csv("ERA-HIST-Tlake_surf.dat")
         export_file_path = fd.asksaveasfilename(defaultextension='.csv')
         read_file.to_csv(export_file_path, index=None)
+
+    def download_png(self):
+        file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
+        if file:
+            self.f.savefig(file)
+            tk.messagebox.showinfo("Sucess", "Saved graph")
 
 
 """
@@ -1583,7 +1593,6 @@ class PageObservation(tk.Frame):
     """
 
     def generate_graph(self):
-        """
         # R packages
         utils = importr("utils")
         utils.chooseCRANmirror(ind=1)
@@ -1635,8 +1644,6 @@ class PageObservation(tk.Frame):
         canvas = FigureCanvasTkAgg(self.f, self.scrollable_frame)
         canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
         canvas.draw()
-        """
-        pass
 
     def download_csv(self):
         df = pd.DataFrame({"Depth": self.depth_horizons, "Age (95% CI Lower Bound)": self.chronsQ[0],

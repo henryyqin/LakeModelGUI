@@ -1,6 +1,36 @@
-      program lakemodel
+      program lake_env
 
       implicit none
+      
+      call lakemodel()
+      
+      stop
+      end
+      
+      
+      subroutine lakemodel ()
+      implicit none
+      
+      !!!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      !character*32 :: lake_data_filename
+      !character*80 :: lake_data_filename, data_input_filename
+      !character*80 :: data_output_profile, data_output_surface
+
+      !data_input_filename = 'ERA_INTERIM_climatology_Tang_2yr.txt'
+      !data_input_filename = 'CCSM-LGM-Mlake_2yr.txt'
+      !data_output_profile = 'profile_output.dat'
+      !data_output_surface = 'surface_output.dat'
+      !!!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    !f2py real(8) intent(in) :: lake_data_filename, data_input_filename
+    !f2py real(8) intent(out) :: data_output_profile, data_output_surface
+      !!!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      
+      !include trim(lake_data_filename)
+      !include "lake_environment.inc" ! info for simulation
+      
+      !program lakemodel
+
+      !implicit none
       include 'Malawi.inc' ! info for simulation
 
       real year,day,ta_in,dp_in,ua_in,rlwd_in,sw_in,qa_in,  &
@@ -16,7 +46,9 @@
 
       call file_open ! open input and output files
       call init_lake ! initialize lake variables
-      !data_input_filename = 'CCSM-HIST-Mlake-10yrs.txt'
+      ispin = 0
+
+!	  Begin Ashling
       !Read in data based on 
       if (wb_flag) then
         !variable lake depth, with or without isotopes
@@ -728,7 +760,7 @@
           de(k)=dm
         enddo
         return !  no further calculations needed
-      open(unit=15,file='C:/Users/xueya/Downloads/LakeModelGUI/Tanganyika.txt',status='old')
+      endif
 
       u=amax1(u2,0.5) ! avoid NAN in ks
       ks=6.6*sqrt(abs(sin(xlat*raddeg)))*u**(-1.84)
@@ -763,7 +795,7 @@
       de(depth-1)=de(depth)  ! necessary for cn solution to work
 
       return
-      end if
+      end
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !                 FILE_OPEN
