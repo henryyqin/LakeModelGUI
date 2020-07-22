@@ -71,6 +71,7 @@ def check_float(str):
         float(str)
         return True
     except:
+        tk.messagebox.showerror(title="Run Model", message="Value entered was not a floating-point number")
         return False
 
 
@@ -84,9 +85,10 @@ def initialize_global_variables():
         global INPUT
         if len(lines) >=1:
             INPUT = lines[0]
-        global START_YEAR
-        if len(lines) >=2:
-            START_YEAR = int(lines[1])
+            global START_YEAR
+            if len(lines) >=2:
+                START_YEAR = int(lines[1])
+
 
 
 def write_to_file(file, data):
@@ -194,23 +196,10 @@ def plot_draw(frame, axes, figure, title, x_axis, y_axis, x_data, y_data, plot_t
     axes.set_ylabel(y_axis)
     i = 0
     for line in y_data:
-        if "normal" in plot_type:
-            if "monthly" in plot_type:
-                date_format = mdates.DateFormatter('%b,%Y')
-                axes.xaxis.set_major_formatter(date_format)
-                axes.plot_date(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i],
-                               marker=None)
-            elif "month-only" in plot_type:
-                date_format = mdates.DateFormatter('%b')
-                axes.xaxis.set_major_formatter(date_format)
-                axes.plot_date(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i])
-            elif "non-month" in plot_type:
-                axes.plot(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i])
-            else:
-                axes.plot_date(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i])
-        if "scatter" in plot_type:
-            axes.scatter(x_data, line, color=colors[i])
-            pass
+        if "monthly" in plot_type:
+            axes.plot(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i])
+        else:
+            axes.plot(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i], marker="o")
         i += 1
     if error_lines != None:
         axes.fill_between(x_data, error_lines[0], error_lines[1], facecolor='grey', edgecolor='none', alpha=0.20)
@@ -223,18 +212,18 @@ def convert_to_monthly(time, start=None):
     Input:
     - time: an array of day numbers (15, 45, 75, etc.)
     """
-    start_date = None
-    if start == None:
+    start_year = copy.copy(start)
+    if start_year == None:
         global START_YEAR
-        start_date = dt.date(START_YEAR, 1, 1)
-    else:
-        start_date = dt.date(start, 1, 1)
+        start_year = copy.copy(START_YEAR)
+    months = [0,1/12,2/12,3/12,4/12,5/12,6/12,7/12,8/12,9/12,10/12,11/12]
     dates = []
-    for day in time:
-        new_date = start_date + dt.timedelta(days=day - 1)
-        dates.append(new_date)
+    for i in range(len(time)):
+        if (i+1)%12==0:
+            start_year += 1
+        month_year = months[(i+1)%12]+start_year
+        dates.append(month_year)
     return dates
-
 
 def convert_to_annual(data, start=None):
     """
@@ -242,22 +231,24 @@ def convert_to_annual(data, start=None):
     Input:
     - data: the y-axis of the timeseries data
     """
-    start_date = None
-    if start == None:
+    start_year = copy.copy(start)
+    if start==None:
         global START_YEAR
-        start_date = dt.date(START_YEAR - 1, 7, 2)
-    else:
-        start_date = dt.date(start - 1, 7, 2)
+        start_year = copy.copy(START_YEAR)
+    start_year+=0.5
+    years = []
+    for i in range(len(data[0])):
+        if (i+1)%12==0:
+            years.append(start_year)
+            start_year+=1
     all_year_avgs = []
     for column in data:
-        years = []
         year_data = []
         year_avgs = []
         for i in range(len(column)):
             year_data.append(column[i])
             if (i + 1) % 12 == 0:
                 year_avgs.append(mean(year_data))
-                years.append(start_date + dt.timedelta(days=365 * ((i + 1) / 12)))
                 year_data.clear()
         all_year_avgs.append(year_avgs)
     return years, all_year_avgs
@@ -578,10 +569,6 @@ class PageEnvModel(tk.Frame):
         csvButton = tk.Button(self.scrollable_frame, text='Download CSV', font=f, command=self.download_csv)
         csvButton.grid(row=rowIdx, column=0, padx=1120, ipadx=30, ipady=3, sticky="W")
 
-        # maybe column=0
-        pngButton = tk.Button(self.scrollable_frame, text='Download PNG', font=f, command=self.download_png)
-        pngButton.grid(row=rowIdx, column=0, padx=1120, ipadx=30, ipady=3, sticky="W")
-
         # Return to Start Page
         homeButton = tk.Button(self.scrollable_frame, text="Back to start page", font=f, bg="azure",
                                command=lambda: self.parent.show_frame(["PageEnvModel"], "StartPage"))
@@ -774,12 +761,6 @@ class PageEnvModel(tk.Frame):
         export_file_path = fd.asksaveasfilename(defaultextension='.csv')
         read_file.to_csv(export_file_path, index=None)
 
-    def download_png(self):
-        file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
-        if file:
-            self.f.savefig(file)
-            tk.messagebox.showinfo("Sucess", "Saved graph")
-
 
 """
 Page to plot environment model time series
@@ -898,10 +879,9 @@ class PageEnvTimeSeries(tk.Frame):
         self.months = convert_to_monthly(self.days)
         plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " over Time", "Month", varstring, self.months,
                   [self.yaxis],
-                  "normal monthly", ["#b22222"], [1], ["Monthly Data"])
-
+                  "monthly", ["#b22222"], [1], ["Monthly Data"])
         self.years, self.yaxes = convert_to_annual([self.yaxis])
-        plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " over Time", "Year", varstring, self.years,
+        plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " over Time", "Year (C.E.)", varstring, self.years,
                   self.yaxes,
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], overlay=True)
 
@@ -1046,17 +1026,15 @@ class PageEnvSeasonalCycle(tk.Frame):
 
         # After yval array is formed for each xval, generate the axtual yaxis data
         self.seasonal_yaxis = []  # actual plotting data for y
-        self.seasonal_days = []
+        self.seasonal_days = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
         global START_YEAR
 
         for i in range(12):  # CHANGE (change how seasonal days are created) 15, 45, 75... 345
-            date = dt.timedelta(days=(i - 1))
-            self.seasonal_days.append(dt.date(START_YEAR, i + 1, 15))
             self.seasonal_yaxis.append(mean(self.ydict[i]))
 
         plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " Seasonal Cycle", "Day of the Year", "Average",
                   self.seasonal_days,
-                  [self.seasonal_yaxis], "normal month-only", ["#000000"], [3], ["Monthly Averaged Data"])
+                  [self.seasonal_yaxis], "normal", ["#000000"], [3], ["Monthly Averaged Data"])
 
     def download_csv(self):
         df = pd.DataFrame({"Time": self.seasonal_days, "Pseudoproxy": self.seasonal_yaxis})
@@ -1216,10 +1194,10 @@ class PageCarbonate(tk.Frame):
         self.months = convert_to_monthly(self.days)
         plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Month", "Simulated Carbonate Data", self.months,
                   [self.carb_proxy],
-                  "normal monthly", ["#b22222"], [1], ["Monthly Data"])
+                  "monthly", ["#b22222"], [1], ["Monthly Data"])
 
         self.years, self.yaxis = convert_to_annual([self.carb_proxy])
-        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year", "Simulated Carbonate Data", self.years,
+        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year (C.E.)", "Simulated Carbonate Data", self.years,
                   self.yaxis,
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], overlay=True)
 
@@ -1399,10 +1377,10 @@ class PageGDGT(tk.Frame):
         self.months = convert_to_monthly(self.days)
         plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Month", "Simulated GDGT Data", self.months,
                   [self.gdgt_proxy],
-                  "normal monthly", ["#b22222"], [1], ["Monthly Data"])
+                  "monthly", ["#b22222"], [1], ["Monthly Data"])
 
         self.years, self.yaxis = convert_to_annual([self.gdgt_proxy])
-        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year", "Simulated GDGT Data", self.years,
+        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year (C.E.)", "Simulated GDGT Data", self.years,
                   self.yaxis,
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], overlay=True)
 
@@ -1458,13 +1436,6 @@ class PageLeafwax(tk.Frame):
         label.grid(sticky="W", columnspan=3, pady=(0, 5))
 
         rowIdx += 1
-
-        # # (UNNECESSARY?-XM) Instructions for uploading file
-        # tk.Label(self.scrollable_frame,
-        #          text="1) Upload a text file to provide input data for the lake model\n2) Enter lake-specific and simulation-specific parameters\n3) If parameters are left empty, default parameters for Lake Tanganyika will be used",
-        #         font=f, justify="left"
-        #          ).grid(row=rowIdx, columnspan=3, rowspan=3, pady=15)
-        # rowIdx += 3
 
         # Shows the name of the current uploaded file, if any.
         self.txtfilename = ""
@@ -1524,10 +1495,7 @@ class PageLeafwax(tk.Frame):
         try:
             int(start_year)
         except:
-            tk.messagebox.showerror(title="Run Leafwax Model", message="Year must be a positive integer value")
-            return
-        if int(start_year) < 0:
-            tk.messagebox.showerror(title="Run Leafwax Model", message="Year must be a positive integer value")
+            tk.messagebox.showerror(title="Run Leafwax Model", message="Year must be an integer value")
             return
         start_year = int(start_year)
         self.dDp = np.loadtxt(self.txtfilename)
@@ -1553,10 +1521,10 @@ class PageLeafwax(tk.Frame):
         self.months = convert_to_monthly(self.days, start=start_year)
         plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Month", "Simulated Leaf Wax Data", self.months,
                   [self.leafwax_proxy],
-                  "normal monthly", ["#b22222"], [1], ["Monthly Data"])
+                  "monthly", ["#b22222"], [1], ["Monthly Data"])
 
         self.years, self.leafwax_array = convert_to_annual([self.leafwax_proxy, self.Q1, self.Q2], start=start_year)
-        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year", "Simulated Leaf Wax Data", self.years,
+        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year (C.E.)", "Simulated Leaf Wax Data", self.years,
                   [self.leafwax_array[0]],
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], error_lines=self.leafwax_array[1:],
                   overlay=True)
@@ -1842,7 +1810,7 @@ class PageBioturbation(tk.Frame):
         homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
 
         self.f, self.axis = plt.subplots(1, 1, figsize=(9, 5), dpi=100)
-        plot_setup(self.scrollable_frame, self.axis, self.f, "ARCHIVE", "Year", "Bioturbated Sensor Data")
+        plot_setup(self.scrollable_frame, self.axis, self.f, "ARCHIVE", "Year (C.E.)", "Bioturbated Sensor Data")
 
     """
     Returns false is any parameter value is invalid
@@ -1853,13 +1821,12 @@ class PageBioturbation(tk.Frame):
             if not p:
                 tk.messagebox.showerror(title="Run Bioturbation Model", message="Not all parameters were entered.")
                 return False
-        if not (params[0].isdigit() and params[1].isdigit()):
+        try:
+            int(params[0])
+            int(params[1])
+        except:
             tk.messagebox.showerror(title="Run Bioturbation Model",
-                                    message="Years must be positive integers")
-            return False
-        if int(params[0]) < 0 or int(params[1]) < 0:
-            tk.messagebox.showerror(title="Run Bioturbation Model",
-                                    message="Years must be positive integers")
+                                    message="Years must be integers")
             return False
         for i in range(2, 5):
             if not check_float(params[i]):
@@ -1902,7 +1869,7 @@ class PageBioturbation(tk.Frame):
         self.bio1 = self.bioiso[:, 0]
         self.bio2 = self.bioiso[:, 1]
         self.ori = self.oriiso[:, 0]
-        plot_draw(self.scrollable_frame, self.axis, self.f, "ARCHIVE", "Year", "Bioturbated Sensor Data", self.days,
+        plot_draw(self.scrollable_frame, self.axis, self.f, "ARCHIVE", "Year (C.E.)", "Bioturbated Sensor Data", self.days,
                   [self.bio1, self.bio2, self.ori],
                   "normal", ["#b22222", "#b22222", "#000000"], [2, 2, 2],
                   ["Bioturbated 1", "Bioturbated 2", "Original"])
@@ -1982,8 +1949,8 @@ class PageCompaction(tk.Frame):
         homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
 
         self.f, self.axis = plt.subplots(1, 2, figsize=(10, 5), dpi=100)
-        plot_setup(self.scrollable_frame, self.axis[0], self.f, "ARCHIVE", "Year", "Compaction Data")
-        plot_setup(self.scrollable_frame, self.axis[1], self.f, "ARCHIVE", "Year", "Compaction Data")
+        plot_setup(self.scrollable_frame, self.axis[0], self.f, "ARCHIVE", "Year (C.E.)", "Compaction Data")
+        plot_setup(self.scrollable_frame, self.axis[1], self.f, "ARCHIVE", "Year (C.E.)", "Compaction Data")
 
     def validate_params(self, params):
         if not check_float(params[0]):

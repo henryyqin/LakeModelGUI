@@ -68,7 +68,7 @@
       parameter (o18flag = .false.)   ! true For Variable D18o
       parameter (deutflag = .false.)   ! true For Variable Dd
       parameter (z_screen = 5.0)   ! Height Of Met Inputs
-      parameter (rhflag = .false.)   ! true for Relative Humidity
+      parameter (rhflag = .true.)   ! true for Relative Humidity
 
 !**********************************************************************
 ! Other parameters DO NOT CHANGE without good reason for doing so******
