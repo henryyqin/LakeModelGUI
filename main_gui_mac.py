@@ -1,3 +1,8 @@
+import os
+import pathlib
+os.chdir(pathlib.Path(__file__).parent.absolute()) # changes working directory to the current file path
+print(pathlib.Path().absolute())
+
 import sys
 
 #tkinter imports
@@ -16,8 +21,9 @@ import lake_archive_bioturb as bio
 import lake_archive_compact as comp
 
 # Data Analytics
-import pandas as pd
 import numpy as np
+from numpy import genfromtxt
+import pandas as pd
 import matplotlib
 
 # Imports for plotting
@@ -30,7 +36,7 @@ from statistics import mean
 plt.style.use('seaborn-whitegrid')
 matplotlib.use('TkAgg')  # Necessary for MacOS Mojave
 
-"""
+
 # Imports for Observation Model
 from rpy2.robjects import FloatVector
 from rpy2.robjects.vectors import StrVector
@@ -38,7 +44,7 @@ import rpy2.robjects as robjects
 from rpy2.robjects.packages import importr
 import rpy2.robjects.numpy2ri
 rpy2.robjects.numpy2ri.activate()
-"""
+
 
 #Miscellaneous imports
 import os
@@ -765,7 +771,7 @@ class PageEnvModel(tk.Frame):
     Downloads 'surface_output.dat' as a CSV to the user's desired location
     """
     def download_csv(self):
-        read_file = pd.read_csv("ERA-HIST-Tlake_surf.dat")
+        read_file = genfromtxt('ERA-HIST-Tlake_surf.dat', delimiter='.')
         export_file_path = fd.asksaveasfilename(defaultextension='.csv')
         read_file.to_csv(export_file_path, index=None)
 
@@ -892,12 +898,31 @@ class PageEnvTimeSeries(tk.Frame):
         plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " over Time", "Year", varstring, self.years, self.yaxes,
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], overlay=True)
 
+    # Numpy 1.15.4
+    """
     def download_csv(self):
-        df = pd.DataFrame({"Time": self.days, "yaxis": self.yaxis})
+        data = np.array([self.days, self.yaxis]).T
+
         file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
         if file:
-            df.to_csv(file, index=False)
+            fmt = ",".join(["%s"] * (data.shape[1]-1))
+            with open(file, 'wb') as f:
+                f.write(b'Time,Data\n')
+                np.savetxt(f, data, fmt=fmt, delimiter=",")
+
             tk.messagebox.showinfo("Success", "Saved Data")
+    """
+    # Numpy 1.17.0 and up
+    def download_csv(self):
+        data = np.array([self.days, self.yaxis]).T
+
+        file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
+        if file:
+            fmt = ",".join(["%s"] * (data.shape[1]-1))
+            np.savetxt(file, data, fmt=fmt, header="Time (Days),Temperature (" + u"\N{DEGREE SIGN}" + "C)", comments='', delimiter=',')
+
+        tk.messagebox.showinfo("Success", "Saved Data")
+
 
     def download_png(self):
         file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
@@ -1044,12 +1069,33 @@ class PageEnvSeasonalCycle(tk.Frame):
         plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " Seasonal Cycle", "Day of the Year", "Average", self.seasonal_days,
                   [self.seasonal_yaxis], "normal month-only", ["#000000"], [3], ["Monthly Averaged Data"])
 
+    # Numpy 1.15.4
+    """
     def download_csv(self):
-        df = pd.DataFrame({"Time": self.seasonal_days, "Pseudoproxy": self.seasonal_yaxis})
+        data = np.array([self.seasonal_days, self.seasonal_yaxis]).T
+
         file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
         if file:
-            df.to_csv(file, index=False)
+            fmt = ",".join(["%s"] * (data.shape[1]-1))
+            with open(file, 'wb') as f:
+                f.write(b'Time,Data\n')
+                np.savetxt(f, data, fmt=fmt, delimiter=",")
+
             tk.messagebox.showinfo("Success", "Saved Data")
+    """
+
+    # Numpy 1.17.0 and up
+    
+    def download_csv(self):
+        data = np.array([self.seasonal_days, self.seasonal_yaxis]).T
+
+        file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
+        if file:
+            fmt = ",".join(["%s"] * (data.shape[1]-1))
+            np.savetxt(file, data, fmt=fmt, header="Date,Temperature (" + u"\N{DEGREE SIGN}" + "C)", comments='', delimiter=',')
+
+        tk.messagebox.showinfo("Success", "Saved Data")
+    
 
     def download_png(self):
         file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
@@ -1171,13 +1217,33 @@ class PageCarbonate(tk.Frame):
         plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year", "Simulated Carbonate Data", self.years, self.yaxis,
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], overlay=True)
         
-
+    # Numpy 1.15.4
+    """
     def download_csv(self):
-        df = pd.DataFrame({"Time": self.days, "Pseudoproxy": self.carb_proxy})
-        file = asksaveasfilename(initialfile="CarbonateData.csv", defaultextension=".csv")
+        data = np.array([self.days, self.carb_proxy]).T
+
+        file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
         if file:
-            df.to_csv(file, index=False)
-            tk.messagebox.showinfo("Success", "Saved Carbonate data")
+            fmt = ",".join(["%s"] * (data.shape[1]-1))
+            with open(file, 'wb') as f:
+                f.write(b'Time,Pseudoproxy\n')
+                np.savetxt(f, data, fmt=fmt, delimiter=",")
+
+            tk.messagebox.showinfo("Success", "Saved Data")
+    """
+
+    # Numpy 1.17.0 and up
+    def download_csv(self):
+        data = np.array([self.days, self.carb_proxy]).T
+
+        file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
+        if file:
+            fmt = ",".join(["%s"] * (data.shape[1]-1))
+            np.savetxt(file, data, fmt=fmt, header="Time,Pseudoproxy", comments='', delimiter=',')
+
+        tk.messagebox.showinfo("Success", "Saved Data")
+
+
     def download_png(self):
         file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
         if file:
@@ -1307,22 +1373,41 @@ class PageGDGT(tk.Frame):
         self.gdgt_proxy = gdgt.gdgt_sensor(self.LST, self.MAAT, self.beta, model=self.model.get())
 
         self.months = convert_to_monthly(self.days)
-        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Month", "Simulated GDGT Data", self.months,
+        plot_draw(self.scrollable_frame, self.axis, self.f, "Leafwax Model", "Month", "Simulated GDGT Data", self.months,
                   [self.gdgt_proxy],
                   "normal monthly", ["#b22222"], [1], ["Monthly Data"])
 
         self.years, self.yaxis = convert_to_annual([self.gdgt_proxy])
-        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year", "Simulated GDGT Data", self.years,
+        plot_draw(self.scrollable_frame, self.axis, self.f, "Leafwax Model", "Year", "Simulated GDGT Data", self.years,
                   self.yaxis,
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], overlay=True)
 
-
+    # Numpy 1.15.4
+    """
     def download_csv(self):
-        df = pd.DataFrame({"Time": self.days, "Pseudoproxy": self.gdgt_proxy})
+        data = np.array([self.days, self.gdgt_proxy]).T
+
         file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
         if file:
-            df.to_csv(file, index=False)
+            fmt = ",".join(["%s"] * (data.shape[1]-1))
+            with open(file, 'wb') as f:
+                f.write(b'Time,Pseudoproxy\n')
+                np.savetxt(f, data, fmt=fmt, delimiter=",")
+
             tk.messagebox.showinfo("Success", "Saved Data")
+    """
+
+    # Numpy 1.17.0 and up
+    def download_csv(self):
+        data = np.array([self.days, self.gdgt_proxy]).T
+
+        file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
+        if file:
+            fmt = ",".join(["%s"] * (data.shape[1]-1))
+            np.savetxt(file, data, fmt=fmt, header="Time,Pseudoproxy", comments='', delimiter=',')
+
+        tk.messagebox.showinfo("Success", "Saved Data")
+
 
     def download_png(self):
         file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
@@ -1462,19 +1547,46 @@ class PageLeafwax(tk.Frame):
             for i in range(len(input.readlines())):
                 self.days.append(30 * i + 15)
         self.months = convert_to_monthly(self.days, start=start_year)
-        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Month", "Simulated Leaf Wax Data", self.months, [self.leafwax_proxy],
+        plot_draw(self.scrollable_frame, self.axis, self.f, "Leafwax Model", "Month", "Simulated Leafwax Data", self.months, [self.leafwax_proxy],
                   "normal monthly", ["#b22222"], [1], ["Monthly Data"])
 
         self.years, self.leafwax_array = convert_to_annual([self.leafwax_proxy, self.Q1, self.Q2], start=start_year)
-        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year", "Simulated Leaf Wax Data", self.years, [self.leafwax_array[0]],
+        plot_draw(self.scrollable_frame, self.axis, self.f, "Leafwax Model", "Year", "Simulated Leafwax Data", self.years, [self.leafwax_array[0]],
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], error_lines=self.leafwax_array[1:], overlay=True)
 
+    """
     def download_csv(self):
         df = pd.DataFrame({"Time": self.days, "Pseudoproxy": self.leafwax_proxy, "95% CI Lower Bound": self.Q1,
                            "95% CI Upper Bound": self.Q2})
 
         export_file_path = fd.asksaveasfilename(defaultextension='.csv')
         df.to_csv(export_file_path, index=None)
+    
+    
+    # Numpy 1.15.4
+    def download_csv(self):
+        data = np.array([self.days, self.leafwax_proxy, self.Q1, self.Q2]).T
+
+        file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
+        if file:
+            fmt = ",".join(["%s"] + ["%s"] + ["%s"] * (data.shape[1]-1))
+            with open(file, 'wb') as f:
+                f.write(b'Time,Pseudoproxy,95% CI Lower Bound,95% CI Upper Bound\n')
+                np.savetxt(f, data, fmt=fmt, delimiter=",")
+
+            tk.messagebox.showinfo("Success", "Saved Data")
+    """
+    # Numpy 1.17.0 and up
+    def download_csv(self):
+        data = np.array([self.days, self.leafwax_proxy, self.Q1, self.Q2]).T
+
+        file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
+        if file:
+            fmt = ",".join(["%s"] + ["%s"] * (data.shape[1]-1))
+            np.savetxt(file, data, fmt=fmt, header="Time,Pseudoproxy,95% CI Lower Bound,95% CI Upper Bound", comments='', delimiter=',')
+
+        tk.messagebox.showinfo("Success", "Saved Data")
+
 
     def download_png(self):
         file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
@@ -1583,7 +1695,6 @@ class PageObservation(tk.Frame):
     """
 
     def generate_graph(self):
-        """
         # R packages
         utils = importr("utils")
         utils.chooseCRANmirror(ind=1)
@@ -1635,8 +1746,6 @@ class PageObservation(tk.Frame):
         canvas = FigureCanvasTkAgg(self.f, self.scrollable_frame)
         canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
         canvas.draw()
-        """
-        pass
 
     def download_csv(self):
         df = pd.DataFrame({"Depth": self.depth_horizons, "Age (95% CI Lower Bound)": self.chronsQ[0],
@@ -1649,6 +1758,31 @@ class PageObservation(tk.Frame):
         if file:
             df.to_csv(file, index=False)
             tk.messagebox.showinfo("Success", "Saved Data")
+
+    """
+    def download_csv(self):
+        data = np.array([self.depth_horizons, self.chronsQ[0], self.chronsQ[0], self.chronsQ[2]]).T
+
+        file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
+        if file:
+            fmt = ",".join(["%s"] * (data.shape[1]-1))
+            with open(file, 'wb') as f:
+                f.write(b'Depth,Age (95% CI Lower Bound),Age (95% CI Median),Age (95% CI Upper Bound)\n')
+                np.savetxt(f, data, fmt=fmt, delimiter=",")
+
+            tk.messagebox.showinfo("Success", "Saved Data")
+    
+    # Numpy 1.17.0 and up
+    def download_csv(self):
+        data = np.array([self.depth_horizons, self.chronsQ[0], self.chronsQ[0], self.chronsQ[2]]).T
+
+        file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
+        if file:
+            fmt = ",".join(["%s"] + ["%s"] * (data.shape[1]-1))
+            np.savetxt(file, data, fmt=fmt, header="Depth,Age (95% CI Lower Bound),Age (95% CI Median),Age (95% CI Upper Bound)", comments='', delimiter=',')
+
+        tk.messagebox.showinfo("Success", "Saved Data")
+    """
 
     def download_png(self):
         file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
@@ -1819,6 +1953,8 @@ class PageBioturbation(tk.Frame):
         plot_draw(self.scrollable_frame, self.axis, self.f, "ARCHIVE", "Year", "Bioturbated Sensor Data", self.days, [self.bio1, self.bio2, self.ori],
                   "normal", ["#b22222", "#b22222", "#000000"], [2,2,2], ["Bioturbated 1", "Bioturbated 2", "Original"])
 
+    # Numpy 1.15.4
+    """
     def download_csv(self):
         df = pd.DataFrame({"Time": self.days, "Pseudoproxy": self.ori,
                            "Bioturbated Carrier 1": self.bio1, "Bioturbated Carrier 2": self.bio2})
@@ -1826,6 +1962,18 @@ class PageBioturbation(tk.Frame):
         if file:
             df.to_csv(file, index=False)
             tk.messagebox.showinfo("Success", "Saved Data")
+    """
+
+    # Numpy 1.17.0 and up
+    def download_csv(self):
+        data = np.array([self.days, self.ori, self.bio1, self.bio2]).T
+
+        file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
+        if file:
+            fmt = ",".join(["%s"] + ["%s"] * (data.shape[1]-1))
+            np.savetxt(file, data, fmt=fmt, header="Time,Pseudoproxy,Bioturbated Carrier 1,Bioturbated Carrier 2", comments='', delimiter=',')
+
+        tk.messagebox.showinfo("Success", "Saved Data")
 
     def download_png(self):
         file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
