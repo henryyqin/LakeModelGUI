@@ -622,6 +622,12 @@ class PageEnvModel(tk.Frame):
                     new[55] = "      character("+str(len(base))+") :: datafile='" + base + "' ! the data file to open in FILE_OPEN subroutine\n"
                 else:
                     new[55] = "      character("+str(len(self.txtfilename))+") :: datafile='" + self.txtfilename + "' ! the data file to open in FILE_OPEN subroutine\n"
+            if len(new[55]) > 132:
+                tk.messagebox.showerror(title="Run Lake Model",
+                                        message="File path is longer than Fortran character limit. "
+                                                "Either move input file to same directory as GUI executable"
+                                                " or move input file to a directory with a shorter file path.")
+                return False
             write_to_file(f, new)
 
     """
