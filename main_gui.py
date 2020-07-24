@@ -598,7 +598,7 @@ class PageEnvModel(tk.Frame):
         base = basename(self.txtfilename)
         nonbase = (self.txtfilename.replace("/", "\\")).replace(base, '')[:-1]
         self.currentTxtFileLabel.configure(text=base)
-
+        print(nonbase, os.getcwd())
         # Modify the Fortran code to read the input text file
         with open("env_heatflux.f90", "r+") as f:
             new = f.readlines()
@@ -607,6 +607,11 @@ class PageEnvModel(tk.Frame):
                     new[19] = "      !data_input_filename = '" + base + "'\n"
                 else:
                     new[19] = "      !data_input_filename = '" + self.txtfilename + "'\n"
+            if len(new[19]) > 132:
+                tk.messagebox.showerror(title="Run Lake Model", message="File path is longer than Fortran character limit. "
+                                                                       "Either move input file to same directory as GUI executable"
+                                                                       " or move input file to a directory with a shorter file path.")
+                return
             write_to_file(f, new)
 
         # Modify the include file to read the input text file
