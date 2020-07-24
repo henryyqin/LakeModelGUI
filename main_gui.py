@@ -19,15 +19,12 @@ import numpy as np
 import matplotlib
 
 # Imports for plotting
-from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
-import datetime as dt
-from matplotlib import dates as mdates
 from statistics import mean
 
 plt.style.use('seaborn-whitegrid')
-matplotlib.use('TkAgg')  # Necessary for Ma
+matplotlib.use('TkAgg')  # Necessary for Mac
 
 # Imports for Observation Model
 from rpy2.robjects import FloatVector
@@ -44,28 +41,28 @@ import sys
 from os.path import basename
 import webbrowser
 import copy
-import subprocess
-import multiprocessing
 from subprocess import PIPE, Popen
 from tkinter.ttk import Label
-from PIL import Image, ImageTk
 from tkinter.filedialog import asksaveasfilename
 
 # ===========GENERAL FUNCTIONS========================================
 def callback(url):
+    """
+    Opens a website URL on the user's default browser
+
+    Input:
+    - url: the URL link for a website
+    """
     webbrowser.open_new(url)
-
-
-# def download_graph(time, proxy, filetype): #self.days, self.gdgt_proxy, '.png'
-#         df = pd.DataFrame({"Time": time, "Pseudoproxy": proxy})
-#         export_file_path = fd.asksaveasfilename(defaultextension=filetype) #ex: .csv or .png
-#         df.to_csv(export_file_path, index=None)
 
 def check_float(str):
     """
-    Returns True if the input string represents a floating point number
+    Determines whether the input string represents a floating point number
+
     Input:
     - str: a string that should represent a floating-point number
+    Returns:
+    - True if the string is a float-point number, False otherwise
     """
     try:
         float(str)
@@ -89,11 +86,9 @@ def initialize_global_variables():
             if len(lines) >=2:
                 START_YEAR = int(lines[1])
 
-
-
 def write_to_file(file, data):
     """
-    Writes data to a file
+    Writes data to a specified file
     Inputs
     - file: the file that is overwritten
     - data: the data which must be contained by the file
@@ -106,12 +101,12 @@ def write_to_file(file, data):
 
 def get_output_data(time, data, column, filename):
     """
-    Retrieves data from surf.dat from years where lake is at equilibrium
+    Retrieves data from a lake model output file for years that are not nspin data
     Inputs
-    - time: an empty array which is populated with day #'s
-    - data: an empty array which is populated with a certain column of data from surf.dat
-    - column: the specific column of data in surf.dat which should populate "data"
-    - filename: the file which contains the desired data
+    - time: an empty array which the function populates with day #'s
+    - data: an empty array which the function populates with a certain column of data from the lake model output file
+    - column: the specific column of data in the lake model output file which should populate "data"
+    - filename: the lake model output file which contains the desired data
     """
     with open(filename) as file:
         lines = file.readlines()
@@ -132,7 +127,7 @@ def uploadTxt(type, frame, file_label, sample=None, file_types=None):
     """
     Allows the user to upload sample data or data of their own choice
     Inputs:
-    - type: indicates where the file is sample data or user-uploaded
+    - type: indicates whether the file is sample data or user-uploaded
     - frame: the frame in which the upload text feature is located
     - file_label: an object within the frame which indicates the filename
     - sample: the name of the sample file
@@ -152,10 +147,10 @@ def uploadTxt(type, frame, file_label, sample=None, file_types=None):
 def plot_setup(frame, axes, figure, title, x_axis, y_axis):
     """
     Creates a blank plot on which a graph can be displayed
-    Inputs
+    Inputs:
     - frame: the page in the GUI where the plot is located
     - axes: the axes which allow plotting capabilities
-    - figure: the figure on which the plot is located
+    - figure: the figure on which the plot is placed
     - title: the title displayed on the plot
     - x_axis: the x-axis label
     - y_axis: the y-axis label
@@ -174,7 +169,7 @@ def plot_draw(frame, axes, figure, title, x_axis, y_axis, x_data, y_data, plot_t
     Inputs
     - frame: the page in the GUI where the plot is located
     - axes: the axes which allow plotting capabilities
-    - figure: the figure on which the plot is located
+    - figure: the figure on which the plot is placed
     - title: the title displayed on the plot
     - x_axis: the x-axis label
     - y_axis: the y-axis label
@@ -209,8 +204,12 @@ def plot_draw(frame, axes, figure, title, x_axis, y_axis, x_data, y_data, plot_t
 def convert_to_monthly(time, start=None):
     """
     Converts timeseries x-axis into monthly units with proper labels
-    Input:
+
+    Inputs:
     - time: an array of day numbers (15, 45, 75, etc.)
+    - start: a user-specified value for the start of the time axis, None by default
+    Returns:
+    - dates: a range of months encapsulating the time array
     """
     start_year = copy.copy(start)
     if start_year == None:
@@ -228,8 +227,13 @@ def convert_to_monthly(time, start=None):
 def convert_to_annual(data, start=None):
     """
     Converts timeseries data into annually averaged data with proper axis labels
+
     Input:
-    - data: the y-axis of the timeseries data
+    - data: the y-axis (or axes) of the timeseries data
+    - start: a user-specified value for the start of the time axis, None by default
+    Returns:
+    - years: a range of years encapsulating the data
+    - all_year_avgs: a y-axis (or axes) that contain(s) yearly averaged data
     """
     start_year = copy.copy(start)
     if start==None:
@@ -269,7 +273,6 @@ initialize_global_variables()
 Creates a GUI object
 """
 
-
 class SampleApp(tk.Tk):
 
     def __init__(self, *args, **kwargs):
@@ -278,8 +281,6 @@ class SampleApp(tk.Tk):
         # title of window
         self.title("Lake Model GUI")
         self.geometry("2500x1600")
-        # self.minsize(600, 300)
-        # self.wm_iconbitmap('icon.ico')
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
 
@@ -302,7 +303,12 @@ class SampleApp(tk.Tk):
         self.protocol('WM_DELETE_WINDOW', self.close_app)
 
     def show_frame(self, old_pages, new_page):
-        '''Show a frame for the given page name'''
+        """
+        Shows a particular frame of the GUI to the user
+        Inputs:
+        - old_pages: the pages that should be hidden from the user
+        - new_page: the page that should be visible to the user
+        """
         for old_page in old_pages:
             old = self.frames[old_page]
             old.destroy()
@@ -314,6 +320,9 @@ class SampleApp(tk.Tk):
                 self.frames[new_page] = new
 
     def close_app(self):
+        """
+        Closes the GUI and ends any associated command line processes
+        """
         sys.exit()
 
 
@@ -348,6 +357,9 @@ class StartPage(tk.Frame):
         self.pack(fill="both", expand=True)
 
     def populate(self):
+        """
+        Populates this frame of the GUI with labels, buttons, and other features
+        """
         label = tk.Label(self.scrollable_frame,
                          text="PRYSMv2.0: Lake PSM",
                          fg="black",
@@ -453,6 +465,9 @@ class PageEnvModel(tk.Frame):
         self.pack(fill="both", expand=True)
 
     def populate(self):
+        """
+        Populates this frame of the GUI with labels, buttons, and other features
+        """
         rowIdx = 1
 
         # Title
@@ -577,16 +592,17 @@ class PageEnvModel(tk.Frame):
                         ipady=3, pady=3, sticky="W")
         rowIdx += 1
 
-    """
-    Allows the user to upload an input text file to be read by the lake model code
-    """
-
     def uploadTxt(self):
+        """
+        Allows the user to upload an input .txt file for the lake model
+        """
         # Open the file choosen by the user
         self.txtfilename = fd.askopenfilename(
             filetypes=(('text files', 'txt'),))
         global INPUT
         INPUT = self.txtfilename
+
+        # Edit global_vars.txt to store the new input file for future access
         with open("global_vars.txt", "r+") as vars:
             new = vars.readlines()
             if len(new) >= 1:
@@ -599,6 +615,8 @@ class PageEnvModel(tk.Frame):
         nonbase = (self.txtfilename.replace("/", "\\")).replace(base, '')[:-1]
         self.currentTxtFileLabel.configure(text=base)
         print(nonbase, os.getcwd())
+
+
         # Modify the Fortran code to read the input text file
         with open("env_heatflux.f90", "r+") as f:
             new = f.readlines()
@@ -667,15 +685,14 @@ class PageEnvModel(tk.Frame):
             write_to_file(vars, new)
         return True
 
-    """
-    Edits the parameters in the .inc file based on user input
-
-    Inputs: 
-    - parameters: the values for the model parameters
-    - comments: the comments in the Fortran code associated with each parameter
-    """
-
     def editInc(self, parameters, comments):
+        """
+        Edits the parameters in the .inc file based on user input
+
+        Inputs:
+        - parameters: the values for the model parameters
+        - comments: the comments in the Fortran code associated with each parameter
+        """
         if not self.validate_params(parameters):
             return
         with open("lake_environment.inc", "r+") as f:
@@ -705,11 +722,15 @@ class PageEnvModel(tk.Frame):
                         new[rows[i]] = "      parameter (" + names[i] + " = " + parameters[i] + ")   ! " + comments[i] + "\n"
             write_to_file(f, new)
 
-    """
-    Fills in parameter values with either Malawi or Tanganyika parameters
-    """
 
     def fill(self, lake, containers):
+        """
+        Fills in parameter values with either Malawi or Tanganyika parameters
+
+        Inputs:
+        - lake: determines which lake's parameters should populate the GUI
+        - containers: the GUI entries and checkboxes that should be populated
+        """
         if lake == "Malawi":
             values = ["23.4", "-12.11", "34.22", "+3", "292", "468.", "2960000.",
                       "1.7e-3", "0.04", "0.1", "0.4", "0.7", "292", "0.0", "-28.",
@@ -735,10 +756,11 @@ class PageEnvModel(tk.Frame):
                 containers[i].delete(0, tk.END)
                 containers[i].insert(0, values[i])
 
-    """
-    Compiles the Fortran model by executing Cygwin commands to run gfortran
-    """
+
     def compileModel(self):
+        """
+        Compiles the Fortran model by executing Cygwin commands to run gfortran
+        """
         response = tk.messagebox.askyesno(title="Run Model", message="Running the model will take several minutes, and "
                                                                      "GUI functionality will temporarily stop. You will receive a notification "
                                                                      "once the model has finished. Do you wish to proceed?")
@@ -752,10 +774,10 @@ class PageEnvModel(tk.Frame):
         else:
             pass
 
-    """
-    Executes the file created by compiling the Fortran model in gfortran
-    """
     def runModel(self):
+        """
+        Executes the file created by compiling the Fortran model in gfortran
+        """
         cygwin2 = Popen(['bash'], stdin=PIPE, stdout=PIPE, shell=True)
         result2 = cygwin2.communicate(input=b"./TEST1.exe")
         print(result2)
@@ -763,11 +785,10 @@ class PageEnvModel(tk.Frame):
                                                           "surface_output.dat located in your "
                                                           "current working directory.")
 
-    """
-    Downloads 'surface_output.dat' as a CSV to the user's desired location
-    """
-
     def download_csv(self):
+        """
+        Downloads the newly generated lake model output file as a CSV to the user's desired location
+        """
         read_file = pd.read_csv("ERA-HIST-Tlake_surf.dat")
         export_file_path = fd.asksaveasfilename(defaultextension='.csv')
         read_file.to_csv(export_file_path, index=None)
@@ -804,6 +825,9 @@ class PageEnvTimeSeries(tk.Frame):
         self.pack(fill="both", expand=True)
 
     def populate(self):
+        """
+        Populates this frame of the GUI with labels, buttons, and other features
+        """
         rowIdx = 1
         # Title
         label = tk.Label(
@@ -871,17 +895,15 @@ class PageEnvTimeSeries(tk.Frame):
                                command=lambda: self.parent.show_frame(["PageEnvTimeSeries"], "StartPage"))
         homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
 
-    """
-    Plots the multiple values of a specific variable for each day of the year as a scatterplot
 
-    Inputs:
-     - column, an int that corresponds to the column of the desired variable to be plotted
-     - varstring, a string that is the name and unit of the variable
-    """
-
-    # extracts data from .dat file and plots data based on given column number
-    # only takes data after the lake has reached equilibriam, e.g. when the days stop repeating
     def generate_env_time_series(self, column, varstring):
+        """
+        Plots timeseries data using the lake model output file
+
+        Inputs:
+         - column: an int that corresponds to the column of the desired variable to be plotted
+         - varstring: a string that is the name and unit of the variable
+        """
         self.days = []  # x-axis
         self.yaxis = []  # y-axis
 
@@ -898,6 +920,9 @@ class PageEnvTimeSeries(tk.Frame):
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], overlay=True)
 
     def download_csv(self):
+        """
+        Downloads data represented in the plot as a .csv file
+        """
         df = pd.DataFrame({"Time": self.days, "yaxis": self.yaxis})
         file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
         if file:
@@ -905,6 +930,9 @@ class PageEnvTimeSeries(tk.Frame):
             tk.messagebox.showinfo("Success", "Saved Data")
 
     def download_png(self):
+        """
+        Downloads the plot as a .png file
+        """
         file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
         if file:
             self.f.savefig(file)
@@ -942,6 +970,9 @@ class PageEnvSeasonalCycle(tk.Frame):
         self.pack(fill="both", expand=True)
 
     def populate(self):
+        """
+        Populates this frame of the GUI with labels, buttons, and other features
+        """
         rowIdx = 1
         # Title
         label = tk.Label(
@@ -1012,17 +1043,14 @@ class PageEnvSeasonalCycle(tk.Frame):
                                command=lambda: self.parent.show_frame(["PageEnvSeasonalCycle"], "StartPage"))
         homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
 
-    """
-    Plots the average of a specific variable for each day of the year as a scatterplot
-
-    Inputs:
-     - column, an int that corresponds to the column of the desired variable to be plotted
-     - varstring, a string that is the name and unit of the variable
-    """
-
-    # Treating 375 as part of the year for now
-    # Treating everything >375 to be 15, 45, etc.
     def generate_env_seasonal_cycle(self, column, varstring):
+        """
+        Plots seasonal cycle data using the lake model output file
+
+        Inputs:
+         - column: an int that corresponds to the column of the desired variable to be plotted
+         - varstring: a string that is the name and unit of the variable
+        """
         self.days = []  # x-axis
         self.yaxis = []  # y-axis
 
@@ -1051,6 +1079,9 @@ class PageEnvSeasonalCycle(tk.Frame):
                   [self.seasonal_yaxis], "normal", ["#000000"], [3], ["Monthly Averaged Data"])
 
     def download_csv(self):
+        """
+        Downloads data represented in the plot as a .csv file
+        """
         df = pd.DataFrame({"Time": self.seasonal_days, "Pseudoproxy": self.seasonal_yaxis})
         file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
         if file:
@@ -1058,6 +1089,9 @@ class PageEnvSeasonalCycle(tk.Frame):
             tk.messagebox.showinfo("Success", "Saved Data")
 
     def download_png(self):
+        """
+        Downloads the plot as a .png file
+        """
         file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
         if file:
             self.f.savefig(file)
@@ -1095,6 +1129,9 @@ class PageCarbonate(tk.Frame):
         self.pack(fill="both", expand=True)
 
     def populate(self):
+        """
+        Populates this frame of the GUI with labels, buttons, and other features
+        """
         rowIdx = 1
 
         # Title
@@ -1193,11 +1230,10 @@ class PageCarbonate(tk.Frame):
         self.f, self.axis = plt.subplots(1, 1, figsize=(9, 5), dpi=100)
         plot_setup(self.scrollable_frame, self.axis, self.f, "SENSOR", "Time", "Simulated Carbonate Data (\u03b4$^{18}O_{carb}$)")
 
-    """
-    Create time series data for carbonate sensor
-    """
-
     def generate_graph(self):
+        """
+        Plots simulated carbonate data using the lake model output file
+        """
         surf_tempr = []
         self.days = []
         get_output_data(self.days, surf_tempr, 1, self.txtfilename)
@@ -1216,6 +1252,9 @@ class PageCarbonate(tk.Frame):
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], overlay=True)
 
     def download_csv(self):
+        """
+        Downloads data represented in the plot as a .csv file
+        """
         df = pd.DataFrame({"Time": self.days, "Pseudoproxy": self.carb_proxy})
         file = asksaveasfilename(initialfile="CarbonateData.csv", defaultextension=".csv")
         if file:
@@ -1223,6 +1262,9 @@ class PageCarbonate(tk.Frame):
             tk.messagebox.showinfo("Success", "Saved Carbonate data")
 
     def download_png(self):
+        """
+        Downloads the plot as a .png file
+        """
         file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
         if file:
             self.f.savefig(file)
@@ -1260,6 +1302,9 @@ class PageGDGT(tk.Frame):
         self.pack(fill="both", expand=True)
 
     def populate(self):
+        """
+        Populates this frame of the GUI with labels, buttons, and other features
+        """
         rowIdx = 1
         # Title
         label = tk.Label(
@@ -1360,11 +1405,10 @@ class PageGDGT(tk.Frame):
         self.f, self.axis = plt.subplots(1, 1, figsize=(9, 5), dpi=100)
         plot_setup(self.scrollable_frame, self.axis, self.f, "SENSOR", "Time", "Simulated GDGT Data (brGDGT / $TEX_{86}$)")
 
-    """
-    Create time series data for GDGT sensor
-    """
-
     def generate_graph(self):
+        """
+        Plots simulated GDGT data using the lake model output file
+        """
         surf_tempr = []
         self.days = []
         get_output_data(self.days, surf_tempr, 1, self.txtfilename)
@@ -1399,6 +1443,9 @@ class PageGDGT(tk.Frame):
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], overlay=True)
 
     def download_csv(self):
+        """
+        Downloads data represented in the plot as a .csv file
+        """
         df = pd.DataFrame({"Time": self.days, "Pseudoproxy": self.gdgt_proxy})
         file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
         if file:
@@ -1406,6 +1453,9 @@ class PageGDGT(tk.Frame):
             tk.messagebox.showinfo("Success", "Saved Data")
 
     def download_png(self):
+        """
+        Downloads the plot as a .png file
+        """
         file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
         if file:
             self.f.savefig(file)
@@ -1443,6 +1493,9 @@ class PageLeafwax(tk.Frame):
         self.pack(fill="both", expand=True)
 
     def populate(self):
+        """
+        Populates this frame of the GUI with labels, buttons, and other features
+        """
         rowIdx = 1
         # Title
         label = tk.Label(
@@ -1501,11 +1554,13 @@ class PageLeafwax(tk.Frame):
                                command=lambda: self.parent.show_frame(["PageLeafwax"], "StartPage"))
         homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
 
-    """
-    Create time series data for leafwax sensor
-    """
-
     def generate_graph(self, start_year):
+        """
+        Plots simulated leafwax data using an input file of isotope ratios in precipitation
+
+        Input:
+        - start_year: the start year for the data collected on isotope ratios in precipitation
+        """
         try:
             int(start_year)
         except:
@@ -1544,6 +1599,9 @@ class PageLeafwax(tk.Frame):
                   overlay=True)
 
     def download_csv(self):
+        """
+        Downloads data represented in the plot as a .csv file
+        """
         df = pd.DataFrame({"Time": self.days, "Pseudoproxy": self.leafwax_proxy, "95% CI Lower Bound": self.Q1,
                            "95% CI Upper Bound": self.Q2})
 
@@ -1551,6 +1609,9 @@ class PageLeafwax(tk.Frame):
         df.to_csv(export_file_path, index=None)
 
     def download_png(self):
+        """
+        Downloads the plot as a .png file
+        """
         file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
         if file:
             self.f.savefig(file)
@@ -1587,6 +1648,9 @@ class PageObservation(tk.Frame):
         self.pack(fill="both", expand=True)
 
     def populate(self):
+        """
+        Populates this frame of the GUI with labels, buttons, and other features
+        """
         rowIdx = 1
 
         # Title
@@ -1655,6 +1719,9 @@ class PageObservation(tk.Frame):
     """
 
     def generate_graph(self):
+        """
+        Utilizes rpy2 to generate a graph of the observation model output
+        """
         # R packages
         utils = importr("utils")
         utils.chooseCRANmirror(ind=1)
@@ -1708,10 +1775,11 @@ class PageObservation(tk.Frame):
         canvas.draw()
 
     def download_csv(self):
+        """
+        Downloads data represented in the plot as a .csv file
+        """
         df = pd.DataFrame({"Depth": self.depth_horizons, "Age (95% CI Lower Bound)": self.chronsQ[0],
                            "Age (95% CI Median)": self.chronsQ[0], "Age (95% CI Upper Bound)": self.chronsQ[2]})
-        # export_file_path = fd.asksaveasfilename(defaultextension='.csv')
-        # df.to_csv(export_file_path, index=None)
 
         file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
         if file:
@@ -1719,6 +1787,9 @@ class PageObservation(tk.Frame):
             tk.messagebox.showinfo("Success", "Saved Data")
 
     def download_png(self):
+        """
+        Downloads the plot as a .png file
+        """
         file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
         if file:
             self.f.savefig(file)
@@ -1756,6 +1827,9 @@ class PageBioturbation(tk.Frame):
         self.pack(fill="both", expand=True)
 
     def populate(self):
+        """
+        Populates this frame of the GUI with labels, buttons, and other features
+        """
         rowIdx = 1
         # Title
         label = tk.Label(
@@ -1831,10 +1905,21 @@ class PageBioturbation(tk.Frame):
     """
 
     def validate_params(self, params, pseudoproxy):
+        """
+        Validates the user parameters entered in the GUI to ensure compatibility with the bioturbation model
+
+        Inputs:
+        - params: the parameters entered by the user
+        - pseudoproxy: the sensor timeseries data (can be carbonate, GDGT, or leafwax)
+        Returns:
+        - True if all parameters are valid, False otherwise
+        """
+        # Check whether any parameters are empty
         for p in params:
             if not p:
                 tk.messagebox.showerror(title="Run Bioturbation Model", message="Not all parameters were entered.")
                 return False
+        # Check whether years are integers
         try:
             int(params[0])
             int(params[1])
@@ -1842,6 +1927,7 @@ class PageBioturbation(tk.Frame):
             tk.messagebox.showerror(title="Run Bioturbation Model",
                                     message="Years must be integers")
             return False
+        # Check whether parameters are floating-point or integer values
         for i in range(2, 5):
             if not check_float(params[i]):
                 tk.messagebox.showerror(title="Run Bioturbation Model",
@@ -1851,13 +1937,7 @@ class PageBioturbation(tk.Frame):
                 tk.messagebox.showerror(title="Run Bioturbation Model",
                                         message=str(params[i]) + " should be an integer")
                 return False
-        # convert parameters to integers for further validation
-        params_copy = copy.deepcopy(params)
-        params_copy = [float(p) for p in params_copy]
-        if params_copy[0] >= params_copy[1]:
-            tk.messagebox.showerror(title="Run Bioturbation Model",
-                                    message="Start year cannot be greater than or equal to end year")
-            return False
+        #ensure time period matches between sensor data and user-entered start year and end year
         if len(pseudoproxy)//12 != (int(params[1]) - int(params[0])):
 
             tk.messagebox.showerror(title="Run Bioturbation Model", message="Length of time between start year and end year"
@@ -1866,25 +1946,32 @@ class PageBioturbation(tk.Frame):
         return True
 
     def run_bioturb_model(self, params):
-        # check whether csv file can be opened
+        """
+        Plots the output of the bioturbation model
+
+        Input:
+        - params: the user-entered parameters for the bioturbation model
+        """
+        # Check to see whether input .csv file contains a column titled "Pseudoproxy"
         try:
             pseudoproxy = pd.read_csv(self.txtfilename)["Pseudoproxy"]
         except:
             tk.messagebox.showerror(title="Run Bioturbation Model", message="Error with reading csv file")
 
-        year = []
         self.days, self.iso = convert_to_annual([pseudoproxy], start=int(params[0]))
+
+        # Validate User-Entered Parameters
         if not self.validate_params(params, pseudoproxy):
             return
         self.age = int(params[1]) - int(params[0])
         self.mxl = np.ones(self.age) * float(params[2])
         self.abu = np.ones(self.age) * float(params[3])
         self.numb = int(params[4])
-        # Run the bioturbation model
+
+        # Run Bioturbation Model
         self.oriabu, self.bioabu, self.oriiso, self.bioiso = bio.bioturbation(self.abu, self.iso[0], self.mxl,
                                                                               self.numb)
-
-        # Plot the bioturbation model
+        # Plot Bioturbation Model Output
         self.bio1 = self.bioiso[:, 0]
         self.bio2 = self.bioiso[:, 1]
         self.ori = self.oriiso[:, 0]
@@ -1894,6 +1981,9 @@ class PageBioturbation(tk.Frame):
                   ["Bioturbated 1", "Bioturbated 2", "Original"])
 
     def download_csv(self):
+        """
+        Downloads data represented in the plot as a .csv file
+        """
         df = pd.DataFrame({"Time": self.days, "Pseudoproxy": self.ori,
                            "Bioturbated Carrier 1": self.bio1, "Bioturbated Carrier 2": self.bio2})
         file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
@@ -1902,6 +1992,9 @@ class PageBioturbation(tk.Frame):
             tk.messagebox.showinfo("Success", "Saved Data")
 
     def download_png(self):
+        """
+        Downloads the plot as a .png file
+        """
         file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
         if file:
             self.f.savefig(file)
@@ -1934,6 +2027,9 @@ class PageCompaction(tk.Frame):
         self.pack(fill="both", expand=True)
 
     def populate(self):
+        """
+        Populates this frame of the GUI with labels, buttons, and other features
+        """
         rowIdx = 1
         # Title
         label = tk.Label(
@@ -1972,6 +2068,14 @@ class PageCompaction(tk.Frame):
         plot_setup(self.scrollable_frame, self.axis[1], self.f, "ARCHIVE", "Depth (m)", "Compaction Data")
 
     def validate_params(self, params):
+        """
+        Validates the parameters entered by the user to ensure compatibility with the compaction model
+
+        Input:
+        - params: the parameters entered by the user
+        Returns:
+        - True if all user-entered parameters are valid, False otherwise
+        """
         if not check_float(params[0]):
             tk.messagebox.showerror(title="Run Compaction Model",
                                     message="Floating point value was not entered for sedimentation rate")
@@ -1993,14 +2097,25 @@ class PageCompaction(tk.Frame):
         return True
 
     def run_compaction_model(self, params):
+        """
+        Plots the output of the compaction model
+
+        Input:
+        - params: the user-entered parameters for the compaction model
+        """
+        # Validate User-Entered Parameters
         if not self.validate_params(params):
             return
         sbar = float(params[0])
         year = int(params[1])
         phi_0 = float(params[2])
+
+        # Run Compaction Model
         self.z, self.phi, self.h, self.h_prime = comp.compaction(sbar, year, phi_0)
         self.axis[0].clear()
         self.axis[1].clear()
+
+        # Plot Compaction Model Output
         plot_draw(self.scrollable_frame, self.axis[0], self.f, "Porosity ($\phi$) Profile in Sediment Core",
                   "Depth (m)",
                   r'Porosity Profile ($\phi$) (unitless)', self.z, [self.phi],
@@ -2011,6 +2126,9 @@ class PageCompaction(tk.Frame):
                   ["Compcated Layer", "Non-Compacted Original Layer"])
 
     def download_csv(self):
+        """
+        Downloads data represented in the plot as a .csv file
+        """
         df = pd.DataFrame({"Depth (m)": self.z, r'Porosity Profile ($\phi$) (unitless)': self.phi,
                            "Compacted Layer": self.h_prime, "Non-Compacted Original Layer": self.h})
         file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
@@ -2019,6 +2137,9 @@ class PageCompaction(tk.Frame):
             tk.messagebox.showinfo("Success", "Saved Data")
 
     def download_png(self):
+        """
+        Downloads the plot as a .png file
+        """
         file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
         if file:
             self.f.savefig(file)
