@@ -396,7 +396,7 @@ class StartPage(tk.Frame):
                         cursor="hand2", 
                         font=MED_FONT)
         paper.pack(pady=1, padx=10)
-        paper.bind("<Button-2>", lambda e: callback(
+        paper.bind("<Button-1>", lambda e: callback(
             "https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2018PA003413"))
 
 
@@ -607,6 +607,11 @@ class PageEnvModel(tk.Frame):
                     new[18] = "      !data_input_filename = '" + base + "'\n"
                 else:
                     new[18] = "      !data_input_filename = '" + self.txtfilename + "'\n"
+            if len(new[19]) > 132:
+                tk.messagebox.showerror(title="Run Lake Model", message="File path is longer than Fortran character limit. "
+                                                                       "Either move input file to same directory as GUI executable"
+                                                                       " or move input file to a directory with a shorter file path.")
+                return
             write_to_file(f, new)
 
         # Modify the include file to read the input text file
@@ -617,6 +622,12 @@ class PageEnvModel(tk.Frame):
                     new[55] = "      character("+str(len(base))+") :: datafile='" + base + "' ! the data file to open in FILE_OPEN subroutine\n"
                 else:
                     new[55] = "      character("+str(len(self.txtfilename))+") :: datafile='" + self.txtfilename + "' ! the data file to open in FILE_OPEN subroutine\n"
+            if len(new[55]) > 132:
+                tk.messagebox.showerror(title="Run Lake Model",
+                                        message="File path is longer than Fortran character limit. "
+                                                "Either move input file to same directory as GUI executable"
+                                                " or move input file to a directory with a shorter file path.")
+                return False
             write_to_file(f, new)
 
     """
@@ -869,14 +880,17 @@ class PageEnvTimeSeries(tk.Frame):
         self.days = []  # x-axis
         self.yaxis = []  # y-axis
 
+        units = ["", "("+u"\N{DEGREE SIGN}"+"C)", "(m)", "(mm/day)", "", "", "", "", "(m)"]
         get_output_data(self.days, self.yaxis, column, self.txtfilename)
 
         self.months = convert_to_monthly(self.days)
-        plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " over Time", "Month", varstring, self.months, [self.yaxis],
+        plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " over Time ", "Month", varstring+" "+units[column], self.months,
+                  [self.yaxis],
                   "no-marker", ["#b22222"], [1], ["Monthly Data"])
 
         self.years, self.yaxes = convert_to_annual([self.yaxis])
-        plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " over Time", "Year (C.E.)", varstring, self.years, self.yaxes,
+        plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " over Time", "Year (C.E.)", varstring+" "+units[column], self.years,
+                  self.yaxes,
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], overlay=True)
 
     # Numpy 1.15.4
@@ -977,7 +991,7 @@ class PageEnvSeasonalCycle(tk.Frame):
         # Empty graph, default
         self.f, self.axis = plt.subplots(1, 1, figsize=(9, 5), dpi=100)
         plot_setup(self.scrollable_frame, self.axis, self.f, "Seasonal Cycle", "Day of the Year",
-                   "Lake Surface Temperature")
+                   "Average Surface Temperature")
 
         # Graph button for each variable
 
@@ -1026,6 +1040,7 @@ class PageEnvSeasonalCycle(tk.Frame):
         self.days = []  # x-axis
         self.yaxis = []  # y-axis
 
+        units = ["", "("+u"\N{DEGREE SIGN}"+"C)", "(m)", "(mm/day)", "", "", "", "", "(m)"]
         get_output_data(self.days, self.yaxis, column, self.txtfilename)
 
         # At this point, self.days and self.yaxis are identical to the ones in envtimeseries
@@ -1043,7 +1058,8 @@ class PageEnvSeasonalCycle(tk.Frame):
         for i in range(12):  # CHANGE (change how seasonal days are created) 15, 45, 75... 345
             self.seasonal_yaxis.append(mean(self.ydict[i]))
 
-        plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " Seasonal Cycle", "Day of the Year", "Average", self.seasonal_days,
+        plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " Seasonal Cycle", "Month", "Average "+varstring+" "+units[column],
+                  self.seasonal_days,
                   [self.seasonal_yaxis], "normal", ["#000000"], [3], ["Monthly Averaged Data"])
 
     # Numpy 1.15.4
@@ -1207,7 +1223,8 @@ class PageCarbonate(tk.Frame):
         homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
 
         self.f, self.axis = plt.subplots(1,1, figsize=(9, 5), dpi=100)
-        plot_setup(self.scrollable_frame, self.axis, self.f, "SENSOR", "Time", "Simulated Carbonate Data")
+        plot_setup(self.scrollable_frame, self.axis, self.f, "SENSOR", "Time", "Simulated Carbonate Data (\u03b4$^{18}O_{carb}$)")
+
 
     """
     Create time series data for carbonate sensor
@@ -1222,11 +1239,13 @@ class PageCarbonate(tk.Frame):
         self.carb_proxy = carb.carb_sensor(self.LST, self.d180w, model=self.model.get())
 
         self.months = convert_to_monthly(self.days)
-        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Month", "Simulated Carbonate Data", self.months, [self.carb_proxy],
+        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year (C.E.)", "Simulated Carbonate Data (\u03b4$^{18}O_{carb}$)", self.months,
+                  [self.carb_proxy],
                   "no-marker", ["#b22222"], [1], ["Monthly Data"])
 
         self.years, self.yaxis = convert_to_annual([self.carb_proxy])
-        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year (C.E.)", "Simulated Carbonate Data", self.years, self.yaxis,
+        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year (C.E.)", "Simulated Carbonate Data (\u03b4$^{18}O_{carb}$)", self.years,
+                  self.yaxis,
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], overlay=True)
         
     # Numpy 1.15.4
@@ -1391,7 +1410,7 @@ class PageGDGT(tk.Frame):
         homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
 
         self.f, self.axis = plt.subplots(1, 1, figsize=(9, 5), dpi=100)
-        plot_setup(self.scrollable_frame, self.axis, self.f, "SENSOR", "Time", "Simulated GDGT Data")
+        plot_setup(self.scrollable_frame, self.axis, self.f, "SENSOR", "Time", "Simulated GDGT Data (brGDGT / $TEX_{86}$)")
 
     """
     Create time series data for GDGT sensor
@@ -1422,12 +1441,12 @@ class PageGDGT(tk.Frame):
         self.gdgt_proxy = gdgt.gdgt_sensor(self.LST, self.MAAT, self.beta, model=self.model.get())
 
         self.months = convert_to_monthly(self.days)
-        plot_draw(self.scrollable_frame, self.axis, self.f, "Leafwax Model", "Month", "Simulated GDGT Data", self.months,
+        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Month", "Simulated GDGT Data (brGDGT / $TEX_{86}$)", self.months,
                   [self.gdgt_proxy],
                   "no-marker", ["#b22222"], [1], ["Monthly Data"])
 
         self.years, self.yaxis = convert_to_annual([self.gdgt_proxy])
-        plot_draw(self.scrollable_frame, self.axis, self.f, "Leafwax Model", "Year (C.E.)", "Simulated GDGT Data", self.years,
+        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year (C.E.)", "Simulated GDGT Data (brGDGT / $TEX_{86}$)", self.years,
                   self.yaxis,
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], overlay=True)
 
@@ -1543,7 +1562,7 @@ class PageLeafwax(tk.Frame):
 
         rowIdx+=2
         self.f, self.axis = plt.subplots(1,1, figsize=(9, 5), dpi=100)
-        plot_setup(self.scrollable_frame, self.axis, self.f, "SENSOR", "Time", "Simulated Leafwax Data")
+        plot_setup(self.scrollable_frame, self.axis, self.f, "SENSOR", "Time", "Simulated Leafwax Data (\u03b4D$_{wax}$)")
 
         tk.Button(self.scrollable_frame, text="Graph Leafwax Proxy Data", font=f, command=lambda: self.generate_graph(start.get())).grid(
             row=rowIdx, column=0, sticky="W")
@@ -1593,12 +1612,15 @@ class PageLeafwax(tk.Frame):
             for i in range(len(input.readlines())):
                 self.days.append(30 * i + 15)
         self.months = convert_to_monthly(self.days, start=start_year)
-        plot_draw(self.scrollable_frame, self.axis, self.f, "Leafwax Model", "Month", "Simulated Leafwax Data", self.months, [self.leafwax_proxy],
+        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Month", "Simulated Leaf Wax Data (\u03b4D$_{wax}$)", self.months,
+                  [self.leafwax_proxy],
                   "no-marker", ["#b22222"], [1], ["Monthly Data"])
 
         self.years, self.leafwax_array = convert_to_annual([self.leafwax_proxy, self.Q1, self.Q2], start=start_year)
-        plot_draw(self.scrollable_frame, self.axis, self.f, "Leafwax Model", "Year (C.E.)", "Simulated Leafwax Data", self.years, [self.leafwax_array[0]],
-                  "normal", ["#000000"], [3], ["Annually Averaged Data"], error_lines=self.leafwax_array[1:], overlay=True)
+        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year (C.E.)", "Simulated Leaf Wax Data (\u03b4D$_{wax}$)", self.years,
+                  [self.leafwax_array[0]],
+                  "normal", ["#000000"], [3], ["Annually Averaged Data"], error_lines=self.leafwax_array[1:],
+                  overlay=True)
 
     """
     def download_csv(self):
@@ -1960,7 +1982,7 @@ class PageBioturbation(tk.Frame):
     Returns false is any parameter value is invalid
     """
 
-    def validate_params(self, params):
+    def validate_params(self, params, pseudoproxy):
         for p in params:
             if not p:
                 tk.messagebox.showerror(title="Run Bioturbation Model", message="Not all parameters were entered.")
@@ -1988,6 +2010,11 @@ class PageBioturbation(tk.Frame):
             tk.messagebox.showerror(title="Run Bioturbation Model",
                                     message="Start year cannot be greater than or equal to end year")
             return False
+        if len(pseudoproxy)//12 != (int(params[1]) - int(params[0])):
+
+            tk.messagebox.showerror(title="Run Bioturbation Model", message="Length of time between start year and end year"
+                                                                            " does not match length of years in input .csv file")
+            return False
         return True
 
     def run_bioturb_model(self, params):
@@ -1999,7 +2026,7 @@ class PageBioturbation(tk.Frame):
 
         year = []
         self.days, self.iso = convert_to_annual([pseudoproxy], start=int(params[0]))
-        if not self.validate_params(params):
+        if not self.validate_params(params, pseudoproxy):
             return
         self.age = int(params[1]) - int(params[0])
         self.mxl = np.ones(self.age) * float(params[2])
