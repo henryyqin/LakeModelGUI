@@ -17,7 +17,7 @@
       integer iin,iout,numpts,num_tra,ktau,iupto,ilake,jlake
       integer depth,depth_a,ktauwan,mixmax_a
 
-      logical bndry_flag,iceflag,s_flag,o18flag,deutflag,ar_flag
+      logical bndry_flag,iceflag,s_flag,o18flag,deutflag,ar_flag,rhflag
       logical snow_flag_a,wb_flag,melt_flag_a
 
 !**********************************************************************

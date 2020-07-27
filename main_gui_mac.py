@@ -197,7 +197,7 @@ def plot_draw(frame, axes, figure, title, x_axis, y_axis, x_data, y_data, plot_t
     axes.set_ylabel(y_axis)
     i = 0
     for line in y_data:
-        if "monthly" in plot_type:
+        if "no-marker" in plot_type:
             axes.plot(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i])
         else:
             axes.plot(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i], marker="o")
@@ -873,7 +873,7 @@ class PageEnvTimeSeries(tk.Frame):
 
         self.months = convert_to_monthly(self.days)
         plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " over Time", "Month", varstring, self.months, [self.yaxis],
-                  "monthly", ["#b22222"], [1], ["Monthly Data"])
+                  "no-marker", ["#b22222"], [1], ["Monthly Data"])
 
         self.years, self.yaxes = convert_to_annual([self.yaxis])
         plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " over Time", "Year (C.E.)", varstring, self.years, self.yaxes,
@@ -1223,7 +1223,7 @@ class PageCarbonate(tk.Frame):
 
         self.months = convert_to_monthly(self.days)
         plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Month", "Simulated Carbonate Data", self.months, [self.carb_proxy],
-                  "monthly", ["#b22222"], [1], ["Monthly Data"])
+                  "no-marker", ["#b22222"], [1], ["Monthly Data"])
 
         self.years, self.yaxis = convert_to_annual([self.carb_proxy])
         plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year (C.E.)", "Simulated Carbonate Data", self.years, self.yaxis,
@@ -1424,7 +1424,7 @@ class PageGDGT(tk.Frame):
         self.months = convert_to_monthly(self.days)
         plot_draw(self.scrollable_frame, self.axis, self.f, "Leafwax Model", "Month", "Simulated GDGT Data", self.months,
                   [self.gdgt_proxy],
-                  "monthly", ["#b22222"], [1], ["Monthly Data"])
+                  "no-marker", ["#b22222"], [1], ["Monthly Data"])
 
         self.years, self.yaxis = convert_to_annual([self.gdgt_proxy])
         plot_draw(self.scrollable_frame, self.axis, self.f, "Leafwax Model", "Year (C.E.)", "Simulated GDGT Data", self.years,
@@ -1594,7 +1594,7 @@ class PageLeafwax(tk.Frame):
                 self.days.append(30 * i + 15)
         self.months = convert_to_monthly(self.days, start=start_year)
         plot_draw(self.scrollable_frame, self.axis, self.f, "Leafwax Model", "Month", "Simulated Leafwax Data", self.months, [self.leafwax_proxy],
-                  "monthly", ["#b22222"], [1], ["Monthly Data"])
+                  "no-marker", ["#b22222"], [1], ["Monthly Data"])
 
         self.years, self.leafwax_array = convert_to_annual([self.leafwax_proxy, self.Q1, self.Q2], start=start_year)
         plot_draw(self.scrollable_frame, self.axis, self.f, "Leafwax Model", "Year (C.E.)", "Simulated Leafwax Data", self.years, [self.leafwax_array[0]],
@@ -2103,8 +2103,8 @@ class PageCompaction(tk.Frame):
         homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
 
         self.f, self.axis = plt.subplots(1, 2, figsize=(10, 5), dpi=100)
-        plot_setup(self.scrollable_frame, self.axis[0], self.f, "ARCHIVE", "Year (C.E.)", "Compaction Data")
-        plot_setup(self.scrollable_frame, self.axis[1], self.f, "ARCHIVE", "Year (C.E.)", "Compaction Data")
+        plot_setup(self.scrollable_frame, self.axis[0], self.f, "ARCHIVE", "Depth (m)", "Compaction Data")
+        plot_setup(self.scrollable_frame, self.axis[1], self.f, "ARCHIVE", "Depth (m)", "Compaction Data")
 
     def validate_params(self, params):
         if not check_float(params[0]):
@@ -2136,9 +2136,9 @@ class PageCompaction(tk.Frame):
         self.axis[1].clear()
         plot_draw(self.scrollable_frame, self.axis[0], self.f, "Porosity ($\phi$) Profile in Sediment Core", "Depth (m)",
                   r'Porosity Profile ($\phi$) (unitless)', self.z, [self.phi],
-                  "normal non-month", ["#000000"], [3], ["Porosity Profile"])
+                  "no-marker", ["#000000"], [3], ["Porosity Profile"])
         plot_draw(self.scrollable_frame, self.axis[1], self.f, "Depth Scale w/Compaction in Sediment Core", "Depth (m)", "Sediment Height (m)",
-                  self.z, [self.h_prime, self.h], "normal non-month", ["#000000", "#b22222"], [3, 3],
+                  self.z, [self.h_prime, self.h], "no-marker", ["#000000", "#b22222"], [3, 3],
                   ["Compcated Layer", "Non-Compacted Original Layer"])
 
     """
