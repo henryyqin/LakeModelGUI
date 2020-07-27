@@ -1,2 +1,2 @@
-/Users/henryqin/Desktop/LakeModelGUI/ERA_INTERIM_climatology_Tang_2yr.txt
+/Users/henryqin/Desktop/LakeModelGUI/CCSM-HIST-Mlake-10yrs.txt
 1979

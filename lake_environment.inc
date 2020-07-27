@@ -26,24 +26,24 @@
       parameter (oblq = 23.4)           ! obliquity
       parameter (xlat = -6.30)          ! latitude (negative for South)
       parameter (xlon = 29.5)           ! longitude (negative for West)
-    parameter (oblq = 23.4)   ! obliquity
-    parameter (xlat = -6.30)   ! latitude (negative for South)
-    parameter (xlon = 29.5)   ! longitude (negative for West)
-    parameter (gmt = +3)   ! local time relative to gmt in hours
-    parameter (max_dep = 570)   ! depth of lake at sill in meters
-    parameter (basedep = 733.)   ! Elevation of Basin Bottom in Meters
-    parameter (b_area = 3290000.)   ! Area of Catchment+Lake in Hectares
-    parameter (cdrn = 2.0e-3)   ! neutral drag coefficient 1.8 HAD 1.7GISS 1.2CCSM
-    parameter (eta = 0.04)   ! shortwave extinction coefficient (1/m)
-    parameter (f = 0.1)   ! fraction of advected air over lake
-    parameter (alb_slush = 0.4)   ! albedo of melting snow
-    parameter (alb_snow = 0.7)   ! albedo of non-melting snow
+      parameter (oblq = 23.4)   ! Obliquity
+      parameter (xlat = -12.11)   ! Latitude (Negative For South)
+      parameter (xlon = 34.22)   ! Longitude (Negative For West)
+      parameter (gmt = +3)   ! Local Time Relative To Gmt In Hours
+      parameter (max_dep = 292)   ! Depth Of Lake At Sill In Meters
+      parameter (basedep = 468.)   ! Elevation Of Basin Bottom In Meters
+      parameter (b_area = 2960000.)   ! Area Of Catchment+Lake In Hectares
+      parameter (cdrn = 1.7e-3)   ! Neutral Drag Coefficient
+      parameter (eta = 0.04)   ! Shortwave Extinction Coefficient (1/M)
+      parameter (f = 0.1)   ! Fraction Of Advected Air Over Lake
+      parameter (alb_slush = 0.4)   ! Albedo Of Melting Snow
+      parameter (alb_snow = 0.7)   ! Albedo Of Non-Melting Snow
 
-    parameter (depth_begin = 570)   ! prescribed depth in meters
-    parameter (salty_begin = 0.0)   ! prescribed salinity in ppt
+      parameter (depth_begin = 292)   ! Prescribed Depth In Meters
+      parameter (salty_begin = 0.0)   ! Prescribed Salinity In Ppt
       co18prec(xt) = 0.3562*xt-21.079   ! function to calc o18prec
-    parameter (o18air = -5.)   ! d18O of air above lake
-    parameter (deutair = -130.)   ! dD of air above lake
+      parameter (o18air = -28.)   ! D18o Of Air Above Lake
+      parameter (deutair = -190.)   ! Dd Of Air Above Lake
       cdeutrun(xt) = 2.5915*xt-161.35   ! function to calc deutrun
 
       real area(max_dep)
@@ -53,22 +53,22 @@
 
       parameter (nspin = 10)              ! number of years for spinup
       parameter (bndry_flag = .false.)    ! true for explict boundry layer computations; presently only for sigma coord climate models
-      parameter (sigma = 0.9925561)       ! sigma level for boundary flag
-      parameter (wb_flag = .false.)       ! true for variable lake depth
-      parameter (iceflag = .true.)        ! true for variable ice cover
-      parameter (s_flag = .false.)        ! true for variable salinity
+      character(25) :: datafile='CCSM-HIST-Mlake-10yrs.txt' ! the data file to open in FILE_OPEN subroutine
+      parameter (tempinit = -4.8)   ! Temperature To Initialize Lake At In INIT_LAKE Subroutine
+      parameter (deutinit = -96.1)   ! Dd To Initialize Lake At In INIT_LAKE Subroutine
+      parameter (o18init = -11.3)   ! D18o To Initialize Lake At In INIT_LAKE Subroutine
       parameter (o18flag = .false.)       ! true for variable d18O 
       parameter (deutflag = .false.)      ! true for variable dD
-    character(38) :: datafile='/Users/henryqin/Desktop/LakeModelGUI/ERA_INTERIM_climatology_Tang_2yr.txt' ! the data file to open in FILE_OPEN subroutine
-
-!**********************************************************************
-! Other parameters DO NOT CHANGE without good reason for doing so******
-
-      parameter (dz=1.0)                ! vertical layer thickness in m
-      parameter (dt = 1.*60.*30.)       ! model time step in seconds
-      parameter (zo=0.0004)             ! water surface roughness length
-    parameter (nspin = 20)   ! number of years for spinup
-    parameter (bndry_flag = .true.)   ! true for explict boundry layer computations
+      parameter (nspin = 10)   ! Number Of Years For Spinup
+      parameter (bndry_flag = .false.)   ! true For Explict Boundary Layer Computations;Presently Only For Sigma Coord Climate Models
+      parameter (sigma = 0.96)   ! Sigma Level For Boundary Flag
+      parameter (wb_flag = .false.)   ! true For Variable Lake Depth
+      parameter (iceflag = .true.)   ! true For Variable Ice Cover
+      parameter (s_flag = .false.)   ! true For Variable Salinity
+      parameter (o18flag = .false.)   ! true For Variable D18o
+      parameter (deutflag = .false.)   ! true For Variable Dd
+      parameter (z_screen = 5.0)   ! Height Of Met Inputs
+      parameter (rhflag = .true.)   ! true for Relative Humidity
     parameter (sigma = 0.9925561)   ! sigma level for boundary flag
     parameter (wb_flag = .true.)   ! true for variable lake depth
     parameter (iceflag = .true.)   ! true for variable ice cover

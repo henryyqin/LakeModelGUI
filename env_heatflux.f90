@@ -16,7 +16,7 @@
       !character*80 :: lake_data_filename, data_input_filename
       !character*80 :: data_output_profile, data_output_surface
 
-      !data_input_filename = 'ERA_INTERIM_climatology_Tang_2yr.txt'
+      !data_input_filename = 'CCSM-HIST-Mlake-10yrs.txt'
       !data_input_filename = 'CCSM-LGM-Mlake_2yr.txt'
       !data_output_profile = 'profile_output.dat'
       !data_output_surface = 'surface_output.dat'
@@ -48,7 +48,7 @@
       call init_lake ! initialize lake variables
       ispin = 0
 
-!	  Begin Ashling
+!   Begin Ashling
       !Read in data based on 
       if (wb_flag) then
         !variable lake depth, with or without isotopes
@@ -138,11 +138,11 @@
                         deutprec_i,o18prec_in, o18prec_i, &
                         runin_in,runin_i,deutrun_in, deutrun_i,&
                         o18run_in,o18run_i)
-		 if (day(2).gt.(day(1)+1)) then   ! monthly input
-		   julian = day(1) + int(j/(24*60*60/int(dt)))
-		 else  ! daily or hourly input
-		   julian = day(1)
-		 end if
+     if (day(2).gt.(day(1)+1)) then   ! monthly input
+       julian = day(1) + int(j/(24*60*60/int(dt)))
+     else  ! daily or hourly input
+       julian = day(1)
+     end if
 
          call lake_main(xtime,julian,ta_i,ua_i,qa_i,ps_i,  &
                         prec_i,sw_i,rlwd_i,runin_i,rh_i,nsteps,&
@@ -152,11 +152,11 @@
 
       if (ispin.le.nspin.and.year(2).ne.year(1)) then
         ispin = ispin+1
-		day(1) = 1
+    day(1) = 1
         rewind 15
         goto 150
       end if
-	  
+    
       year(1) = year(2)                 ! increment year,day,hour
       day(1) = day(2)
 
@@ -186,7 +186,7 @@
            q2w,ti,u2i,t2i,q2i,ta_i,qa_i,ua_i,ta,ua,qa,taC,albs,albi,  &
            albw,swi,tin,tcutk,hicedum,delq,evapw,evapi,   &
            qhi,qei,delqs,tkw,tki,evap,qe,qh,qbot,qw,qnetice,evaps,    &
-		   qew,qhw,sww,luw,                                          &
+       qew,qhw,sww,luw,                                          &
            dnsty,de,fracadd,surf_a,fracprv,o18prec,o18run,     &
            deutprec,deutrun,runout,hsprv,snowmelt,o18snow,deutsnow,   &
            tdepth1,tdepth2,xtime,rain,snowadd, &
@@ -813,8 +813,8 @@
 !      output files
       open(unit=50,file='ERA-HIST-Tlake_Tprof.dat',status='unknown')
       open(unit=51,file='ERA-HIST-Tlake_surf.dat',status='unknown')
-!	  open(unit=52,file='ERA-HIST-Tlake_o18prof.dat',status='unknown')
-!	  open(unit=53,file='ERA-HIST-Tlake_deutprof.dat',status='unknown')
+!   open(unit=52,file='ERA-HIST-Tlake_o18prof.dat',status='unknown')
+!   open(unit=53,file='ERA-HIST-Tlake_deutprof.dat',status='unknown')
 
       return
       end
@@ -1019,12 +1019,12 @@
       else
          albs=alb_snow  ! albedo of snow
       end if
-	  
+    
       if (xlat.ge.0.0) then  ! northern hemisphere
          albw = 0.08 + 0.02 * sin(2. * pi * julian / 365. + pi / 2.)
-	  else                   ! southern hemisphere
-		 albw = 0.08 + 0.02 * sin(2. * pi * julian / 365. - pi / 2.)
-	  endif	
+    else                   ! southern hemisphere
+     albw = 0.08 + 0.02 * sin(2. * pi * julian / 365. - pi / 2.)
+    endif 
 
       return
       end
@@ -1407,12 +1407,12 @@
         qhw_ave = qhw_ave+Qhw         !SD HEAT BUDGET ADD
         luw_ave = luw_ave+luw         !SD HEAT BUDGET ADD
         sww_ave = sww_ave+sww         !SD HEAT BUDGET ADD
-!		print *, qew_ave
+!   print *, qew_ave
 
         do k=1,depth
            temp_ave(k)=temp_ave(k)+temp_a(k)
-!sd		  ! o18pro_ave(k)=o18pro_ave(k)+trace_a(k,1)
-!sd 	  ! deutpro_ave(k)=deutpro_ave(k)+trace_a(k,2)
+!sd     ! o18pro_ave(k)=o18pro_ave(k)+trace_a(k,1)
+!sd     ! deutpro_ave(k)=deutpro_ave(k)+trace_a(k,2)
         end do
 
         if (xtime.eq.1.) then    ! print daily averages
@@ -1424,7 +1424,7 @@
 ! I removed ice from my output; would need to be added back in; format adjusted accordingly
            if (o18flag.and.deutflag) then
           write(51,361) day,tsurf_ave/nsteps,&
-           				 fice_ave/nsteps,&
+                   fice_ave/nsteps,&
                          evap_ave*econv/nsteps,&
                          mix_ave/nsteps,&
                          hice_ave/nsteps,hsnow_ave/nsteps,&
@@ -1440,8 +1440,8 @@
   361      format(F9.2,1x,9(F7.2,1x),2(I5,1x),F6.2)                             
 !          write(50,*) day,((temp_ave(k)/48.),k=1,depth)
            write(50,362) day,((temp_ave(k)/nsteps),k=1,depth)
-!sd		   write(52,362) day,((o18pro_ave(k)/nsteps),k=1,depth)
-!sd		   write(53,362) day,((deutpro_ave(k)/nsteps),k=1,depth)
+!sd      write(52,362) day,((o18pro_ave(k)/nsteps),k=1,depth)
+!sd      write(53,362) day,((deutpro_ave(k)/nsteps),k=1,depth)
   362      format(58(F11.2,1x))           
            else if (o18flag.and..not.deutflag) then 
          write(51,371) day,tsurf_ave/nsteps,&
@@ -1489,12 +1489,12 @@
            runout_sum = 0.0
            qew_ave = 0.0         !SD HEAT BUDGET ADD
            qhw_ave = 0.0         !SD HEAT BUDGET ADD
-		   sww_ave = 0.0         !ENERGY BUDGET ADD
-		   luw_ave = 0.0         !ENERGY BUDGET ADD
+       sww_ave = 0.0         !ENERGY BUDGET ADD
+       luw_ave = 0.0         !ENERGY BUDGET ADD
            do k=1,max_dep
              temp_ave(k)=0.0
-!sd			 o18pro_ave(k)=0.0
-!sd			 deutpro_ave(k)=0.0
+!sd      o18pro_ave(k)=0.0
+!sd      deutpro_ave(k)=0.0
            end do
         endif
       endif
@@ -1884,7 +1884,7 @@
 
         rho_max = -50.0   !
 
-!	write(*,*)'mixprev is',mixprev
+! write(*,*)'mixprev is',mixprev
 
         do kk=1,mixprev-1   ! find maximum density above mixed section
          if (dnsty(kk).gt.rho_max ) rho_max=dnsty(kk)
