@@ -568,10 +568,6 @@ class PageEnvModel(tk.Frame):
         rowIdx += 1
 
 
-        csvButton = tk.Button(self.scrollable_frame, text='Download CSV', font=f, command=self.download_csv)
-        csvButton.grid(row=rowIdx, column=0, padx=1120, ipadx=30, ipady=3, sticky="W")
-
-
         # Return to Start Page
         homeButton = tk.Button(self.scrollable_frame, text="Back to start page", font=f, bg="azure", 
                                command=lambda: self.parent.show_frame(["PageEnvModel"], "StartPage"))
@@ -734,9 +730,10 @@ class PageEnvModel(tk.Frame):
     """
 
     def runModel(self, btn):
-        response = tk.messagebox.askyesno(title="Warning", message="Running the model will take several minutes, and the GUI may close "
-                                                                     "once the model finishes running. If this occurs, you will need to "
-                                                                     "re-open the GUI to download the output. Do you wish to proceed?")
+        response = tk.messagebox.askyesno(title="Warning!", message="Running the model will take several minutes, and the GUI may close "
+                                                                     "once the model finishes running. Do you wish to proceed? \n\n"
+                                                                     "(The output data will be saved in your directory as profile.dat "
+                                                                     "and surface.dat)")
         if response == 1:
             btn["state"]="disabled"
             model_process = multiprocessing.Process(target=self.computeModel(btn))
@@ -758,14 +755,6 @@ class PageEnvModel(tk.Frame):
 
         # Run Environment Model (Crashes eventually)
         lakepsm.lakemodel()
-
-    """
-    Downloads 'surface_output.dat' as a CSV to the user's desired location
-    """
-    def download_csv(self):
-        read_file = genfromtxt('ERA-HIST-Tlake_surf.dat', delimiter='.')
-        export_file_path = fd.asksaveasfilename(defaultextension='.csv')
-        read_file.to_csv(export_file_path, index=None)
 
 
 """
