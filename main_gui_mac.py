@@ -1,7 +1,7 @@
 import os
 import pathlib
+print('starting...')
 os.chdir(pathlib.Path(__file__).parent.absolute()) # changes working directory to the current file path
-print(pathlib.Path().absolute())
 
 import sys
 
@@ -23,7 +23,6 @@ import lake_archive_compact as comp
 # Data Analytics
 import numpy as np
 from numpy import genfromtxt
-import pandas as pd
 import matplotlib
 
 # Imports for plotting
@@ -48,8 +47,6 @@ rpy2.robjects.numpy2ri.activate()
 
 #Miscellaneous imports
 import os
-#os.chdir("/Users/henryqin/Desktop/LakeModelGUI/dist/main_gui_mac") #pyinstaller test
-print(os.getcwd())
 from os.path import basename
 import webbrowser
 import copy
