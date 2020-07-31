@@ -1,2 +1,0 @@
-/Users/henryqin/Desktop/LakeModelGUI/CCSM-HIST-Mlake-10yrs.txt
-1979
