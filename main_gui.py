@@ -1,6 +1,3 @@
-import sys
-sys.settrace
-
 #tkinter imports
 import tkinter as tk
 from tkinter import Canvas, Image, PhotoImage, font
