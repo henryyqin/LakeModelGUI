@@ -2,13 +2,16 @@
 ! Declarations ********************************************************
       real dz,dt,readdt,basedep,zo,z_screen,delta,rhowat,rhoice,rhosnow
       real Le,Lei,fusion,surf,fracmin,fraclim,qwtau,cpw_ice,condw,beta
+      real qhw_ave, qew_ave, luw_ave, sww_ave
       real snocrit,kv,dm,pi,tsurfp,mixing,trace,depth_begin,salty_begin
       real trace_i,trace_a,d_frac,tempi_a,hice_a,hsnow_a,xlat,xlon,gmt
-      real b_area,runout_sum,alb_slush,alb_snow,fsol1,fsol2,sical0,sical1
+      real b_area,runout_sum,alb_slush,alb_snow,fsol1,fsol2,sical0
+      real sical1
       real salty_a,eta,fraci_a,temp_a,d_fraca,snowcut,o18air,f,ti_a
       real deutair,dexch,alphak,lamisw,lamilw,ca,cb,c70,c71,c72,c73
       real lamssw,lamslw,afrac1,afrac2,condi,conds,cpair,emis
       real o18snow_a,deutsnow_a,psum_a,surfarea_a,hsnow_ave,temp_ave
+      real o18pro_ave,deutpro_ave
       real tsurf_ave,fice_ave,evap_ave,hice_ave,o18_ave,deut_ave
       real oblq,cdrn,raddeg,dpd,grav,sigma,rair,rvap,cvap
       real co18prec,co18run,cdeutprec,cdeutrun,xt,mix_ave
@@ -17,49 +20,55 @@
       integer iin,iout,numpts,num_tra,ktau,iupto,ilake,jlake
       integer depth,depth_a,ktauwan,mixmax_a
 
-      logical bndry_flag,iceflag,s_flag,o18flag,deutflag,ar_flag
+      logical bndry_flag,iceflag,s_flag,o18flag,deutflag,ar_flag,rhflag
       logical snow_flag_a,wb_flag,melt_flag_a
-
+      real tempinit, deutinit, o18init !Ashling
 !**********************************************************************
 ! Lake specific parameters ********************************************
 
-      parameter (oblq = 23.4)           ! obliquity
-      parameter (xlat = -6.30)          ! latitude (negative for South)
-      parameter (xlon = 29.5)           ! longitude (negative for West)
-    parameter (oblq = 23.4)   ! obliquity
-    parameter (xlat = -6.30)   ! latitude (negative for South)
-    parameter (xlon = 29.5)   ! longitude (negative for West)
-    parameter (gmt = +3)   ! local time relative to gmt in hours
-    parameter (max_dep = 570)   ! depth of lake at sill in meters
-    parameter (basedep = 733.)   ! Elevation of Basin Bottom in Meters
-    parameter (b_area = 3290000.)   ! Area of Catchment+Lake in Hectares
-    parameter (cdrn = 2.0e-3)   ! neutral drag coefficient 1.8 HAD 1.7GISS 1.2CCSM
-    parameter (eta = 0.04)   ! shortwave extinction coefficient (1/m)
-    parameter (f = 0.1)   ! fraction of advected air over lake
-    parameter (alb_slush = 0.4)   ! albedo of melting snow
-    parameter (alb_snow = 0.7)   ! albedo of non-melting snow
+      parameter (oblq = 23.4)   ! Obliquity
+      parameter (xlat = -12.11)   ! Latitude (Negative For South)
+      parameter (xlon = 34.22)   ! Longitude (Negative For West)
+      parameter (gmt = +3)   ! Local Time Relative To Gmt In Hours
+      parameter (max_dep = 292)   ! Depth Of Lake At Sill In Meters
+      parameter (basedep = 468.)   ! Elevation Of Basin Bottom In Meters
+      parameter (b_area = 2960000.)   ! Area Of Catchment+Lake In Hectares
+      parameter (cdrn = 1.7e-3)   ! Neutral Drag Coefficient
+      parameter (eta = 0.04)   ! Shortwave Extinction Coefficient (1/M)
+      parameter (f = 0.1)   ! Fraction Of Advected Air Over Lake
+      parameter (alb_slush = 0.4)   ! Albedo Of Melting Snow
+      parameter (alb_snow = 0.7)   ! Albedo Of Non-Melting Snow
 
-    parameter (depth_begin = 570)   ! prescribed depth in meters
-    parameter (salty_begin = 0.0)   ! prescribed salinity in ppt
+      parameter (depth_begin = 292)   ! Prescribed Depth In Meters
+      parameter (salty_begin = 0.0)   ! Prescribed Salinity In Ppt
+
+      parameter (o18air = -28.)   ! D18o Of Air Above Lake
+      parameter (deutair = -190.)   ! Dd Of Air Above Lake
       co18prec(xt) = 0.3562*xt-21.079   ! function to calc o18prec
-    parameter (o18air = -5.)   ! d18O of air above lake
-    parameter (deutair = -130.)   ! dD of air above lake
+      co18run(xt) = 0.3562*xt-21.079    ! function to calc o18run
+      cdeutprec(xt) = 2.5915*xt-161.35  ! function to calc deutprec
       cdeutrun(xt) = 2.5915*xt-161.35   ! function to calc deutrun
 
       real area(max_dep)
-      data area/570*3290000./ ! lake area in hectares by depth 
+      data area/292*2960000./ ! lake area in hectares by depth 
 
+      ! Removed from the model, for easier access
+      character(25) :: datafile='CCSM-HIST-Mlake-10yrs.txt' ! the data file to open in FILE_OPEN subroutine
+      parameter (tempinit = -4.8)   ! Temperature To Initialize Lake At In INIT_LAKE Subroutine
+      parameter (deutinit = -96.1)   ! Dd To Initialize Lake At In INIT_LAKE Subroutine
+      parameter (o18init = -11.3)   ! D18o To Initialize Lake At In INIT_LAKE Subroutine
 ! Simulation specific parameters **************************************
 
-      parameter (nspin = 10)              ! number of years for spinup
-      parameter (bndry_flag = .false.)    ! true for explict boundry layer computations; presently only for sigma coord climate models
-      parameter (sigma = 0.9925561)       ! sigma level for boundary flag
-      parameter (wb_flag = .false.)       ! true for variable lake depth
-      parameter (iceflag = .true.)        ! true for variable ice cover
-      parameter (s_flag = .false.)        ! true for variable salinity
-      parameter (o18flag = .false.)       ! true for variable d18O 
-      parameter (deutflag = .false.)      ! true for variable dD
-    character(38) :: datafile='/Users/henryqin/Desktop/LakeModelGUI/ERA_INTERIM_climatology_Tang_2yr.txt' ! the data file to open in FILE_OPEN subroutine
+      parameter (nspin = 10)   ! Number Of Years For Spinup
+      parameter (bndry_flag = .false.)   ! true For Explict Boundary Layer Computations;Presently Only For Sigma Coord Climate Models
+      parameter (sigma = 0.96)   ! Sigma Level For Boundary Flag
+      parameter (wb_flag = .false.)   ! true For Variable Lake Depth
+      parameter (iceflag = .true.)   ! true For Variable Ice Cover
+      parameter (s_flag = .false.)   ! true For Variable Salinity
+      parameter (o18flag = .false.)   ! true For Variable D18o
+      parameter (deutflag = .false.)   ! true For Variable Dd
+      parameter (z_screen = 5.0)   ! Height Of Met Inputs
+      parameter (rhflag = .true.)   ! true for Relative Humidity
 
 !**********************************************************************
 ! Other parameters DO NOT CHANGE without good reason for doing so******
@@ -67,15 +76,15 @@
       parameter (dz=1.0)                ! vertical layer thickness in m
       parameter (dt = 1.*60.*30.)       ! model time step in seconds
       parameter (zo=0.0004)             ! water surface roughness length
-    parameter (nspin = 20)   ! number of years for spinup
-    parameter (bndry_flag = .true.)   ! true for explict boundry layer computations
-    parameter (sigma = 0.9925561)   ! sigma level for boundary flag
-    parameter (wb_flag = .true.)   ! true for variable lake depth
-    parameter (iceflag = .true.)   ! true for variable ice cover
-    parameter (s_flag = .true.)   ! true for variable salinity
-    parameter (o18flag = .true.)   ! true for variable d18O
-    parameter (deutflag = .true.)   ! true for variable dD
-    parameter (z_screen = 5.0)   ! height of met inputs
+      parameter (n_trace=3)             ! model does 3 tracers (o18, D, sal)
+      parameter (delta=5.67e-8)         ! s-b constant
+      parameter (rhowat = 1000.)        ! density of water
+      parameter (rhosnow = 330.)        ! density of snow
+      parameter (rhoice = 917.)         ! density of ice
+      parameter (snowcut = 2.2)         ! temp at which precip is snow
+      parameter (cpair = 1.00464e3)     ! specific heat capacity dry air
+      parameter (rair = 287.05)         ! specific gas constant dry air
+      parameter (rvap = 461.495)        ! specific gas constant water vapor
       parameter (cvap = 1.81e3)         ! specific heat capacity water vapor
       parameter (Le = 2.45e6)           ! latent heat of vaporization water
       parameter (Lei = 2.5e6)           ! latent heat of vaporization ice
@@ -102,7 +111,7 @@
       parameter (dm=1.38889E-07)        ! thermal molecular diffusivity of water
       parameter (pi=3.141592654)        !
       parameter (snocrit = 0.05)        ! for albedo, in m
-      parameter (dexch  =1.0)           ! fixed depth (m) over which isotope exchange occurs
+      parameter (dexch  =1.0)    ! fixed depth (m) over which isotope exchange occurs
       parameter (alphak = 0.994)        ! fractionation coeff
       parameter (lamisw = 3.0)          ! extinction coef for sw thru ice
       parameter (lamilw = 20.)          ! extinction coef for lw thru ice
@@ -130,6 +139,7 @@
       common ktauwan (12),ti_a(max_dep)
       common mix_ave, tsurf_ave, fice_ave
       common evap_ave, hice_ave, hsnow_ave, o18_ave
+      common qew_ave, qhw_ave, sww_ave, luw_ave
       common deut_ave, runout_sum, temp_ave(max_dep)
 
 !**********************************************************************
