@@ -614,7 +614,6 @@ class PageEnvModel(tk.Frame):
         base = basename(self.txtfilename)
         nonbase = (self.txtfilename.replace("/", "\\")).replace(base, '')[:-1]
         self.currentTxtFileLabel.configure(text=base)
-        print(nonbase, os.getcwd())
 
 
         # Modify the Fortran code to read the input text file
@@ -720,6 +719,8 @@ class PageEnvModel(tk.Frame):
                             new[rows[i]] = "      parameter (" + names[i] + " = .false.)   ! " + comments[i] + "\n"
                     else:
                         new[rows[i]] = "      parameter (" + names[i] + " = " + parameters[i] + ")   ! " + comments[i] + "\n"
+            # Change data label to include depth begin and surface area
+            new[52] = "      data area/"+parameters[12]+"*"+parameters[6]+"/ ! lake area in hectares by depth\n"
             write_to_file(f, new)
 
 

@@ -17,7 +17,7 @@
       !character*80 :: data_output_profile, data_output_surface
 
       !lake_data_filename = 'lake_environment.inc'
-      !data_input_filename = 'TRACE_13_5kyr_11kyr_Malawi_monthlyaccel.txt'
+      !data_input_filename = 'ERA_INTERIM_1979_2016_Tanganyika.txt'
       !data_output_profile = 'profile_output.dat'
       !data_output_surface = 'surface_output.dat'
       !!!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
