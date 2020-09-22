@@ -534,7 +534,7 @@ class PageEnvModel(tk.Frame):
                       "Check Mark For Variable Ice Cover",
                       "Check Mark For Variable Salinity", "Check Mark For Variable \u0394¹⁸o",
                       "Check Mark For Variable \u0394d",
-                      "Height Of Met Inputs", "Check Mark for Relative Humidity", "Start Year"]
+                      "Height Of Met Inputs", "Check Mark for Relative Humidity", "Start Year", "Surface Area"]
         param_values = []
         param_containers = []
         tk.Label(self.scrollable_frame, text="Lake-Specific Parameters", font=LARGE_FONT).grid(
@@ -553,10 +553,10 @@ class PageEnvModel(tk.Frame):
             param_containers.append(p)
 
         # List entries for simulation-specific parameters
-        for i in range(rowIdx + 19, rowIdx + 30):
+        for i in range(rowIdx + 19, rowIdx + 31):
             tk.Label(self.scrollable_frame, text=parameters[i - rowIdx], font=f).grid(
                 row=i - 19, column=0, padx=720, sticky="W")
-            if i in [rowIdx + 19, rowIdx + 21, rowIdx + 27, rowIdx + 29]:
+            if i in [rowIdx + 19, rowIdx + 21, rowIdx + 27, rowIdx + 29, rowIdx + 30]:
                 p = tk.Entry(self.scrollable_frame)
                 p.grid(row=i - 19, column=0, padx=1120, sticky="W")
                 param_containers.append(p)
@@ -659,7 +659,7 @@ class PageEnvModel(tk.Frame):
     def validate_params(self, parameters):
         for i in range(len(parameters)):
             # Checks whether numerical values are indeed numerical
-            if (i <= 21 or i == 27) and (not parameters[i] == ""):
+            if (i <= 21 or i == 27 or i == 30) and (not parameters[i] == ""):
                 if not check_float(parameters[i]):
                     tk.messagebox.showerror(title="Run Lake Model", message="Non-numerical value was entered as a value"
                                                                             " for a numerical parameter.")
@@ -706,7 +706,7 @@ class PageEnvModel(tk.Frame):
                     68, 69, 70]
             global PARAMETERS
             PARAMETERS = copy.copy(parameters)
-            for i in range(len(parameters)-1):
+            for i in range(len(parameters)-2):
                 if len(str(parameters[i])) != 0:
                     comments[i] = comments[i].replace("\u0394", "D")
                     comments[i] = comments[i].replace("¹⁸", "18")
@@ -720,7 +720,7 @@ class PageEnvModel(tk.Frame):
                     else:
                         new[rows[i]] = "      parameter (" + names[i] + " = " + parameters[i] + ")   ! " + comments[i] + "\n"
             # Change data label to include depth begin and surface area
-            new[52] = "      data area/"+parameters[12]+"*"+parameters[6]+"/ ! lake area in hectares by depth\n"
+            new[52] = "      data area/"+parameters[4]+"*"+parameters[30]+"/ ! lake area in hectares by depth\n"
             write_to_file(f, new)
 
 
@@ -736,16 +736,16 @@ class PageEnvModel(tk.Frame):
             values = ["23.4", "-12.11", "34.22", "+3", "292", "468.", "2960000.",
                       "1.7e-3", "0.04", "0.1", "0.4", "0.7", "292", "0.0", "-28.",
                       "-190.", "-4.8", "-96.1", "-11.3", "10", 0, "0.96", 0, 1,
-                      0, 0, 0, "5.0", 1, "1979"]
+                      0, 0, 0, "5.0", 1, "1979", "2960000."]
         elif lake == "Tanganyika":
             values = ["23.4", "-6.30", "29.5", "+3", "999", "733.", "23100000.",
                       "2.0e-3", "0.065", "0.3", "0.4", "0.7", "570", "0.0", "-14.0", "-96.",
-                      "23.0", "24.0", "3.7", "10", 0, "0.9925561", 0, 0, 0, 0, 0, "5.0", 1, "1979"]
+                      "23.0", "24.0", "3.7", "10", 0, "0.9925561", 0, 0, 0, 0, 0, "5.0", 1, "1979", "3290000."]
         elif lake == "Refill":
             values = copy.copy(PARAMETERS)
         else:
             values = [""] * 20
-            values.extend([0, "", 0, 0, 0, 0, 0, "", 0, ""])
+            values.extend([0, "", 0, 0, 0, 0, 0, "", 0, "", ""])
         for i in range(len(values)):
             if i == 20 or (i > 21 and i < 27) or i==28:
                 containers[i].deselect()
