@@ -53,7 +53,7 @@
       data area/292*2960000./ ! lake area in hectares by depth 
 
       ! Removed from the model, for easier access
-      character(25) :: datafile='CCSM-HIST-Mlake-10yrs.txt' ! the data file to open in FILE_OPEN subroutine
+      character(49) :: datafile='/Users/henryqin/Desktop/CCSM-HIST-Mlake-10yrs.txt' ! the data file to open in FILE_OPEN subroutine
       parameter (tempinit = -4.8)   ! Temperature To Initialize Lake At In INIT_LAKE Subroutine
       parameter (deutinit = -96.1)   ! Dd To Initialize Lake At In INIT_LAKE Subroutine
       parameter (o18init = -11.3)   ! D18o To Initialize Lake At In INIT_LAKE Subroutine

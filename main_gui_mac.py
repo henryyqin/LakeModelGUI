@@ -1,10 +1,14 @@
-"""
-import os
-import pathlib
-os.chdir(pathlib.Path(__file__).parent.absolute()) # changes working directory to the current file path
-print(pathlib.Path().absolute())
 
+import os
 import sys
+import pathlib
+from pathlib import Path
+
+currentPath = Path(sys.executable)
+parentPath = currentPath.parent
+os.chdir(parentPath)
+
+
 
 #tkinter imports
 import tkinter as tk
@@ -24,7 +28,6 @@ import lake_archive_compact as comp
 # Data Analytics
 import numpy as np
 from numpy import genfromtxt
-import pandas as pd
 import matplotlib
 
 # Imports for plotting
@@ -48,9 +51,6 @@ rpy2.robjects.numpy2ri.activate()
 
 
 #Miscellaneous imports
-import os
-#os.chdir("/Users/henryqin/Desktop/LakeModelGUI/dist/main_gui_mac") #pyinstaller test
-print(os.getcwd())
 from os.path import basename
 import webbrowser
 import copy
@@ -60,7 +60,7 @@ from subprocess import PIPE, Popen
 from tkinter.ttk import Label
 from PIL import Image, ImageTk
 from tkinter.filedialog import asksaveasfilename
-"""
+
 #tkinter imports
 import tkinter as tk
 from tkinter import Canvas, Image, PhotoImage, font
@@ -72,18 +72,12 @@ import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-#plt.style.use('seaborn-whitegrid')
 matplotlib.use('TkAgg')  # Necessary for MacOS Mojave
-import sys
 
 #===========GENERAL FUNCTIONS========================================
 def callback(url):
     webbrowser.open_new(url)
 
-# def download_graph(time, proxy, filetype): #self.days, self.gdgt_proxy, '.png'
-#         df = pd.DataFrame({"Time": time, "Pseudoproxy": proxy})
-#         export_file_path = fd.asksaveasfilename(defaultextension=filetype) #ex: .csv or .png
-#         df.to_csv(export_file_path, index=None)
 
 def check_float(str):
     """
@@ -95,6 +89,7 @@ def check_float(str):
         float(str)
         return True
     except:
+        tk.messagebox.showerror(title="Run Model", message="Value entered was not a floating-point number")
         return False
 
 def initialize_global_variables():
@@ -105,9 +100,11 @@ def initialize_global_variables():
     with open("global_vars.txt", "r") as start:
         lines = start.readlines()
         global INPUT
-        INPUT = lines[0]
-        global START_YEAR
-        START_YEAR = int(lines[1])
+        if len(lines) >=1:
+            INPUT = lines[0]
+            global START_YEAR
+            if len(lines) >=2:
+                START_YEAR = int(lines[1])
 
 def write_to_file(file, data):
     """
@@ -177,7 +174,6 @@ def plot_setup(frame, axes, figure, title, x_axis, y_axis):
     """
     canvas = FigureCanvasTkAgg(figure, frame)
     canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=9, sticky="e")
-  
     axes.set_title(title, fontsize=12)
     axes.set_xlabel(x_axis)
     axes.set_ylabel(y_axis)
@@ -212,23 +208,10 @@ def plot_draw(frame, axes, figure, title, x_axis, y_axis, x_data, y_data, plot_t
     axes.set_ylabel(y_axis)
     i = 0
     for line in y_data:
-        if "normal" in plot_type:
-            if "monthly" in plot_type:
-                date_format = mdates.DateFormatter('%b,%Y')
-                axes.xaxis.set_major_formatter(date_format)
-                axes.plot_date(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i],
-                               marker=None)
-            elif "month-only" in plot_type:
-                date_format = mdates.DateFormatter('%b')
-                axes.xaxis.set_major_formatter(date_format)
-                axes.plot_date(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i])
-            elif "non-month" in plot_type:
-                axes.plot(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i])
-            else:
-                axes.plot_date(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i])
-        if "scatter" in plot_type:
-            axes.scatter(x_data, line, color=colors[i])
-            pass
+        if "no-marker" in plot_type:
+            axes.plot(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i])
+        else:
+            axes.plot(x_data, line, linestyle="solid", color=colors[i], linewidth=widths[i], label=labels[i], marker="o")
         i += 1
     if error_lines != None:
         axes.fill_between(x_data, error_lines[0], error_lines[1], facecolor='grey', edgecolor='none', alpha=0.20)
@@ -241,16 +224,17 @@ def convert_to_monthly(time, start=None):
     Input:
     - time: an array of day numbers (15, 45, 75, etc.)
     """
-    start_date = None
-    if start==None:
+    start_year = copy.copy(start)
+    if start_year == None:
         global START_YEAR
-        start_date = dt.date(START_YEAR, 1, 1)
-    else:
-        start_date = dt.date(start, 1, 1)
+        start_year = copy.copy(START_YEAR)
+    months = [0,1/12,2/12,3/12,4/12,5/12,6/12,7/12,8/12,9/12,10/12,11/12]
     dates = []
-    for day in time:
-        new_date = start_date + dt.timedelta(days=day-1)
-        dates.append(new_date)
+    for i in range(len(time)):
+        if (i+1)%12==0:
+            start_year += 1
+        month_year = months[(i+1)%12]+start_year
+        dates.append(month_year)
     return dates
 
 def convert_to_annual(data, start=None):
@@ -259,22 +243,24 @@ def convert_to_annual(data, start=None):
     Input:
     - data: the y-axis of the timeseries data
     """
-    start_date = None
+    start_year = copy.copy(start)
     if start==None:
         global START_YEAR
-        start_date = dt.date(START_YEAR-1, 7, 2)
-    else:
-        start_date = dt.date(start - 1, 7, 2)
+        start_year = copy.copy(START_YEAR)
+    start_year+=0.5
+    years = []
+    for i in range(len(data[0])):
+        if (i+1)%12==0:
+            years.append(start_year)
+            start_year+=1
     all_year_avgs = []
     for column in data:
-        years = []
         year_data = []
         year_avgs = []
         for i in range(len(column)):
             year_data.append(column[i])
             if (i + 1) % 12 == 0:
                 year_avgs.append(mean(year_data))
-                years.append(start_date+dt.timedelta(days=365*((i+1)/12)))
                 year_data.clear()
         all_year_avgs.append(year_avgs)
     return years, all_year_avgs
@@ -345,7 +331,6 @@ Home/Title Page
 """
 class StartPage(tk.Frame):
     def __init__(self, parent, *args, **kwargs):
-        
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
         canvas = tk.Canvas(self)
@@ -354,7 +339,7 @@ class StartPage(tk.Frame):
 
         self.scrollable_frame.bind(
             "<Configure>",
-            lambda e: canvas.configure(  bg='white',
+            lambda e: canvas.configure(bg='white smoke',
                 scrollregion=canvas.bbox("all")
             )
         )
@@ -421,7 +406,7 @@ class StartPage(tk.Frame):
                         cursor="hand2", 
                         font=MED_FONT)
         paper.pack(pady=0, padx=10)
-        paper.bind("<Button-2>", lambda e: callback(
+        paper.bind("<Button-1>", lambda e: callback(
             "https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/2018PA003413"))
 
 
@@ -460,7 +445,6 @@ class PageEnvModel(tk.Frame):
         s = ttk.Style()
         s.configure('new.TFrame', background='white smoke')
         self.scrollable_frame = ttk.Frame(canvas, style='new.TFrame')
-
         self.scrollable_frame.bind(
             "<Configure>",
             lambda e: canvas.configure(
@@ -549,7 +533,7 @@ class PageEnvModel(tk.Frame):
                       "Check Mark For Variable Ice Cover",
                       "Check Mark For Variable Salinity", "Check Mark For Variable \u0394¹⁸o",
                       "Check Mark For Variable \u0394d",
-                      "Height Of Met Inputs", "Start Year"]
+                      "Height Of Met Inputs", "Check Mark for Relative Humidity", "Start Year", "Surface Area"]
         param_values = []
         param_containers = []
         tk.Label(self.scrollable_frame, bg="white smoke",  text="Lake-Specific Parameters", font=LARGE_FONT).grid(
@@ -564,15 +548,14 @@ class PageEnvModel(tk.Frame):
                 row=i, column=0, sticky="W")
             p = tk.Entry(self.scrollable_frame, bd=1)
             p.grid(row=i, column=0, ipady=1, ipadx=0, padx=350, sticky="W")
-            
             param_values.append(p)
             param_containers.append(p)
 
         # List entries for simulation-specific parameters
-        for i in range(rowIdx + 19, rowIdx + 29):
-            tk.Label(self.scrollable_frame, bg="white smoke",  text=parameters[i - rowIdx], font=f).grid(
+        for i in range(rowIdx + 19, rowIdx + 31):
+            tk.Label(self.scrollable_frame, bg="white smoke", text=parameters[i - rowIdx], font=f).grid(
                 row=i - 19, column=0, padx=600, sticky="W")
-            if i in [rowIdx + 19, rowIdx + 21, rowIdx + 27, rowIdx + 28]:
+            if i in [rowIdx + 19, rowIdx + 21, rowIdx + 27, rowIdx + 30]:
                 p = tk.Entry(self.scrollable_frame, bd=1)
                 p.grid(row=i - 19, column=0, padx=950, sticky="W")
                 param_containers.append(p)
@@ -596,12 +579,6 @@ class PageEnvModel(tk.Frame):
             self.scrollable_frame, text="Run Model", font=f, command=lambda: self.runModel(runButton))
         runButton.grid(row=rowIdx, padx=950, ipadx=10, ipady=3, sticky="W")
         rowIdx += 1
-
-
-        csvButton = tk.Button(self.scrollable_frame, text='Download CSV', font=f, command=self.download_csv)
-        csvButton.grid(row=rowIdx, padx=950, ipadx=10, ipady=3, sticky="W")
-
-
 
 
     """
@@ -631,23 +608,31 @@ class PageEnvModel(tk.Frame):
                     new[18] = "      !data_input_filename = '" + base + "'\n"
                 else:
                     new[18] = "      !data_input_filename = '" + self.txtfilename + "'\n"
+            if len(new[19]) > 132:
+                tk.messagebox.showerror(title="Run Lake Model", message="File path is longer than Fortran character limit. "
+                                                                       "Either move input file to same directory as GUI executable"
+                                                                       " or move input file to a directory with a shorter file path.")
+                return
             write_to_file(f, new)
 
         # Modify the include file to read the input text file
-        with open("Malawi.inc", "r+") as f:
+        with open("lake_environment.inc", "r+") as f:
             new = f.readlines()
             if self.txtfilename != "":
                 if nonbase == os.getcwd():
-                    new[
-                        55] = "      character(38) :: datafile='" + base + "' ! the data file to open in FILE_OPEN subroutine\n"
+                    new[55] = "      character("+str(len(base))+") :: datafile='" + base + "' ! the data file to open in FILE_OPEN subroutine\n"
                 else:
-                    new[
-                        55] = "      character(38) :: datafile='" + self.txtfilename + "' ! the data file to open in FILE_OPEN subroutine\n"
+                    new[55] = "      character("+str(len(self.txtfilename))+") :: datafile='" + self.txtfilename + "' ! the data file to open in FILE_OPEN subroutine\n"
+            if len(new[55]) > 132:
+                tk.messagebox.showerror(title="Run Lake Model",
+                                        message="File path is longer than Fortran character limit. "
+                                                "Either move input file to same directory as GUI executable"
+                                                " or move input file to a directory with a shorter file path.")
+                return False
             write_to_file(f, new)
 
     """
     Checks if any parameter value is invalid
-
     Inputs: 
     - parameters: the values for the model parameters
     Returns: 
@@ -657,19 +642,19 @@ class PageEnvModel(tk.Frame):
     def validate_params(self, parameters):
         for i in range(len(parameters)):
             # Checks whether numerical values are indeed numerical
-            if (i <= 21 or i == 27) and (not parameters[i] == ""):
+            if (i <= 21 or i == 27 or i == 30) and (not parameters[i] == ""):
                 if not check_float(parameters[i]):
                     tk.messagebox.showerror(title="Run Lake Model", message="Non-numerical value was entered as a value"
                                                                             " for a numerical parameter.")
                     return False
-            if (i == 28):
+            if (i == 29):
                 try:
                     int(parameters[i])
                 except:
                     tk.messagebox.showerror(title="Run Lake Model", message="Years must be integer values")
                     return False
         global START_YEAR
-        START_YEAR = int(parameters[28])
+        START_YEAR = int(parameters[29])
         with open("global_vars.txt", "r+") as vars:
             new = vars.readlines()
             new[1] = str(START_YEAR)
@@ -678,8 +663,7 @@ class PageEnvModel(tk.Frame):
 
     """
     Edits the parameters in the .inc file based on user input
-
-    Inputs: 
+    Inputs: F2PY comes with NumPy. You can run the terminal command $ pip install numpy
     - parameters: the values for the model parameters
     - comments: the comments in the Fortran code associated with each parameter
     """
@@ -687,30 +671,32 @@ class PageEnvModel(tk.Frame):
     def editInc(self, parameters, comments):
         if not self.validate_params(parameters):
             return
-        with open("Malawi.inc", "r+") as f:
+        with open("lake_environment.inc", "r+") as f:
             new = f.readlines()
             # names of the parameters that need to be modified
             names = ["oblq", "xlat", "xlon", "gmt", "max_dep", "basedep", "b_area", "cdrn", "eta", "f", "alb_slush",
                      "alb_snow", "depth_begin", "salty_begin", "o18air", "deutair", "tempinit", "deutinit", "o18init",
-                     "nspin", "bndry_flag", "sigma", "wb_flag", "iceflag", "s_flag", "o18flag", "deutflag", "z_screen"]
+                     "nspin", "bndry_flag", "sigma", "wb_flag", "iceflag", "s_flag", "o18flag", "deutflag", "z_screen",
+                     "rhflag"]
             # line numbers in the .inc file that need to be modified
             rows = [28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 42, 44, 45, 56, 57, 58, 61, 62, 63, 64, 65, 66, 67,
-                    68, 69]
+                    68, 69, 70]
             global PARAMETERS
             PARAMETERS = copy.copy(parameters)
-            for i in range(len(parameters) - 1):
+            for i in range(len(parameters) - 2):
                 if len(str(parameters[i])) != 0:
                     comments[i] = comments[i].replace("\u0394", "D")
                     comments[i] = comments[i].replace("¹⁸", "18")
                     comments[i] = comments[i].replace("Check Mark", "true")
                     comments[i] = comments[i].replace("\n", "")
-                    if i == 20 or (i > 21 and i < 27):
+                    if i == 20 or (i > 21 and i < 27) or i==28:
                         if parameters[i] == 1:
                             new[rows[i]] = "      parameter (" + names[i] + " = .true.)   ! " + comments[i] + "\n"
                         else:
                             new[rows[i]] = "      parameter (" + names[i] + " = .false.)   ! " + comments[i] + "\n"
                     else:
                         new[rows[i]] = "      parameter (" + names[i] + " = " + parameters[i] + ")   ! " + comments[i] + "\n"
+            new[52] = "      data area/"+parameters[4]+"*"+parameters[30]+"/ ! lake area in hectares by depth\n"
             write_to_file(f, new)
 
     """
@@ -722,18 +708,18 @@ class PageEnvModel(tk.Frame):
             values = ["23.4", "-12.11", "34.22", "+3", "292", "468.", "2960000.",
                       "1.7e-3", "0.04", "0.1", "0.4", "0.7", "292", "0.0", "-28.",
                       "-190.", "-4.8", "-96.1", "-11.3", "10", 0, "0.96", 0, 1,
-                      0, 0, 0, "5.0", "1979"]
+                      0, 0, 0, "5.0", 1, "1979", "2960000."]
         elif lake=="Tanganyika":
             values = ["23.4", "-6.30", "29.5", "+3", "999", "733.", "23100000.",
                       "2.0e-3", "0.065", "0.3", "0.4", "0.7", "570", "0.0", "-14.0", "-96.",
-                      "23.0", "24.0", "3.7", "10", 0, "0.9925561", 0, 0, 0, 0, 0, "5.0", "1979"]
+                      "23.0", "24.0", "3.7", "10", 0, "0.9925561", 0, 0, 0, 0, 0, "5.0", 1, "1979", "3290000."]
         elif lake=="Refill":
             values = copy.copy(PARAMETERS)
         else:
             values = [""]*20
-            values.extend([0,"",0,0,0,0,0,""])
+            values.extend([0,"",0,0,0,0,0,"", 0, "", ""])
         for i in range(len(values)):
-            if i == 20 or (i > 21 and i < 27):
+            if i == 20 or (i > 21 and i < 27) or i==28:
                 containers[i].deselect()
                 if values[i] == 1:
                     containers[i].select()
@@ -748,9 +734,10 @@ class PageEnvModel(tk.Frame):
     """
 
     def runModel(self, btn):
-        response = tk.messagebox.askyesno(title="Warning", message="Running the model will take several minutes, and the GUI may close "
-                                                                     "once the model finishes running. If this occurs, you will need to "
-                                                                     "re-open the GUI to download the output. Do you wish to proceed?")
+        response = tk.messagebox.askyesno(title="Warning!", message="Running the model will take several minutes, and the GUI may close "
+                                                                     "once the model finishes running. Do you wish to proceed? \n\n"
+                                                                     "(The output data will be saved in your directory as profile.dat "
+                                                                     "and surface.dat)")
         if response == 1:
             btn["state"]="disabled"
             model_process = multiprocessing.Process(target=self.computeModel(btn))
@@ -772,25 +759,6 @@ class PageEnvModel(tk.Frame):
 
         # Run Environment Model (Crashes eventually)
         lakepsm.lakemodel()
-
-
-
-    def check_file(self, file, past_size, progress, btn):
-        current_size = os.path.getsize(file)
-        if past_size != current_size or current_size==0:
-            self.after(60000, lambda: self.check_file(file, current_size, progress, btn))
-        else:
-            btn["state"]="normal"
-            progress.stop()
-        return None
-
-    """
-    Downloads 'surface_output.dat' as a CSV to the user's desired location
-    """
-    def download_csv(self):
-        read_file = genfromtxt('ERA-HIST-Tlake_surf.dat', delimiter='.')
-        export_file_path = fd.asksaveasfilename(defaultextension='.csv')
-        read_file.to_csv(export_file_path, index=None)
 
 
 """
@@ -894,7 +862,6 @@ class PageEnvTimeSeries(tk.Frame):
 
     """
     Plots the multiple values of a specific variable for each day of the year as a scatterplot
-
     Inputs:
      - column, an int that corresponds to the column of the desired variable to be plotted
      - varstring, a string that is the name and unit of the variable
@@ -906,28 +873,29 @@ class PageEnvTimeSeries(tk.Frame):
         self.days = []  # x-axis
         self.yaxis = []  # y-axis
 
+        units = ["", "("+u"\N{DEGREE SIGN}"+"C)", "(m)", "(mm/day)", "", "", "", "", "(m)"]
         get_output_data(self.days, self.yaxis, column, self.txtfilename)
 
         self.months = convert_to_monthly(self.days)
-        plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " over Time", "Month", varstring, self.months, [self.yaxis],
-                  "normal monthly", ["#b22222"], [1], ["Monthly Data"])
+        plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " over Time ", "Month", varstring+" "+units[column], self.months,
+                  [self.yaxis],
+                  "no-marker", ["#b22222"], [1], ["Monthly Data"])
 
         self.years, self.yaxes = convert_to_annual([self.yaxis])
-        plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " over Time", "Year", varstring, self.years, self.yaxes,
+        plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " over Time", "Year (C.E.)", varstring+" "+units[column], self.years,
+                  self.yaxes,
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], overlay=True)
 
     # Numpy 1.15.4
     """
     def download_csv(self):
         data = np.array([self.days, self.yaxis]).T
-
         file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
         if file:
             fmt = ",".join(["%s"] * (data.shape[1]-1))
             with open(file, 'wb') as f:
                 f.write(b'Time,Data\n')
                 np.savetxt(f, data, fmt=fmt, delimiter=",")
-
             tk.messagebox.showinfo("Success", "Saved Data")
     """
     # Numpy 1.17.0 and up
@@ -938,8 +906,7 @@ class PageEnvTimeSeries(tk.Frame):
         if file:
             fmt = ",".join(["%s"] * (data.shape[1]-1))
             np.savetxt(file, data, fmt=fmt, header="Time (Days),Temperature (" + u"\N{DEGREE SIGN}" + "C)", comments='', delimiter=',')
-
-        tk.messagebox.showinfo("Success", "Saved Data")
+            tk.messagebox.showinfo("Success", "Saved Data")
 
 
     def download_png(self):
@@ -954,7 +921,7 @@ Page to plot seasonal cycle
 
 
 class PageEnvSeasonalCycle(tk.Frame):
-
+    
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
@@ -1014,7 +981,7 @@ class PageEnvSeasonalCycle(tk.Frame):
         # Empty graph, default
         self.f, self.axis = plt.subplots(1, 1, figsize=(7, 4.5), dpi=100)
         plot_setup(self.scrollable_frame, self.axis, self.f, "Seasonal Cycle", "Day of the Year",
-                   "Lake Surface Temperature")
+                   "Average Surface Temperature")
 
         # Graph button for each variable
 
@@ -1051,7 +1018,6 @@ class PageEnvSeasonalCycle(tk.Frame):
 
     """
     Plots the average of a specific variable for each day of the year as a scatterplot
-
     Inputs:
      - column, an int that corresponds to the column of the desired variable to be plotted
      - varstring, a string that is the name and unit of the variable
@@ -1063,44 +1029,27 @@ class PageEnvSeasonalCycle(tk.Frame):
         self.days = []  # x-axis
         self.yaxis = []  # y-axis
 
+        units = ["", "("+u"\N{DEGREE SIGN}"+"C)", "(m)", "(mm/day)", "", "", "", "", "(m)"]
         get_output_data(self.days, self.yaxis, column, self.txtfilename)
 
         # At this point, self.days and self.yaxis are identical to the ones in envtimeseries
 
-        self.ydict = {}  # dictionary to store the y values for each day from 15 to 375
-        for day in self.days:  # 15, 45, ...
-            # if the day is not a key, then make an empty list
-            if day % 360 not in self.ydict:
-                self.ydict[day % 360] = []
-            self.ydict[day % 360].append(self.yaxis[int((day - 15) / 30)])  # (day - 15)/30 gets the correct index
+        self.ydict = {}
+        for idx in range(len(self.days)):
+            if idx % 12 not in self.ydict:
+                self.ydict[idx] = []
+            self.ydict[idx % 12].append(self.yaxis[idx])
 
         # After yval array is formed for each xval, generate the axtual yaxis data
         self.seasonal_yaxis = []  # actual plotting data for y
-        self.seasonal_days = []
+        self.seasonal_days = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
         global START_YEAR
-        start = dt.date(START_YEAR, 1, 1)
-        for i in range(15, 346, 30):
-            date = start+dt.timedelta(days=(i-1))
-            self.seasonal_days.append(date)
+        for i in range(12):  # CHANGE (change how seasonal days are created) 15, 45, 75... 345
             self.seasonal_yaxis.append(mean(self.ydict[i]))
 
-        plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " Seasonal Cycle", "Day of the Year", "Average", self.seasonal_days,
-                  [self.seasonal_yaxis], "normal month-only", ["#000000"], [3], ["Monthly Averaged Data"])
-
-    # Numpy 1.15.4
-    """
-    def download_csv(self):
-        data = np.array([self.seasonal_days, self.seasonal_yaxis]).T
-
-        file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
-        if file:
-            fmt = ",".join(["%s"] * (data.shape[1]-1))
-            with open(file, 'wb') as f:
-                f.write(b'Time,Data\n')
-                np.savetxt(f, data, fmt=fmt, delimiter=",")
-
-            tk.messagebox.showinfo("Success", "Saved Data")
-    """
+        plot_draw(self.scrollable_frame, self.axis, self.f, varstring + " Seasonal Cycle", "Month", "Average "+varstring+" "+units[column],
+                  self.seasonal_days,
+                  [self.seasonal_yaxis], "normal", ["#000000"], [3], ["Monthly Averaged Data"])
 
     # Numpy 1.17.0 and up
     
@@ -1111,8 +1060,7 @@ class PageEnvSeasonalCycle(tk.Frame):
         if file:
             fmt = ",".join(["%s"] * (data.shape[1]-1))
             np.savetxt(file, data, fmt=fmt, header="Date,Temperature (" + u"\N{DEGREE SIGN}" + "C)", comments='', delimiter=',')
-
-        tk.messagebox.showinfo("Success", "Saved Data")
+            tk.messagebox.showinfo("Success", "Saved Data")
     
 
     def download_png(self):
@@ -1126,7 +1074,7 @@ Page to run carbonate sensor model and plot data
 
 
 class PageCarbonate(tk.Frame):
-
+    
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
@@ -1189,7 +1137,7 @@ class PageCarbonate(tk.Frame):
         self.model.set("ONeil")
         model_names = ["ONeil", "Kim-ONeil", "ErezLuz", "Bemis", "Lynch"]
         for name in model_names:
-            tk.Radiobutton(self.scrollable_frame, text=name, bg="white smoke", font=MED_FONT, value=name, variable=self.model).grid(
+            tk.Radiobutton(self.scrollable_frame, text=name, font=MED_FONT, value=name, variable=self.model).grid(
                 row=rowIdx, column=0,
                 pady=1,
                 ipadx=20, ipady=5,
@@ -1198,6 +1146,41 @@ class PageCarbonate(tk.Frame):
         tk.Button(self.scrollable_frame, text="Generate Graph of Carbonate Proxy Data", font=MED_FONT, command=self.generate_graph).grid(
             row=rowIdx, column=0, pady=(10, 5),
             ipadx=20, ipady=5, sticky="W")
+
+        rowIdx+=3
+
+        tk.Label(self.scrollable_frame, text="Citations:", font=MED_FONT, justify="left").grid(row=rowIdx, column=0, sticky="W")
+
+        rowIdx+=1
+        citations = ["- O’Neil, J. R., Clayton, R. N., & Mayeda, T. K. (1969).\n"
+                     "Oxygen isotope fractionation in divalent metal carbonates.\n"
+                     "The Journal of Chemical Physics, 51(12), 5547–5558.",
+                     "- Kim, S.-T., & O’Neil, J. R. (1997).\n"
+                     "Equilibrium and nonequilibrium oxygen isotope effects in synthetic carbonates.\n"
+                     "Geochimica et Cosmochimica Acta, 61(16), 3461–3475.",
+                     "- Erez, J., & Luz, B. (1983).\n"
+                     "Experimental paleotemperature equation for planktonic foraminifera.\n"
+                     "Geochimica et Cosmochimica Acta, 47(6), 1025–1031.",
+                     "- Bemis, B. E., Spero, H. J., Bijma, J., & Lea, D. W. (1998).\n"
+                     "Reevaluation of the oxygen isotopic composition of planktonic foraminifera:\n"
+                     "Experimental results and revised paleotemperature equations. Paleoceanography, 13(2), 150–160.",
+                     "- Jean Lynch (No Citation)"]
+        citationLinks = ["https://aip.scitation.org/doi/abs/10.1063/1.1671982",
+                         "https://www.sciencedirect.com/science/article/pii/S0016703797001695",
+                         "https://www.sciencedirect.com/science/article/abs/pii/0016703783902326",
+                         "https://agupubs.onlinelibrary.wiley.com/doi/abs/10.1029/98PA00070"]
+        for i in range(len(citations)):
+            citation = tk.Label(self.scrollable_frame,
+                               text=citations[i],
+                               fg="SlateBlue2",
+                               cursor="hand2",
+                               font=MED_FONT,
+                               justify="left")
+            citation.grid(row=rowIdx, column=0, columnspan=10, pady=5, sticky="W")
+            if i < 4:
+                link = citationLinks[i]
+                citation.bind("<Button-1>", lambda e, link=link: callback(link))
+            rowIdx+=1
 
         # Save as PNG and CSV
         
@@ -1213,7 +1196,8 @@ class PageCarbonate(tk.Frame):
         homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
 
         self.f, self.axis = plt.subplots(1,1, figsize=(7, 4.5), dpi=100)
-        plot_setup(self.scrollable_frame, self.axis, self.f, "SENSOR", "Time", "Simulated Carbonate Data")
+        plot_setup(self.scrollable_frame, self.axis, self.f, "SENSOR", "Time", "Simulated Carbonate Data (\u03b4$^{18}O_{carb}$)")
+
 
     """
     Create time series data for carbonate sensor
@@ -1228,27 +1212,15 @@ class PageCarbonate(tk.Frame):
         self.carb_proxy = carb.carb_sensor(self.LST, self.d180w, model=self.model.get())
 
         self.months = convert_to_monthly(self.days)
-        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Month", "Simulated Carbonate Data", self.months, [self.carb_proxy],
-                  "normal monthly", ["#b22222"], [1], ["Monthly Data"])
+        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year (C.E.)", "Simulated Carbonate Data (\u03b4$^{18}O_{carb}$)", self.months,
+                  [self.carb_proxy],
+                  "no-marker", ["#b22222"], [1], ["Monthly Data"])
 
         self.years, self.yaxis = convert_to_annual([self.carb_proxy])
-        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year", "Simulated Carbonate Data", self.years, self.yaxis,
+        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year (C.E.)", "Simulated Carbonate Data (\u03b4$^{18}O_{carb}$)", self.years,
+                  self.yaxis,
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], overlay=True)
         
-    # Numpy 1.15.4
-    """
-    def download_csv(self):
-        data = np.array([self.days, self.carb_proxy]).T
-
-        file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
-        if file:
-            fmt = ",".join(["%s"] * (data.shape[1]-1))
-            with open(file, 'wb') as f:
-                f.write(b'Time,Pseudoproxy\n')
-                np.savetxt(f, data, fmt=fmt, delimiter=",")
-
-            tk.messagebox.showinfo("Success", "Saved Data")
-    """
 
     # Numpy 1.17.0 and up
     def download_csv(self):
@@ -1258,8 +1230,7 @@ class PageCarbonate(tk.Frame):
         if file:
             fmt = ",".join(["%s"] * (data.shape[1]-1))
             np.savetxt(file, data, fmt=fmt, header="Time,Pseudoproxy", comments='', delimiter=',')
-
-        tk.messagebox.showinfo("Success", "Saved Data")
+            tk.messagebox.showinfo("Success", "Saved Data")
 
 
     def download_png(self):
@@ -1336,7 +1307,7 @@ class PageGDGT(tk.Frame):
         self.model.set("TEX86-tierney")
         model_names = ["TEX86-tierney", "TEX86-powers", "TEX86-loomis", "MBT-R", "MBT-J"]
         for name in model_names:
-            tk.Radiobutton(self.scrollable_frame, bg="white smoke", text=name, value=name, font=MED_FONT, variable=self.model).grid(row=rowIdx, column=0,
+            tk.Radiobutton(self.scrollable_frame, text=name, value=name, font=MED_FONT, variable=self.model).grid(row=rowIdx, column=0,
                                                                                                  pady=5,
                                                                                                  ipadx=20, ipady=5,
                                                                                                  sticky="W")
@@ -1345,6 +1316,43 @@ class PageGDGT(tk.Frame):
 
         tk.Button(self.scrollable_frame, text="Generate Graph of GDGT Proxy Data", font=MED_FONT, command=self.generate_graph).grid(
             row=rowIdx, column=0, pady=20, ipadx=20, ipady=5, sticky="W")
+
+        rowIdx += 3
+        tk.Label(self.scrollable_frame, text="Citations:", font=MED_FONT, justify="left").grid(row=rowIdx, column=0,
+                                                                                               sticky="W")
+
+        rowIdx += 1
+        citations = ["- Tierney, J. E., Russell, J. M., Huang, Y., Damsté, J. S. S., Hopmans, E. C., & Cohen, A. S. (2008).\n"
+                     "Northern Hemisphere controls on tropical southeast African climate during the past 60,000 years.\n"
+                     "Science, 322(5899), 252–255.",
+                     "- Powers, L. A., Johnson, T. C., Werne, J. P., Castañeda, I. S., Hopmans, E. C., Damsté, J. S. S., & Schouten, S. (2011).\n"
+                     "Organic geochemical records of environmental variability in Lake Malawi during the last 700 years,\n"
+                     "part I: The TEX86 temperature record. Palaeogeography, Palaeoclimatology, Palaeoecology, 303(1), 133–139.",
+                     "- Loomis, S. E., Russell, J. M., Ladd, B., Street-Perrott, F. A., & Damsté, J. S. S. (2012).\n"
+                     "Calibration and application of the branched GDGT temperature proxy on East African lake sediments.\n"
+                     "Earth and Planetary Science Letters, 357, 277–288.",
+                     "- Russell, J. M., Hopmans, E. C., Loomis, S. E., Liang, J., & Damsté, J. S. S. (2018).\n"
+                     "Distributions of 5-and 6-methyl branched glycerol dialkyl glycerol tetraethers (brGDGTs) in East African lake sediment:\n"
+                     "Effects of temperature, pH, and new lacustrine paleotemperature calibrations. Organic Geochemistry, 117, 56–69.",
+                     "- De Jonge, C., Hopmans, E. C., Zell, C. I., Kim, J.-H., Schouten, S., & Damsté, J. S. S. (2014).\n"
+                     "Occurrence and abundance of 6-methyl branched glycerol dialkyl glycerol tetraethers in soils:\n"
+                     "Implications for palaeoclimate reconstruction. Geochimica et Cosmochimica Acta, 141, 97–112."]
+        citationLinks = ["https://arizona.pure.elsevier.com/en/publications/northern-hemisphere-controls-on-tropical-southeast-african-climat",
+                         "http://www.pitt.edu/~jwerne/uploads/3/0/1/0/30101831/29.powersetal.p311.pdf",
+                         "http://www.jsg.utexas.edu/sloomis/files/Loomis_2012_GDGT-Calibration.pdf",
+                         "https://www.sciencedirect.com/science/article/pii/S0146638017304394",
+                         "https://www.sciencedirect.com/science/article/abs/pii/S0016703714004141"]
+        for i in range(len(citations)):
+            citation = tk.Label(self.scrollable_frame,
+                                text=citations[i],
+                                fg="SlateBlue2",
+                                cursor="hand2",
+                                font=MED_FONT,
+                                justify="left")
+            citation.grid(row=rowIdx, column=0, columnspan=10, pady=5, sticky="W")
+            link = citationLinks[i]
+            citation.bind("<Button-1>", lambda e, link=link: callback(link))
+            rowIdx += 1
 
         # Save as PNG and CSV
         
@@ -1360,7 +1368,7 @@ class PageGDGT(tk.Frame):
         homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
 
         self.f, self.axis = plt.subplots(1, 1, figsize=(7, 4.5), dpi=100)
-        plot_setup(self.scrollable_frame, self.axis, self.f, "SENSOR", "Time", "Simulated GDGT Data")
+        plot_setup(self.scrollable_frame, self.axis, self.f, "SENSOR", "Time", "Simulated GDGT Data (brGDGT / $TEX_{86}$)")
 
     """
     Create time series data for GDGT sensor
@@ -1391,29 +1399,15 @@ class PageGDGT(tk.Frame):
         self.gdgt_proxy = gdgt.gdgt_sensor(self.LST, self.MAAT, self.beta, model=self.model.get())
 
         self.months = convert_to_monthly(self.days)
-        plot_draw(self.scrollable_frame, self.axis, self.f, "Leafwax Model", "Month", "Simulated GDGT Data", self.months,
+        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Month", "Simulated GDGT Data (brGDGT / $TEX_{86}$)", self.months,
                   [self.gdgt_proxy],
-                  "normal monthly", ["#b22222"], [1], ["Monthly Data"])
+                  "no-marker", ["#b22222"], [1], ["Monthly Data"])
 
         self.years, self.yaxis = convert_to_annual([self.gdgt_proxy])
-        plot_draw(self.scrollable_frame, self.axis, self.f, "Leafwax Model", "Year", "Simulated GDGT Data", self.years,
+        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year (C.E.)", "Simulated GDGT Data (brGDGT / $TEX_{86}$)", self.years,
                   self.yaxis,
                   "normal", ["#000000"], [3], ["Annually Averaged Data"], overlay=True)
 
-    # Numpy 1.15.4
-    """
-    def download_csv(self):
-        data = np.array([self.days, self.gdgt_proxy]).T
-
-        file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
-        if file:
-            fmt = ",".join(["%s"] * (data.shape[1]-1))
-            with open(file, 'wb') as f:
-                f.write(b'Time,Pseudoproxy\n')
-                np.savetxt(f, data, fmt=fmt, delimiter=",")
-
-            tk.messagebox.showinfo("Success", "Saved Data")
-    """
 
     # Numpy 1.17.0 and up
     def download_csv(self):
@@ -1423,8 +1417,7 @@ class PageGDGT(tk.Frame):
         if file:
             fmt = ",".join(["%s"] * (data.shape[1]-1))
             np.savetxt(file, data, fmt=fmt, header="Time,Pseudoproxy", comments='', delimiter=',')
-
-        tk.messagebox.showinfo("Success", "Saved Data")
+            tk.messagebox.showinfo("Success", "Saved Data")
 
 
     def download_png(self):
@@ -1441,7 +1434,7 @@ Page to run leafwax sensor model and plot data
 
 
 class PageLeafwax(tk.Frame):
-
+    
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
@@ -1505,8 +1498,7 @@ class PageLeafwax(tk.Frame):
 
         rowIdx+=2
         self.f, self.axis = plt.subplots(1,1, figsize=(7, 4.5), dpi=100)
-        plot_setup(self.scrollable_frame, self.axis, self.f, "SENSOR", "Time", "Simulated Leafwax Data")
-
+        plot_setup(self.scrollable_frame, self.axis, self.f, "SENSOR", "Time", "Simulated Leafwax Data (\u03b4D$_{wax}$)")
         tk.Button(self.scrollable_frame, text="Graph Leafwax Proxy Data", font=f, command=lambda: self.generate_graph(start.get())).grid(
             row=rowIdx, column=0, ipadx=20, ipady=5, sticky="W")
 
@@ -1534,9 +1526,6 @@ class PageLeafwax(tk.Frame):
         except:
             tk.messagebox.showerror(title="Run Leafwax Model", message="Year must be a positive integer value")
             return
-        if int(start_year) < 0:
-            tk.messagebox.showerror(title="Run Leafwax Model", message="Year must be a positive integer value")
-            return
         start_year = int(start_year)
         self.dDp = np.loadtxt(self.txtfilename)
         self.fC_3 = 0.7  # fraction of C3 plants
@@ -1559,35 +1548,16 @@ class PageLeafwax(tk.Frame):
             for i in range(len(input.readlines())):
                 self.days.append(30 * i + 15)
         self.months = convert_to_monthly(self.days, start=start_year)
-        plot_draw(self.scrollable_frame, self.axis, self.f, "Leafwax Model", "Month", "Simulated Leafwax Data", self.months, [self.leafwax_proxy],
-                  "normal monthly", ["#b22222"], [1], ["Monthly Data"])
+        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Month", "Simulated Leaf Wax Data (\u03b4D$_{wax}$)", self.months,
+                  [self.leafwax_proxy],
+                  "no-marker", ["#b22222"], [1], ["Monthly Data"])
 
         self.years, self.leafwax_array = convert_to_annual([self.leafwax_proxy, self.Q1, self.Q2], start=start_year)
-        plot_draw(self.scrollable_frame, self.axis, self.f, "Leafwax Model", "Year", "Simulated Leafwax Data", self.years, [self.leafwax_array[0]],
-                  "normal", ["#000000"], [3], ["Annually Averaged Data"], error_lines=self.leafwax_array[1:], overlay=True)
+        plot_draw(self.scrollable_frame, self.axis, self.f, "SENSOR", "Year (C.E.)", "Simulated Leaf Wax Data (\u03b4D$_{wax}$)", self.years,
+                  [self.leafwax_array[0]],
+                  "normal", ["#000000"], [3], ["Annually Averaged Data"], error_lines=self.leafwax_array[1:],
+                  overlay=True)
 
-    """
-    def download_csv(self):
-        df = pd.DataFrame({"Time": self.days, "Pseudoproxy": self.leafwax_proxy, "95% CI Lower Bound": self.Q1,
-                           "95% CI Upper Bound": self.Q2})
-
-        export_file_path = fd.asksaveasfilename(defaultextension='.csv')
-        df.to_csv(export_file_path, index=None)
-    
-    
-    # Numpy 1.15.4
-    def download_csv(self):
-        data = np.array([self.days, self.leafwax_proxy, self.Q1, self.Q2]).T
-
-        file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
-        if file:
-            fmt = ",".join(["%s"] + ["%s"] + ["%s"] * (data.shape[1]-1))
-            with open(file, 'wb') as f:
-                f.write(b'Time,Pseudoproxy,95% CI Lower Bound,95% CI Upper Bound\n')
-                np.savetxt(f, data, fmt=fmt, delimiter=",")
-
-            tk.messagebox.showinfo("Success", "Saved Data")
-    """
     # Numpy 1.17.0 and up
     def download_csv(self):
         data = np.array([self.days, self.leafwax_proxy, self.Q1, self.Q2]).T
@@ -1596,8 +1566,7 @@ class PageLeafwax(tk.Frame):
         if file:
             fmt = ",".join(["%s"] + ["%s"] * (data.shape[1]-1))
             np.savetxt(file, data, fmt=fmt, header="Time,Pseudoproxy,95% CI Lower Bound,95% CI Upper Bound", comments='', delimiter=',')
-
-        tk.messagebox.showinfo("Success", "Saved Data")
+            tk.messagebox.showinfo("Success", "Saved Data")
 
 
     def download_png(self):
@@ -1684,7 +1653,8 @@ class PageObservation(tk.Frame):
         plot_setup(self.scrollable_frame, self.axis, self.f, "Observation Model", "Age (cal years BP)", "Depth in Core (cm)")
 
 
-        tk.Button(self.scrollable_frame, text="Graph Observation Model", font=MED_FONT, command=lambda: self.generate_graph()).grid(
+        runButton = tk.Button(self.scrollable_frame, text="Graph Observation Model", font=MED_FONT, command=lambda: self.ask_response(runButton))
+        runButton.grid(
             row=rowIdx, column=0, pady=1,
             ipadx=20, ipady=5, sticky="W")
 
@@ -1706,20 +1676,29 @@ class PageObservation(tk.Frame):
     Plot observation model
     """
 
-    def generate_graph(self):
+    def ask_response(self, btn):
+        response = tk.messagebox.askyesno(title="Warning", message="Running the model will take several minutes. Do you wish to proceed?")
+        if response == 1:
+            btn["state"] = "disabled"
+            model_process = multiprocessing.Process(target=self.run_model(btn))
+            model_process.start()
+        else:
+            pass
+
+    def run_model(self,  btn):
         # R packages
         utils = importr("utils")
         utils.chooseCRANmirror(ind=1)
         packnames = ('Bchron', 'stats', 'graphics')
         utils.install_packages(StrVector(packnames))
-        Bchron = importr('Bchron')
+        Bchron = importr('Bchron') #rlang Error
         r = robjects.r
-
+        
         # Read in the data (csv file must be in the same directory as executable)
-        data = np.genfromtxt(self.txtfilename, delimiter=',', names=True, dtype=None)
-        year = data['AGE']
-        depth = data['DP']
-        sds = data['SD']
+        self.data = np.genfromtxt(self.txtfilename, delimiter=',', names=True, dtype=None)
+        year = self.data['AGE']
+        depth = self.data['DP']
+        sds = self.data['SD']
         calCurves = np.repeat('normal', len(year))
         nyears = year[-1]
         d = depth[-1]
@@ -1743,12 +1722,15 @@ class PageObservation(tk.Frame):
         chrons = thetaPredict[:, :-1]
         self.chronsQ = np.quantile(chrons.transpose(), [0.025, 0.5, 0.975], axis=1)
 
+        self.generate_graph(btn)
+
+    def generate_graph(self, btn):
         # Actual Plotting
         self.axis.fill_betweenx(self.depth_horizons, self.chronsQ[0], self.chronsQ[2],
                           facecolor='Silver', edgecolor='Silver', lw=0.0) # horizontal fill between 2.5% - 97.5% of data
 
         self.axis.plot(self.chronsQ[1], self.depth_horizons, color="black", lw=0.75) # median line
-        self.axis.scatter(data['AGE'], data['DP'], marker="s") # squares
+        self.axis.scatter(self.data['AGE'], self.data['DP'], marker="s") # squares
         self.axis.legend(['Median', '95% CI', 'Dated Positions'])
         self.axis.invert_xaxis()
         self.axis.invert_yaxis()
@@ -1759,31 +1741,30 @@ class PageObservation(tk.Frame):
         canvas.get_tk_widget().grid(row=1, column=3, rowspan=16, columnspan=15, sticky="nw")
         canvas.draw()
 
+        btn["state"] = "normal"
+        tk.messagebox.showinfo("Success!", "The model has completed running.")
+
+    """
     def download_csv(self):
         df = pd.DataFrame({"Depth": self.depth_horizons, "Age (95% CI Lower Bound)": self.chronsQ[0],
                         "Age (95% CI Median)": self.chronsQ[0], "Age (95% CI Upper Bound)": self.chronsQ[2]})
         #export_file_path = fd.asksaveasfilename(defaultextension='.csv')
         #df.to_csv(export_file_path, index=None)
-
-
         file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
         if file:
             df.to_csv(file, index=False)
             tk.messagebox.showinfo("Success", "Saved Data")
-
-    """
+    
     def download_csv(self):
         data = np.array([self.depth_horizons, self.chronsQ[0], self.chronsQ[0], self.chronsQ[2]]).T
-
         file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
         if file:
             fmt = ",".join(["%s"] * (data.shape[1]-1))
             with open(file, 'wb') as f:
                 f.write(b'Depth,Age (95% CI Lower Bound),Age (95% CI Median),Age (95% CI Upper Bound)\n')
                 np.savetxt(f, data, fmt=fmt, delimiter=",")
-
             tk.messagebox.showinfo("Success", "Saved Data")
-    
+    """
     # Numpy 1.17.0 and up
     def download_csv(self):
         data = np.array([self.depth_horizons, self.chronsQ[0], self.chronsQ[0], self.chronsQ[2]]).T
@@ -1792,9 +1773,8 @@ class PageObservation(tk.Frame):
         if file:
             fmt = ",".join(["%s"] + ["%s"] * (data.shape[1]-1))
             np.savetxt(file, data, fmt=fmt, header="Depth,Age (95% CI Lower Bound),Age (95% CI Median),Age (95% CI Upper Bound)", comments='', delimiter=',')
-
-        tk.messagebox.showinfo("Success", "Saved Data")
-    """
+            tk.messagebox.showinfo("Success", "Saved Data")
+    
 
     def download_png(self):
         file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
@@ -1807,7 +1787,7 @@ class PageObservation(tk.Frame):
 Page to run bioturbation archive model and plot data
 """
 class PageBioturbation(tk.Frame):
-
+    
     def __init__(self, parent, *args, **kwargs):
         super().__init__(parent, *args, **kwargs)
         self.parent = parent
@@ -1887,7 +1867,6 @@ class PageBioturbation(tk.Frame):
         tk.Button(self.scrollable_frame, text="Generate Graph", font=MED_FONT,
                   command=lambda: self.run_bioturb_model([p.get() for p in param_values])).grid(
             row=rowIdx, column=0, sticky="W")
-
        
         # Save as PNG and CSV
         
@@ -1904,24 +1883,23 @@ class PageBioturbation(tk.Frame):
 
         
         self.f, self.axis = plt.subplots(1, 1, figsize=(7, 4.5), dpi=100)
-        plot_setup(self.scrollable_frame, self.axis, self.f, "ARCHIVE", "Year", "Bioturbated Sensor Data")
+        plot_setup(self.scrollable_frame, self.axis, self.f, "ARCHIVE", "Year (C.E.)", "Bioturbated Sensor Data")
 
     """
     Returns false is any parameter value is invalid
     """
 
-    def validate_params(self, params):
+    def validate_params(self, params, pseudoproxy):
         for p in params:
             if not p:
                 tk.messagebox.showerror(title="Run Bioturbation Model", message="Not all parameters were entered.")
                 return False
-        if not (params[0].isdigit() and params[1].isdigit()):
+        try:
+            int(params[0])
+            int(params[1])
+        except:
             tk.messagebox.showerror(title="Run Bioturbation Model",
-                                    message="Years must be positive integers")
-            return False
-        if int(params[0]) < 0 or int(params[1]) < 0:
-            tk.messagebox.showerror(title="Run Bioturbation Model",
-                                    message="Years must be positive integers")
+                                    message="Years must be integers")
             return False
         for i in range(2, 5):
             if not check_float(params[i]):
@@ -1939,6 +1917,11 @@ class PageBioturbation(tk.Frame):
             tk.messagebox.showerror(title="Run Bioturbation Model",
                                     message="Start year cannot be greater than or equal to end year")
             return False
+        if len(pseudoproxy)//12 != (int(params[1]) - int(params[0])):
+
+            tk.messagebox.showerror(title="Run Bioturbation Model", message="Length of time between start year and end year"
+                                                                            " does not match length of years in input .csv file")
+            return False
         return True
 
     def run_bioturb_model(self, params):
@@ -1949,8 +1932,8 @@ class PageBioturbation(tk.Frame):
             tk.messagebox.showerror(title="Run Bioturbation Model", message="Error with reading csv file")
 
         year = []
-        self.days, self.iso = convert_to_annual([pseudoproxy])
-        if not self.validate_params(params):
+        self.days, self.iso = convert_to_annual([pseudoproxy], start=int(params[0]))
+        if not self.validate_params(params, pseudoproxy):
             return
         self.age = int(params[1]) - int(params[0])
         self.mxl = np.ones(self.age) * float(params[2])
@@ -1963,7 +1946,7 @@ class PageBioturbation(tk.Frame):
         self.bio1 = self.bioiso[:, 0]
         self.bio2 = self.bioiso[:, 1]
         self.ori = self.oriiso[:, 0]
-        plot_draw(self.scrollable_frame, self.axis, self.f, "ARCHIVE", "Year", "Bioturbated Sensor Data", self.days, [self.bio1, self.bio2, self.ori],
+        plot_draw(self.scrollable_frame, self.axis, self.f, "ARCHIVE", "Year (C.E.)", "Bioturbated Sensor Data", self.days, [self.bio1, self.bio2, self.ori],
                   "normal", ["#b22222", "#b22222", "#000000"], [2,2,2], ["Bioturbated 1", "Bioturbated 2", "Original"])
 
     # Numpy 1.15.4
@@ -1985,8 +1968,7 @@ class PageBioturbation(tk.Frame):
         if file:
             fmt = ",".join(["%s"] + ["%s"] * (data.shape[1]-1))
             np.savetxt(file, data, fmt=fmt, header="Time,Pseudoproxy,Bioturbated Carrier 1,Bioturbated Carrier 2", comments='', delimiter=',')
-
-        tk.messagebox.showinfo("Success", "Saved Data")
+            tk.messagebox.showinfo("Success", "Saved Data")
 
     def download_png(self):
         file = asksaveasfilename(initialfile="Figure.png", defaultextension=".png")
@@ -2055,10 +2037,9 @@ class PageCompaction(tk.Frame):
                                command=lambda: self.parent.show_frame(["PageCompaction"], "StartPage"))
         homeButton.grid(row=0, column=8, ipadx=10, ipady=3, sticky="NE")
 
-
         self.f, self.axis = plt.subplots(1, 2, figsize=(9, 5), dpi=100)
-        plot_setup(self.scrollable_frame, self.axis[0], self.f, "ARCHIVE", "Year", "Compaction Data")
-        plot_setup(self.scrollable_frame, self.axis[1], self.f, "ARCHIVE", "Year", "Compaction Data")
+        plot_setup(self.scrollable_frame, self.axis[0], self.f, "ARCHIVE", "Depth (m)", "Compaction Data")
+        plot_setup(self.scrollable_frame, self.axis[1], self.f, "ARCHIVE", "Depth (m)", "Compaction Data")
 
     def validate_params(self, params):
         if not check_float(params[0]):
@@ -2074,6 +2055,9 @@ class PageCompaction(tk.Frame):
         if not check_float(params[2]):
             tk.messagebox.showerror(title="Run Compaction Model", message="Floating point value was not entered for porosity")
             return False
+        if not (float(params[2]) > 0 and float(params[2]) < 1):
+            tk.messagebox.showerror(title="Run Compaction Model",
+                                    message="Porosity must be a value between 0 and 1 (exclusive)")
         return True
 
     def run_compaction_model(self, params):
@@ -2083,19 +2067,25 @@ class PageCompaction(tk.Frame):
         year = int(params[1])
         phi_0 = float(params[2])
         self.z, self.phi, self.h, self.h_prime = comp.compaction(sbar, year, phi_0)
+        self.axis[0].clear()
+        self.axis[1].clear()
         plot_draw(self.scrollable_frame, self.axis[0], self.f, "Porosity ($\phi$) Profile in Sediment Core", "Depth (m)",
                   r'Porosity Profile ($\phi$) (unitless)', self.z, [self.phi],
-                  "normal non-month", ["#000000"], [3], ["Porosity Profile"])
+                  "no-marker", ["#000000"], [3], ["Porosity Profile"])
         plot_draw(self.scrollable_frame, self.axis[1], self.f, "Depth Scale w/Compaction in Sediment Core", "Depth (m)", "Sediment Height (m)",
-                  self.z, [self.h_prime, self.h], "normal non-month", ["#000000", "#b22222"], [3, 3],
+                  self.z, [self.h_prime, self.h], "no-marker", ["#000000", "#b22222"], [3, 3],
                   ["Compcated Layer", "Non-Compacted Original Layer"])
 
+
+    # Numpy 1.17.0 and up
     def download_csv(self):
-        df = pd.DataFrame({"Depth (m)": self.z, r'Porosity Profile ($\phi$) (unitless)':self.phi,
-                           "Compacted Layer": self.h.prime,"Non-Compacted Original Layer": self.h})
+        data = np.array([self.z, self.phi, self.h_prime, self.h]).T
+
         file = asksaveasfilename(initialfile="Data.csv", defaultextension=".csv")
         if file:
-            df.to_csv(file, index=False)
+            fmt = ",".join(["%s"] + ["%s"] * (data.shape[1]-1))
+            np.savetxt(file, data, fmt=fmt, header="Depth (m),"+r'Porosity Profile ($\phi$) (unitless),'
+                +"Compacted Layer,Non-Compacted Original Layer", comments='', delimiter=',')
             tk.messagebox.showinfo("Success", "Saved Data")
 
     def download_png(self):
@@ -2106,6 +2096,7 @@ class PageCompaction(tk.Frame):
 
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     app = SampleApp()
     app.config(highlightcolor="white smoke")
     app.mainloop()
