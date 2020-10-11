@@ -4,11 +4,10 @@ import sys
 import pathlib
 from pathlib import Path
 
-"""
+# Comment these 3 lines to run using python
 currentPath = Path(sys.executable)
 parentPath = currentPath.parent
 os.chdir(parentPath)
-"""
 
 
 #tkinter imports
