@@ -50,13 +50,13 @@
       cdeutrun(xt) = 2.5915*xt-161.35   ! function to calc deutrun
 
       real area(max_dep)
-      data area/292*2960000./ ! lake area in hectares by depth 
+      data area/292*2960000./ ! lake area in hectares by depth
 
       ! Removed from the model, for easier access
-      character(49) :: datafile='/Users/henryqin/Desktop/CCSM-HIST-Mlake-10yrs.txt' ! the data file to open in FILE_OPEN subroutine
-      parameter (tempinit = -4.8)   ! Temperature To Initialize Lake At In INIT_LAKE Subroutine
-      parameter (deutinit = -96.1)   ! Dd To Initialize Lake At In INIT_LAKE Subroutine
-      parameter (o18init = -11.3)   ! D18o To Initialize Lake At In INIT_LAKE Subroutine
+      character(25) :: datafile='CCSM-HIST-Mlake-10yrs.txt' ! the data file to open in FILE_OPEN subroutine
+      parameter (tempinit = -4.8)   ! Temperature To Initialize Lake At InINIT_LAKE Subroutine
+      parameter (deutinit = -96.1)   ! Dd To Initialize Lake At InINIT_LAKE Subroutine
+      parameter (o18init = -11.3)   ! D18o To Initialize Lake At InINIT_LAKE Subroutine
 ! Simulation specific parameters **************************************
 
       parameter (nspin = 10)   ! Number Of Years For Spinup
@@ -139,7 +139,7 @@
       common ktauwan (12),ti_a(max_dep)
       common mix_ave, tsurf_ave, fice_ave
       common evap_ave, hice_ave, hsnow_ave, o18_ave
-      common qew_ave, qhw_ave, sww_ave, luw_ave
+	common qew_ave, qhw_ave, sww_ave, luw_ave
       common deut_ave, runout_sum, temp_ave(max_dep)
 
 !**********************************************************************

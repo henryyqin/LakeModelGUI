@@ -4,10 +4,11 @@ import sys
 import pathlib
 from pathlib import Path
 
+"""
 currentPath = Path(sys.executable)
 parentPath = currentPath.parent
 os.chdir(parentPath)
-
+"""
 
 
 #tkinter imports
@@ -525,9 +526,9 @@ class PageEnvModel(tk.Frame):
                       "Neutral Drag Coefficient", "Shortwave Extinction Coefficient (1/M)",
                       "Fraction Of Advected Air Over Lake", "Albedo Of Melting Snow", "Albedo Of Non-Melting Snow",
                       "Prescribed Depth In Meters", "Prescribed Salinity In Ppt", "\u0394¹⁸o Of Air Above Lake",
-                      "\u0394d Of Air Above Lake", "Temperature To Initialize Lake At In INIT_LAKE Subroutine",
-                      "Dd To Initialize Lake At In INIT_LAKE Subroutine",
-                      "\u0394¹⁸o To Initialize Lake At In INIT_LAKE Subroutine", "Number Of Years For Spinup",
+                      "\u0394d Of Air Above Lake", "Temperature To Initialize Lake At In\nINIT_LAKE Subroutine",
+                      "Dd To Initialize Lake At In\nINIT_LAKE Subroutine",
+                      "\u0394¹⁸o To Initialize Lake At In\nINIT_LAKE Subroutine", "Number Of Years For Spinup",
                       "Check Mark For Explict Boundary Layer Computations;\nPresently Only For Sigma Coord Climate Models",
                       "Sigma Level For Boundary Flag", "Check Mark For Variable Lake Depth",
                       "Check Mark For Variable Ice Cover",
@@ -536,37 +537,38 @@ class PageEnvModel(tk.Frame):
                       "Height Of Met Inputs", "Check Mark for Relative Humidity", "Start Year", "Surface Area"]
         param_values = []
         param_containers = []
-        tk.Label(self.scrollable_frame, bg="white smoke",  text="Lake-Specific Parameters", font=LARGE_FONT).grid(
+        tk.Label(self.scrollable_frame, text="Lake-Specific Parameters", font=LARGE_FONT).grid(
             row=rowIdx, pady=10, sticky="W")
-        tk.Label(self.scrollable_frame, bg="white smoke", text="Simulation-Specific Parameters", font=LARGE_FONT).grid(
-            row=rowIdx, pady=10, padx=600, sticky="W")
+        tk.Label(self.scrollable_frame, text="Simulation-Specific Parameters", font=LARGE_FONT).grid(
+            row=rowIdx, pady=10, padx=720, sticky="W")
         rowIdx += 1
 
         # List entries for lake-specific parameters
         for i in range(rowIdx, rowIdx + 19):
-            tk.Label(self.scrollable_frame, bg="white smoke", text=parameters[i - rowIdx], font=f).grid(
+            tk.Label(self.scrollable_frame, text=parameters[i - rowIdx], font=f).grid(
                 row=i, column=0, sticky="W")
-            p = tk.Entry(self.scrollable_frame, bd=1)
-            p.grid(row=i, column=0, ipady=1, ipadx=0, padx=350, sticky="W")
+            p = tk.Entry(self.scrollable_frame)
+            p.grid(row=i, column=0, padx=390, sticky="W")
             param_values.append(p)
             param_containers.append(p)
 
         # List entries for simulation-specific parameters
         for i in range(rowIdx + 19, rowIdx + 31):
-            tk.Label(self.scrollable_frame, bg="white smoke", text=parameters[i - rowIdx], font=f).grid(
-                row=i - 19, column=0, padx=600, sticky="W")
-            if i in [rowIdx + 19, rowIdx + 21, rowIdx + 27, rowIdx + 30]:
-                p = tk.Entry(self.scrollable_frame, bd=1)
-                p.grid(row=i - 19, column=0, padx=950, sticky="W")
+            tk.Label(self.scrollable_frame, text=parameters[i - rowIdx], font=f).grid(
+                row=i - 19, column=0, padx=720, sticky="W")
+            if i in [rowIdx + 19, rowIdx + 21, rowIdx + 27, rowIdx + 29, rowIdx + 30]:
+                p = tk.Entry(self.scrollable_frame)
+                p.grid(row=i - 19, column=0, padx=1120, sticky="W")
                 param_containers.append(p)
             else:
                 p = tk.IntVar()
                 c = tk.Checkbutton(self.scrollable_frame, variable=p)
-                c.grid(row=i - 19, column=0, padx=950, sticky="W")
+                c.grid(row=i - 19, column=0, padx=1120, sticky="W")
                 param_containers.append(c)
             param_values.append(p)
 
-        rowIdx += 16
+        rowIdx += 19
+
 
         # Submit entries for .inc file
         submitButton = tk.Button(self.scrollable_frame, text="Save Parameters", font=f,
@@ -704,20 +706,26 @@ class PageEnvModel(tk.Frame):
     """
 
     def fill(self, lake, containers):
+        """
+        Fills in parameter values with either Malawi or Tanganyika parameters
+        Inputs:
+        - lake: determines which lake's parameters should populate the GUI
+        - containers: the GUI entries and checkboxes that should be populated
+        """
         if lake == "Malawi":
             values = ["23.4", "-12.11", "34.22", "+3", "292", "468.", "2960000.",
                       "1.7e-3", "0.04", "0.1", "0.4", "0.7", "292", "0.0", "-28.",
                       "-190.", "-4.8", "-96.1", "-11.3", "10", 0, "0.96", 0, 1,
                       0, 0, 0, "5.0", 1, "1979", "2960000."]
-        elif lake=="Tanganyika":
+        elif lake == "Tanganyika":
             values = ["23.4", "-6.30", "29.5", "+3", "999", "733.", "23100000.",
                       "2.0e-3", "0.065", "0.3", "0.4", "0.7", "570", "0.0", "-14.0", "-96.",
                       "23.0", "24.0", "3.7", "10", 0, "0.9925561", 0, 0, 0, 0, 0, "5.0", 1, "1979", "3290000."]
-        elif lake=="Refill":
+        elif lake == "Refill":
             values = copy.copy(PARAMETERS)
         else:
-            values = [""]*20
-            values.extend([0,"",0,0,0,0,0,"", 0, "", ""])
+            values = [""] * 20
+            values.extend([0, "", 0, 0, 0, 0, 0, "", 0, "", ""])
         for i in range(len(values)):
             if i == 20 or (i > 21 and i < 27) or i==28:
                 containers[i].deselect()
